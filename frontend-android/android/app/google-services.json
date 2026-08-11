@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "923564777292",
+    "project_id": "smart-sight-51f66",
+    "storage_bucket": "smart-sight-51f66.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:923564777292:android:6fadbfd4dc48f6822139e9",
+        "android_client_info": {
+          "package_name": "com.smartsight.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB51nZzQ1T7xelHCiff0Su3005g99ZKoIY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
