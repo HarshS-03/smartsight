@@ -5,8 +5,7 @@ import uuid
 import threading
 import numpy as np
 import cv2 as cv
-from datetime import timedelta, datetime
-
+from datetime import timedelta, datetim
 from django.utils import timezone
 from django.conf import settings
 from django.http import StreamingHttpResponse, HttpResponse
@@ -14,12 +13,10 @@ from django.shortcuts import get_object_or_404
 from django.db.models.functions import TruncDate
 from django.db.models import Count, Min, Max
 from openpyxl import Workbook
-
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-
 from .models import User, Person, PersonImage, RecognitionLog, Camera, Notification, DevicePushToken
 from .serializers import (
     UserSerializer,
