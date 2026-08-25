@@ -5,11 +5,9 @@ export default function Footer({ setActivePage }) {
     <footer
       className="footer py-4 mt-auto"
       style={{
-        background: 'rgba(255, 255, 255, 0.45)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
-        boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
+        background: 'var(--bg-surface-solid, #ffffff)',
+        borderTop: '1px solid var(--border-color, #e2e8f0)',
+        boxShadow: 'var(--shadow-xs, 0 -1px 2px rgba(0, 0, 0, 0.03))',
         position: 'relative',
         zIndex: 10
       }}
@@ -22,7 +20,7 @@ export default function Footer({ setActivePage }) {
             onClick={(e) => { e.preventDefault(); setActivePage('home'); }}
             style={{ fontSize: '1.1rem', letterSpacing: '-0.5px', fontFamily: 'var(--font-brand)', color: 'var(--text-heading)' }}
           >
-            Smart <span style={{ color: '#0d6efd' }}>Sight</span>
+            Smart <span style={{ color: 'var(--color-primary, #2563eb)' }}>Sight</span>
           </a>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>&copy; 2026 Smart Sight. All rights reserved.</span>
         </div>

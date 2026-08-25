@@ -42,16 +42,12 @@ export default function HomePage({ setActivePage }) {
       {/* ════════════════════════════════════════════════════════ */}
       {/* HERO SECTION */}
       {/* ════════════════════════════════════════════════════════ */}
-      <section className="hero-section">
-        <div className="hero-bg-wrapper">
-
-          <div className="hero-bg"></div>
-          <div className="orb orb-1"></div>
-          <div className="orb orb-2"></div>
-          <div className="orb orb-3"></div>
+      <section className="page-hero">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
-
-        <div className="container hero-content">
+        <div className="container page-hero-content">
           <div className="row align-items-center g-5">
             {/* Center: Copy */}
             <div className="col-lg-10 mx-auto text-center">

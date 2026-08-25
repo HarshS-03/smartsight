@@ -5,7 +5,7 @@ import uuid
 import threading
 import numpy as np
 import cv2 as cv
-from datetime import timedelta, datetim
+from datetime import timedelta, datetime
 from django.utils import timezone
 from django.conf import settings
 from django.http import StreamingHttpResponse, HttpResponse
@@ -17,7 +17,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from .models import User, Person, PersonImage, RecognitionLog, Camera, Notification, DevicePushToken
+from .models import User, Person, PersonImage, PersonEmbedding, RecognitionLog, Camera, Notification, DevicePushToken
 from .serializers import (
     UserSerializer,
     PersonSerializer,
@@ -123,14 +123,35 @@ class DatasetUploadView(APIView):
         person, created = Person.objects.get_or_create(name=person_name.strip())
 
         uploaded_images = []
+        embedding_count = 0
         if images:
             for img in images:
                 pi = PersonImage.objects.create(person=person, image=img)
                 uploaded_images.append(pi)
 
+                # Auto-compute ArcFace embedding for the uploaded image
+                if getattr(settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface':
+                    try:
+                        from app.utils.embedding_engine import compute_embedding, get_gallery
+                        result = compute_embedding(pi.image.path)
+                        if result is not None:
+                            emb, det_conf, _ = result
+                            PersonEmbedding.objects.create(
+                                person=person,
+                                source_image=pi,
+                                embedding=emb.tolist(),
+                            )
+                            get_gallery().add_embedding(person.id, person.name, emb)
+                            embedding_count += 1
+                    except Exception as e:
+                        print(f"[DatasetUpload] Auto-embedding error for {pi.image.name}: {e}")
+
         serializer = PersonSerializer(person, context={'request': request})
         res_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
-        return Response(serializer.data, status=res_status)
+        response_data = serializer.data
+        if embedding_count > 0:
+            response_data['embeddings_computed'] = embedding_count
+        return Response(response_data, status=res_status)
 
 
 class ClassifyUnknownsAPIView(APIView):
@@ -359,7 +380,7 @@ def test_alert(request):
 def face_verify_frame(request):
     """
     Receive a base64-encoded camera frame from the mobile app,
-    run YOLO face recognition, and return JWT tokens if an admin user is recognized.
+    run face recognition (ArcFace or YOLO), and return JWT tokens if an admin user is recognized.
     """
     try:
         img_data = request.data.get('image', '')
@@ -377,26 +398,55 @@ def face_verify_frame(request):
         if frame is None:
             return Response({'status': 'error', 'message': 'Invalid image format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Use the same YOLO model as face login stream
-        model = get_yolo_model('yolov8n')
-        results = model(frame, conf=0.25, verbose=False)
+        use_arcface = getattr(settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
 
-        best_conf = 0.0
-        recognized_name = None
+        if use_arcface:
+            # ── ArcFace Pipeline ──
+            from app.utils.embedding_engine import detect_and_recognize
+            login_threshold = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
+            detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1)
 
-        for box in results[0].boxes:
-            cls_id = int(box.cls[0])
-            conf = float(box.conf[0])
-            if conf > best_conf:
-                best_conf = conf
-                recognized_name = model.names[cls_id]
+            if not detections:
+                return Response({
+                    'status': 'no_face',
+                    'message': 'No face detected in frame',
+                    'faces': 0
+                })
 
-        if not recognized_name:
-            return Response({
-                'status': 'no_face',
-                'message': 'No face detected in frame',
-                'faces': 0
-            })
+            best = detections[0]
+            recognized_name = best['person_name']
+            best_conf = best['recognition_similarity']
+            det_conf = best['detection_confidence']
+
+            if not recognized_name:
+                return Response({
+                    'status': 'unrecognized',
+                    'message': f'Face detected but no matching identity found (similarity: {round(best_conf * 100, 1)}%)',
+                    'faces': 1,
+                    'detection_confidence': round(det_conf, 3),
+                    'recognition_similarity': round(best_conf, 3)
+                })
+        else:
+            # ── YOLO Fallback ──
+            model = get_yolo_model('yolov8n')
+            results = model(frame, conf=0.25, verbose=False)
+
+            best_conf = 0.0
+            recognized_name = None
+
+            for box in results[0].boxes:
+                cls_id = int(box.cls[0])
+                conf = float(box.conf[0])
+                if conf > best_conf:
+                    best_conf = conf
+                    recognized_name = model.names[cls_id]
+
+            if not recognized_name:
+                return Response({
+                    'status': 'no_face',
+                    'message': 'No face detected in frame',
+                    'faces': 0
+                })
 
         # Check if recognized person is a registered admin user
         try:
@@ -418,7 +468,8 @@ def face_verify_frame(request):
                 'confidence': round(best_conf, 3)
             })
 
-        if best_conf < 0.50:
+        min_login_conf = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60) if use_arcface else 0.50
+        if best_conf < min_login_conf:
             return Response({
                 'status': 'low_confidence',
                 'message': f'Detected "{recognized_name}" but confidence too low ({round(best_conf * 100, 1)}%)',
@@ -632,9 +683,20 @@ class NotificationListAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        now = timezone.now()
+        # Auto-expire any pending notifications older than 15 minutes
+        timeout_threshold = now - timezone.timedelta(minutes=15)
+        stale_pending = Notification.objects.filter(status='PENDING', created_at__lt=timeout_threshold)
+        if stale_pending.exists():
+            stale_pending.update(status='EXPIRED', is_read=True, processed_at=now)
+
+        # Ensure all already expired, approved, or cancelled alerts are marked read
+        Notification.objects.filter(status__in=['EXPIRED', 'APPROVED', 'CANCELLED'], is_read=False).update(is_read=True)
+
         notifications = Notification.objects.all()[:50]
         serializer = NotificationSerializer(notifications, many=True)
-        unread_count = Notification.objects.filter(is_read=False).count()
+        # Unread count strictly counts only active, unhandled PENDING alerts
+        unread_count = Notification.objects.filter(status='PENDING', is_read=False).count()
         return Response({
             'notifications': serializer.data,
             'unread_count': unread_count
@@ -696,7 +758,10 @@ class NotificationActionAPIView(APIView):
                 confidence = 0.0
                 
                 pm = re.search(r"\((.*?)\)", notification.title)
-                if pm: person_name = pm.group(1)
+                if pm: 
+                    person_name = pm.group(1).strip()
+                    if 'unknown' in person_name.lower():
+                        person_name = 'Unknown'
                 
                 cm = re.search(r"on (.*?) \(Confidence: (.*?)%\)", notification.message)
                 if cm:
@@ -751,4 +816,107 @@ class RegisterPushTokenAPIView(APIView):
             'status': 'success',
             'message': 'FCM Push Token registered successfully',
             'created': created
+        })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def webrtc_offer(request):
+    import asyncio
+    from app.utils.webrtc_processor import process_webrtc_offer
+
+    sdp_offer = request.data.get('sdp')
+    camera_src = request.data.get('src', '0')
+    model_name = request.data.get('model', 'yolov8n_onnx')
+
+    if not sdp_offer:
+        return Response({'error': 'SDP offer is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        res = loop.run_until_complete(process_webrtc_offer(sdp_offer, camera_src, model_name))
+        loop.close()
+        return Response(res, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'status': 'fallback', 'message': str(e)}, status=status.HTTP_200_OK)
+
+
+# ==============================================================================
+# GALLERY MANAGEMENT API VIEWS (ArcFace Embedding Engine)
+# ==============================================================================
+
+class GalleryStatusAPIView(APIView):
+    """Returns the current state of the ArcFace embedding gallery."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
+        if engine != 'arcface':
+            return Response({
+                'engine': engine,
+                'status': 'inactive',
+                'message': 'ArcFace engine is not active. Set RECOGNITION_ENGINE=arcface in settings.'
+            })
+
+        from app.utils.embedding_engine import get_gallery
+        gallery = get_gallery()
+        stats = gallery.stats()
+        return Response({
+            'engine': engine,
+            'status': 'active',
+            'threshold': getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.55),
+            'login_threshold': getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60),
+            'detection_backend': getattr(settings, 'ARCFACE_DETECTION_BACKEND', 'retinaface'),
+            **stats,
+        })
+
+
+class GalleryRebuildAPIView(APIView):
+    """Force-reload the in-memory embedding gallery from the database."""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
+        if engine != 'arcface':
+            return Response({'error': 'ArcFace engine is not active.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from app.utils.embedding_engine import get_gallery
+        gallery = get_gallery()
+        gallery.reload()
+        stats = gallery.stats()
+        return Response({
+            'status': 'success',
+            'message': 'Gallery rebuilt from database.',
+            **stats,
+        })
+
+
+class ComputePersonEmbeddingsAPIView(APIView):
+    """Compute (or recompute) ArcFace embeddings for all images of a person."""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, person_id):
+        engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
+        if engine != 'arcface':
+            return Response({'error': 'ArcFace engine is not active.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from app.utils.embedding_engine import compute_person_embeddings
+        try:
+            person = Person.objects.get(id=person_id)
+        except Person.DoesNotExist:
+            return Response({'error': 'Person not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        recompute = request.data.get('recompute', False)
+        if recompute:
+            # Delete existing embeddings and recompute all
+            PersonEmbedding.objects.filter(person=person).delete()
+
+        computed, skipped, errors = compute_person_embeddings(person_id)
+        return Response({
+            'status': 'success',
+            'person_name': person.name,
+            'computed': computed,
+            'skipped': skipped,
+            'errors': errors,
         })

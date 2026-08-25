@@ -29,8 +29,6 @@ export default function ForgotPasswordPage({ setActivePage }) {
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
               boxShadow: 'var(--shadow-lg)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)'
             }}>
 
               <div className="position-absolute top-0 start-50 translate-middle"

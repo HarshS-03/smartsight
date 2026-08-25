@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../api/axios';
+import { syncThemeAndStatusBar } from '../utils/themeStatusBar';
 
 export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const hasToken = !!localStorage.getItem('access_token');
@@ -21,14 +22,63 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
     setActivePage('login');
   };
 
-  // Force Light Theme
+  // Dynamic Theme (Light / Dark / System Auto)
+  const [themeMode, setThemeMode] = useState(() => {
+    const saved = localStorage.getItem('theme_mode') || localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+    return 'system';
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState(() => {
+    const saved = localStorage.getItem('theme_mode') || localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
   useEffect(() => {
-    document.documentElement.setAttribute('data-bs-theme', 'light');
-    localStorage.setItem('theme', 'light');
-  }, []);
+    const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+    const applyTheme = () => {
+      let active = themeMode;
+      if (themeMode === 'system') {
+        active = mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+      }
+      setResolvedTheme(active);
+      syncThemeAndStatusBar(active);
+      localStorage.setItem('theme_mode', themeMode);
+      localStorage.setItem('theme', active);
+    };
+
+    applyTheme();
+
+    const handleChange = () => {
+      if (themeMode === 'system') {
+        applyTheme();
+      }
+    };
+
+    if (mediaQuery) {
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(handleChange);
+        return () => mediaQuery.removeListener(handleChange);
+      }
+    }
+  }, [themeMode]);
+
+  const cycleTheme = () => {
+    setThemeMode(prev => {
+      if (prev === 'light') return 'dark';
+      if (prev === 'dark') return 'system';
+      return 'light';
+    });
+  };
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const lastNotifiedIdRef = useRef(null);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -36,7 +86,9 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
       try {
         const res = await API.get('/notifications/');
         const notifs = res.data.notifications || [];
-        const count = res.data.unread_count || notifs.filter(n => n.status === 'PENDING').length;
+        const count = typeof res.data.unread_count === 'number'
+          ? res.data.unread_count
+          : notifs.filter(n => n.status === 'PENDING' && !n.is_read).length;
         setUnreadCount(count);
       } catch (err) {
         // Silent catch
@@ -44,7 +96,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
     };
     fetchUnread();
     window.addEventListener('refresh-notifications', fetchUnread);
-    return () => window.removeEventListener('refresh-notifications', fetchUnread);
+    const interval = setInterval(fetchUnread, 15000);
+    return () => {
+      window.removeEventListener('refresh-notifications', fetchUnread);
+      clearInterval(interval);
+    };
   }, []);
 
   // Sliding Liquid Pill Logic
@@ -116,27 +172,25 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           width: 100%;
           margin: 0;
           border-radius: 0 !important;
-          background: rgba(255, 255, 255, 0.55) !important;
-          backdrop-filter: blur(20px) saturate(180%);
-          -webkit-backdrop-filter: blur(20px) saturate(180%);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.6) !important;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+          background: var(--navbar-bg, #ffffff) !important;
+          border-bottom: 1px solid var(--navbar-border, #e2e8f0) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
           z-index: 1050;
-          transition: all 0.3s ease;
-          padding-top: 0.65rem;
+          transition: all 0.2s ease;
+          padding-top: max(0.65rem, env(safe-area-inset-top, 0.65rem));
           padding-bottom: 0.65rem;
-          padding-left: 0;
-          padding-right: 0;
+          padding-left: env(safe-area-inset-left, 0px);
+          padding-right: env(safe-area-inset-right, 0px);
         }
 
         [data-bs-theme="dark"] .navbar {
-          background: rgba(11, 15, 25, 0.65) !important;
-          border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          background: var(--navbar-bg, #0b0f19) !important;
+          border-bottom-color: var(--navbar-border) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
         .navbar-brand {
-          font-family: var(--font-brand) !important;
+          font-family: 'Inter', sans-serif !important;
           font-weight: var(--fw-bold, 700);
           letter-spacing: var(--ls-heading, -0.03em);
         }
@@ -165,7 +219,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           }
 
           .nav-item.active .nav-link {
-            color: #0d6efd !important;
+            color: #2563eb !important;
             background: rgba(13, 110, 253, 0.12);
             border-color: rgba(13, 110, 253, 0.25);
             font-weight: 700;
@@ -177,7 +231,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           }
 
           [data-bs-theme="light"] .nav-item.active .nav-link {
-            color: #0d6efd !important;
+            color: #2563eb !important;
             background: rgba(13, 110, 253, 0.1);
             border-color: rgba(13, 110, 253, 0.2);
           }
@@ -218,14 +272,14 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           .mobile-nav-link:hover,
           .mobile-nav-link.active {
             background: rgba(13, 110, 253, 0.08) !important;
-            color: #0d6efd !important;
+            color: #2563eb !important;
             font-weight: 700;
             transform: translateX(3px);
           }
 
           .mobile-nav-link.active i.mobile-icon,
           .mobile-nav-link:hover i.mobile-icon {
-            color: #0d6efd !important;
+            color: #2563eb !important;
             transform: scale(1.05);
           }
 
@@ -263,14 +317,12 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           border-radius: 50% !important;
           border: 1px solid var(--border-color);
           background: var(--bg-surface-solid) !important;
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.05));
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           color: var(--text-heading) !important;
           position: relative;
           overflow: visible;
@@ -278,11 +330,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         }
 
         .theme-toggle-btn:hover {
-          border-color: rgba(13, 110, 253, 0.5);
+          border-color: var(--color-primary, #2563eb);
           background: var(--bg-surface-hover) !important;
-          color: #0d6efd !important;
+          color: var(--color-primary, #2563eb) !important;
           transform: scale(1.05);
-          box-shadow: 0 4px 18px rgba(13, 110, 253, 0.2);
+          box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
         }
 
         .theme-toggle-btn i {
@@ -292,12 +344,10 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
 
         /* Dropdown Menus (Theme Selector & User Account) */
         .dropdown-menu {
-          background: var(--dropdown-bg, #0f172a) !important;
-          border: 1px solid var(--dropdown-border, rgba(255, 255, 255, 0.12)) !important;
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
-          border-radius: 16px !important;
-          backdrop-filter: blur(20px) !important;
-          -webkit-backdrop-filter: blur(20px) !important;
+          background: var(--dropdown-bg, #ffffff) !important;
+          border: 1px solid var(--dropdown-border, #e2e8f0) !important;
+          box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.08)) !important;
+          border-radius: 12px !important;
         }
 
         .dropdown-item {
@@ -317,21 +367,21 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
 
         #themeDropdownMenu .dropdown-item.active {
           background-color: rgba(13, 110, 253, 0.12) !important;
-          color: #0d6efd !important;
+          color: #2563eb !important;
         }
 
         /* ── Organic Liquid Pill Indicator ── */
         .nav-liquid-pill {
           background: rgba(13, 110, 253, 0.25) !important;
           border: 1px solid rgba(13, 110, 253, 0.5) !important;
-          box-shadow: 0 0 20px rgba(13, 110, 253, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+          box-shadow: 0 0 20px rgba(13, 110, 253, 0.3) !important;
           pointer-events: none;
         }
 
         [data-bs-theme="light"] .nav-liquid-pill {
           background: rgba(13, 110, 253, 0.12) !important;
           border: 1px solid rgba(13, 110, 253, 0.35) !important;
-          box-shadow: 0 4px 16px rgba(13, 110, 253, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+          box-shadow: 0 4px 16px rgba(13, 110, 253, 0.15) !important;
         }
 
         .nav-link-liquid {
@@ -352,7 +402,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         }
 
         [data-bs-theme="light"] .nav-link-liquid.active-link {
-          color: #0d6efd !important;
+          color: #2563eb !important;
         }
 
         /* ── Light mode navbar toggler icon fix ── */
@@ -390,7 +440,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: #0d6efd;
+          background: #2563eb;
           box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
           display: flex;
           align-items: center;
@@ -417,7 +467,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             href="#"
             onClick={(e) => { e.preventDefault(); setActivePage('home'); closeMobileNav(); }}
           >
-            Smart <span style={{ color: '#0d6efd' }}>Sight</span>
+            Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
 
           <div className="d-flex align-items-center gap-2 ms-auto d-lg-none me-2">
@@ -429,7 +479,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               title="Notifications"
               style={{ background: 'transparent', width: '42px', height: '42px', boxShadow: 'none' }}
             >
-              <i className="bi bi-bell-fill" style={{ fontSize: '2.15rem', color: '#0d6efd', lineHeight: 1 }}></i>
+              <i className="bi bi-bell-fill" style={{ fontSize: '2.15rem', color: '#2563eb', lineHeight: 1 }}></i>
               {unreadCount > 0 && (
                 <span
                   className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
@@ -585,8 +635,40 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               ))}
             </ul>
 
-            {/* Apple/Vercel Style User Footer (< 992px) */}
-            <div className="d-lg-none pt-2 border-top border-white border-opacity-10">
+            {/* Mobile Footer with Theme Toggle (< 992px) */}
+            <div className="d-lg-none pt-2 border-top border-secondary border-opacity-25">
+              <div className="d-flex align-items-center justify-content-between mb-3 px-1">
+                <span className="small text-secondary fw-semibold">Appearance</span>
+                <button
+                  type="button"
+                  className="btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5"
+                  onClick={cycleTheme}
+                  style={{
+                    background: 'var(--bg-surface-solid)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-heading)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600
+                  }}
+                >
+                  {themeMode === 'system' ? (
+                    <>
+                      <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
+                      <span>Auto ({resolvedTheme === 'dark' ? 'Dark' : 'Light'})</span>
+                    </>
+                  ) : themeMode === 'dark' ? (
+                    <>
+                      <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
+                      <span>Dark Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-sun-fill text-warning"></i>
+                      <span>Light Mode</span>
+                    </>
+                  )}
+                </button>
+              </div>
               {isAuthenticated ? (
                 <div className="p-3 rounded-4 d-flex align-items-center justify-content-between" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
                   <div className="d-flex align-items-center" style={{ gap: '10px', minWidth: 0 }}>
@@ -641,7 +723,25 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             </div>
 
             {/* Right Side Items for Desktop (>= 992px) */}
-            <ul className="navbar-nav ms-auto d-none d-lg-flex align-items-center gap-3">
+            <ul className="navbar-nav ms-auto d-none d-lg-flex align-items-center gap-2">
+              <li className="nav-item">
+                <button
+                  type="button"
+                  className="theme-toggle-btn"
+                  onClick={cycleTheme}
+                  title={themeMode === 'system' ? `Theme: Auto/System (Currently ${resolvedTheme})` : themeMode === 'dark' ? 'Theme: Dark Mode' : 'Theme: Light Mode'}
+                  aria-label="Toggle Theme"
+                >
+                  {themeMode === 'system' ? (
+                    <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
+                  ) : themeMode === 'dark' ? (
+                    <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
+                  ) : (
+                    <i className="bi bi-sun-fill text-warning"></i>
+                  )}
+                </button>
+              </li>
+
               {isAuthenticated ? (
                 <li className="nav-item dropdown position-relative">
                   <a
@@ -656,7 +756,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                     </div>
                     <span className="user-name-text">{displayName}</span>
                   </a>
-                  <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+                  <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', }}>
                     <li>
                       <h6 className="dropdown-header small text-uppercase fw-bold text-center mb-2" style={{ color: 'var(--text-secondary)' }}>{user?.username ? `Account: ${user.username}` : 'User Account'}</h6>
                     </li>

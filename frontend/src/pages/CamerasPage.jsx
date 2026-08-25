@@ -112,13 +112,13 @@ export default function CamerasPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="cameras-hero">
-        <div className="cameras-hero-bg-wrapper">
-          <div className="cameras-hero-bg"></div>
-          <div className="cameras-orb"></div>
+      <section className="page-hero">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
 
-        <div className="container position-relative" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content" style={{ zIndex: 2 }}>
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="cameras-title mb-2">
@@ -166,7 +166,7 @@ export default function CamerasPage() {
                   <div className="d-flex flex-column gap-3">
                     <div>
                       <span className="text-secondary small fw-bold text-uppercase d-block mb-1.5" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Source Stream</span>
-                      <div className="font-mono text-truncate rounded-pill d-flex align-items-center gap-2 px-3.5 py-2" style={{ background: 'rgba(13, 110, 253, 0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(13, 110, 253, 0.25)', color: '#0d6efd', fontSize: '0.85rem', fontWeight: 600 }} title={camera.source}>
+                      <div className="font-mono text-truncate rounded-pill d-flex align-items-center gap-2 px-3.5 py-2" style={{ background: 'rgba(13, 110, 253, 0.08)', border: '1px solid rgba(13, 110, 253, 0.25)', color: '#2563eb', fontSize: '0.85rem', fontWeight: 600 }} title={camera.source}>
                         <i className="bi bi-link-45deg fs-6 text-primary opacity-75"></i>
                         <span className="text-truncate" style={{ letterSpacing: '0.01em' }}>{camera.source}</span>
                       </div>
@@ -246,7 +246,7 @@ export default function CamerasPage() {
       {/* Add Camera Modal */}
       {showAddModal && (
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block glass-modal" tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
@@ -300,7 +300,7 @@ export default function CamerasPage() {
       {/* Edit Camera Modal */}
       {showEditModal && editCamera && (
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block glass-modal" tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
@@ -354,7 +354,7 @@ export default function CamerasPage() {
       {/* Delete Confirmation Modal - Mounted directly on document.body via React Portal */}
       {showDeleteModal && deleteCamera && createPortal(
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)', zIndex: 10540 }} onClick={() => setShowDeleteModal(false)}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, zIndex: 10540 }} onClick={() => setShowDeleteModal(false)}></div>
           <div
             className="modal fade show"
             tabIndex="-1"
@@ -385,9 +385,7 @@ export default function CamerasPage() {
                   background: 'rgba(255, 255, 255, 0.45)',
                   border: '1px solid rgba(255, 255, 255, 0.8)',
                   borderRadius: '28px',
-                  backdropFilter: 'blur(30px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-                  boxShadow: '0 20px 45px rgba(31, 38, 135, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9)'
+                  boxShadow: '0 20px 45px rgba(31, 38, 135, 0.08)'
                 }}
               >
                 <div className="modal-body p-4 text-center d-flex flex-column align-items-center justify-content-center">

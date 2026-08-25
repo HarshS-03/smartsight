@@ -14,7 +14,15 @@ _face_login_verified = {}
 
 def get_yolo_model(model_name):
     if model_name not in YOLO_MODELS:
-        if model_name == 'yolov8n_onnx':
+        if model_name in ['yolov8n_face_onnx', 'yolov8n-face.onnx', 'face']:
+            model_path = 'app/models/yolov8n-face.onnx'
+        elif model_name in ['yolov8n_face_pt', 'yolov8n-face.pt']:
+            model_path = 'app/models/yolov8n-face.pt'
+        elif model_name in ['yolo26n_face_onnx', 'yolo26n-face.onnx']:
+            model_path = 'app/models/yolo26n-face.onnx'
+        elif model_name in ['yolo26n_face_pt', 'yolo26n-face.pt']:
+            model_path = 'app/models/yolo26n-face.pt'
+        elif model_name == 'yolov8n_onnx':
             model_path = 'app/models/nano/weights/best.onnx'
         elif model_name in ['yolov8n_pt', 'yolov8n']:
             model_path = 'app/models/nano/weights/best.pt'
@@ -26,12 +34,12 @@ def get_yolo_model(model_name):
             model_path = f'app/models/{model_name}.pt'
             
         if not os.path.exists(model_path):
-            YOLO_MODELS[model_name] = YOLO(f'{model_name}.pt')
+            model_path = 'app/models/yolo26n-face.onnx' if os.path.exists('app/models/yolo26n-face.onnx') else 'app/models/nano/weights/best.onnx'
+            
+        if model_path.endswith('.onnx'):
+            YOLO_MODELS[model_name] = YOLO(model_path, task='detect')
         else:
-            if model_path.endswith('.onnx'):
-                YOLO_MODELS[model_name] = YOLO(model_path, task='detect')
-            else:
-                YOLO_MODELS[model_name] = YOLO(model_path)
+            YOLO_MODELS[model_name] = YOLO(model_path)
     return YOLO_MODELS[model_name]
 
 
@@ -99,6 +107,7 @@ class ThreadedCamera:
                 time.sleep(0.05)
 
         self.started = False
+        self.frame_id = 0
         self.read_lock = threading.Lock()
         self.condition = threading.Condition()
         self.active_clients = 1
@@ -136,10 +145,11 @@ class ThreadedCamera:
                     with self.read_lock:
                         self.grabbed = grabbed
                         self.frame = frame
+                        self.frame_id += 1
                     with self.condition:
                         self.condition.notify_all()
                 else:
-                    time.sleep(0.01)
+                    time.sleep(0.005)
             else:
                 time.sleep(0.01)
             time.sleep(0.001)
@@ -149,10 +159,13 @@ class ThreadedCamera:
             self.last_access = time.time()
             return self.grabbed, (self.frame.copy() if self.frame is not None else None)
             
-    def read_new(self):
+    def read_new(self, last_id=-1):
         with self.condition:
-            self.condition.wait(timeout=0.02)
-        return self.read()
+            if self.frame_id == last_id and self.started:
+                self.condition.wait(timeout=0.04)
+        with self.read_lock:
+            self.last_access = time.time()
+            return self.grabbed, (self.frame.copy() if self.frame is not None else None), self.frame_id
         
     def release(self):
         self.started = False
@@ -227,11 +240,19 @@ def draw_detection_box(frame, box, label_text, box_color):
 
 
 def gen_face_login_frames(token=None):
+    from django.conf import settings as django_settings
+    use_arcface = getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
+
     cap = ThreadedCamera(0)
     if not cap.grabbed:
         cap = ThreadedCamera(1)
         
-    model = get_yolo_model('yolov8n')
+    if not use_arcface:
+        model = get_yolo_model('yolov8n')
+    else:
+        from app.utils.embedding_engine import detect_and_recognize
+        login_threshold = getattr(django_settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
+
     laser_y = 40
     laser_direction = 8
     success_frames_count = 0
@@ -259,27 +280,39 @@ def gen_face_login_frames(token=None):
     cap.start()
     
     try:
+        last_frame_id = -1
         while True:
             loop_start = time.time()
-            success, frame = cap.read_new()
+            success, frame, last_frame_id = cap.read_new(last_frame_id)
             if not success:
                 break
                 
             frame = cv.flip(frame, 1)
             h, w, _ = frame.shape
-            results = model(frame, conf=0.25, verbose=False)
-            
+
             best_conf = 0.0
             recognized_name = None
             face_box = None
-            
-            for box in results[0].boxes:
-                cls_id = int(box.cls[0])
-                conf = float(box.conf[0])
-                if conf > best_conf:
-                    best_conf = conf
-                    recognized_name = model.names[cls_id]
-                    face_box = [int(v) for v in box.xyxy[0]]
+
+            if use_arcface:
+                # ── ArcFace Pipeline ──
+                detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1)
+                if detections:
+                    det = detections[0]
+                    recognized_name = det['person_name']
+                    best_conf = det['recognition_similarity']
+                    x1, y1, x2, y2 = det['bbox']
+                    face_box = [int(x1), int(y1), int(x2), int(y2)]
+            else:
+                # ── YOLO Fallback ──
+                results = model(frame, conf=0.25, verbose=False)
+                for box in results[0].boxes:
+                    cls_id = int(box.cls[0])
+                    conf = float(box.conf[0])
+                    if conf > best_conf:
+                        best_conf = conf
+                        recognized_name = model.names[cls_id]
+                        face_box = [int(v) for v in box.xyxy[0]]
             
             # Draw Biometric Corner HUD overlays
             hud_color = (253, 110, 13)
@@ -299,6 +332,9 @@ def gen_face_login_frames(token=None):
             if laser_y >= h - 40 or laser_y <= 40:
                 laser_direction *= -1
                 
+            # Verification threshold: ArcFace uses login_threshold, YOLO uses 0.75
+            verify_threshold = login_threshold if use_arcface else 0.75
+
             if face_box:
                 x1, y1, x2, y2 = face_box
                 is_admin = False
@@ -309,7 +345,7 @@ def gen_face_login_frames(token=None):
                 except User.DoesNotExist:
                     pass
                     
-                if best_conf >= 0.75 and is_admin:
+                if best_conf >= verify_threshold and is_admin:
                     box_color = (84, 185, 25)
                     label_prefix = "[ADMIN]"
                 elif is_admin:
@@ -323,7 +359,7 @@ def gen_face_login_frames(token=None):
                 label = f"{label_prefix} {recognized_name} ({round(best_conf * 100, 1)}%)"
                 cv.putText(frame, label, (x1, y1 - 10), cv.FONT_HERSHEY_SIMPLEX, 0.55, box_color, 2, cv.LINE_AA)
                 
-                if best_conf >= 0.75 and is_admin:
+                if best_conf >= verify_threshold and is_admin:
                     success_frames_count += 1
                     if success_frames_count >= 2:
                         verified_user = user
@@ -378,6 +414,14 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
 
     model = get_yolo_model(model_name)
     is_custom = (model_name in ['yolov8n_onnx', 'yolov8n_pt', 'yolov8n', 'yolov8s_onnx', 'yolov8s_pt', 'yolov8s'])
+
+    # Determine recognition engine
+    from django.conf import settings as django_settings
+    use_arcface = getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
+    if use_arcface:
+        from app.utils.embedding_engine import detect_and_recognize
+        arcface_threshold = getattr(django_settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.50)
+        arcface_max_faces = getattr(django_settings, 'ARCFACE_MAX_FACES_PER_FRAME', 10)
     
     inference_lock = threading.Lock()
     latest_frame = [None]
@@ -388,6 +432,7 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
         "max_confidence": 0.0,
         "detected_names_set": set(),
         "clean_frame": None,
+        "timestamp": time.time(),
     }
     inference_running = [True]
     
@@ -403,51 +448,93 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                 continue
             
             try:
-                fh, fw = frame_to_process.shape[:2]
-                if fw > 640:
-                    scale_w = 640.0 / fw
-                    target_h = max(320, int(fh * scale_w))
-                    infer_frame = cv.resize(frame_to_process, (640, target_h))
-                    scale_x = fw / 640.0
-                    scale_y = fh / float(target_h)
-                else:
-                    infer_frame = frame_to_process
-                    scale_x = 1.0
-                    scale_y = 1.0
+                if use_arcface:
+                    # ── ArcFace Pipeline ──
+                    detections = detect_and_recognize(
+                        frame_to_process,
+                        threshold=arcface_threshold,
+                        max_faces=arcface_max_faces,
+                        model_name=model_name
+                    )
 
-                results = model(infer_frame, conf=0.5, verbose=False, imgsz=640)
-                
-                boxes = []
-                person_count = 0
-                person_detected = False
-                max_confidence = 0.0
-                detected_names_set = set()
-                
-                for box in results[0].boxes:
-                    cls_id = int(box.cls[0])
-                    if is_custom or cls_id == 0:
+                    boxes = []
+                    person_count = 0
+                    person_detected = False
+                    max_confidence = 0.0
+                    detected_names_set = set()
+
+                    for det in detections:
                         person_count += 1
                         person_detected = True
-                        conf = float(box.conf[0])
+                        x1, y1, x2, y2 = [int(v) for v in det['bbox']]
+                        name = det['person_name'] if det['is_known'] else 'Unknown'
+                        sim = det['recognition_similarity']
+                        det_conf = det['detection_confidence']
+
+                        # Use recognition similarity as the display confidence
+                        conf = sim if det['is_known'] else det_conf
                         if conf > max_confidence:
                             max_confidence = conf
-                        
-                        box_name = 'Unknown'
-                        if is_custom:
-                            if conf >= 0.65:
-                                box_name = model.names[cls_id]
-                            detected_names_set.add(box_name)
+
+                        detected_names_set.add(name)
+
+                        # Color coding based on recognition similarity
+                        if det['is_known'] and sim >= 0.70:
+                            box_color = (84, 185, 25)   # Green — high confidence match
+                        elif det['is_known']:
+                            box_color = (0, 200, 200)   # Yellow-green — moderate match
                         else:
-                            detected_names_set.add('Unknown')
-                        
-                        bx1, by1, bx2, by2 = [float(v) for v in box.xyxy[0]]
-                        x1 = int(bx1 * scale_x)
-                        y1 = int(by1 * scale_y)
-                        x2 = int(bx2 * scale_x)
-                        y2 = int(by2 * scale_y)
-                        
-                        box_color = (84, 185, 25) if box_name != 'Unknown' else (0, 0, 255)
-                        boxes.append((x1, y1, x2, y2, box_name, conf, box_color))
+                            box_color = (0, 0, 255)     # Red — unknown
+
+                        boxes.append((x1, y1, x2, y2, name, conf, box_color))
+
+                else:
+                    # ── YOLO Fallback ──
+                    fh, fw = frame_to_process.shape[:2]
+                    if fw > 640:
+                        scale_w = 640.0 / fw
+                        target_h = max(320, int(fh * scale_w))
+                        infer_frame = cv.resize(frame_to_process, (640, target_h))
+                        scale_x = fw / 640.0
+                        scale_y = fh / float(target_h)
+                    else:
+                        infer_frame = frame_to_process
+                        scale_x = 1.0
+                        scale_y = 1.0
+
+                    results = model(infer_frame, conf=0.5, verbose=False, imgsz=640)
+                    
+                    boxes = []
+                    person_count = 0
+                    person_detected = False
+                    max_confidence = 0.0
+                    detected_names_set = set()
+                    
+                    for box in results[0].boxes:
+                        cls_id = int(box.cls[0])
+                        if is_custom or cls_id == 0:
+                            person_count += 1
+                            person_detected = True
+                            conf = float(box.conf[0])
+                            if conf > max_confidence:
+                                max_confidence = conf
+                            
+                            box_name = 'Unknown'
+                            if is_custom:
+                                if conf >= 0.65:
+                                    box_name = model.names[cls_id]
+                                detected_names_set.add(box_name)
+                            else:
+                                detected_names_set.add('Unknown')
+                            
+                            bx1, by1, bx2, by2 = [float(v) for v in box.xyxy[0]]
+                            x1 = int(bx1 * scale_x)
+                            y1 = int(by1 * scale_y)
+                            x2 = int(bx2 * scale_x)
+                            y2 = int(by2 * scale_y)
+                            
+                            box_color = (84, 185, 25) if box_name != 'Unknown' else (0, 0, 255)
+                            boxes.append((x1, y1, x2, y2, box_name, conf, box_color))
                 
                 with inference_lock:
                     latest_detections["boxes"] = boxes
@@ -456,8 +543,16 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                     latest_detections["max_confidence"] = max_confidence
                     latest_detections["detected_names_set"] = detected_names_set
                     latest_detections["clean_frame"] = frame_to_process.copy()
+                    latest_detections["timestamp"] = time.time()
             except Exception as e:
-                print(f"[InferenceWorker] Error running YOLO inference: {e}")
+                print(f"[InferenceWorker] Error running inference: {e}")
+                with inference_lock:
+                    latest_detections["boxes"] = []
+                    latest_detections["person_count"] = 0
+                    latest_detections["person_detected"] = False
+                    latest_detections["max_confidence"] = 0.0
+                    latest_detections["detected_names_set"] = set()
+                    latest_detections["timestamp"] = time.time()
             
             time.sleep(0.005)
     
@@ -470,9 +565,10 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
     has_triggered_alert = False
 
     try:
+        last_frame_id = -1
         while True:
             loop_start = time.time()
-            success, frame = cap.read_new()
+            success, frame, last_frame_id = cap.read_new(last_frame_id)
             if not success:
                 error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
                 cv.putText(error_frame, "Stream Lost", (200, 240), 
@@ -485,12 +581,13 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
             frame = rotate_and_flip_frame(frame, orientation)
             
             with inference_lock:
-                if latest_frame[0] is None:
-                    latest_frame[0] = frame.copy()
+                latest_frame[0] = frame
             
             with inference_lock:
                 is_active = _feed_stats.get('detection_active', True)
-                if is_active:
+                det_time = latest_detections.get("timestamp", 0)
+                is_stale = (det_time > 0) and ((time.time() - det_time) > 0.65)
+                if is_active and not is_stale:
                     boxes = latest_detections["boxes"]
                     person_count = latest_detections["person_count"]
                     person_detected = latest_detections["person_detected"]
@@ -515,6 +612,9 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                 cv.putText(annotated_frame, "DETECTION PAUSED", (140, 240), 
                            cv.FONT_HERSHEY_SIMPLEX, 1.2, (255, 165, 0), 3, cv.LINE_AA)
             
+            fh_orig, fw_orig = frame.shape[:2]
+            frame_resolution = f"{fw_orig}x{fh_orig}"
+
             frame_count += 1
             elapsed = time.time() - fps_start_time
             if elapsed >= 1.0:
@@ -522,16 +622,19 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                     "fps": round(frame_count / elapsed, 1),
                     "persons": person_count,
                     "faces": person_count,
-                    "names": list(detected_names_set)
+                    "names": list(detected_names_set),
+                    "resolution": frame_resolution
                 }
                 frame_count = 0
                 fps_start_time = time.time()
             else:
                 if stats_key not in _feed_stats:
-                    _feed_stats[stats_key] = {"fps": 0, "persons": 0, "faces": 0, "names": []}
+                    _feed_stats[stats_key] = {"fps": 0, "persons": 0, "faces": 0, "names": [], "resolution": "640x480"}
                 _feed_stats[stats_key]["persons"] = person_count
                 _feed_stats[stats_key]["faces"] = person_count
                 _feed_stats[stats_key]["names"] = list(detected_names_set)
+                _feed_stats[stats_key]["resolution"] = frame_resolution
+
                     
             # Stream encoding optimization: scale large high-res frames to 1024px max width for 30+ FPS HTTP streaming
             stream_frame = annotated_frame
@@ -566,19 +669,21 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
             if continuous_detection_frames >= ALERT_THRESHOLD and not has_triggered_alert:
                 has_triggered_alert = True
                 
-                if detected_names_set:
-                    detected_name = ", ".join(sorted(list(detected_names_set)))
-                    is_known = ("Unknown" not in detected_names_set)
-                else:
+                has_unknown = ("Unknown" in detected_names_set) or (not detected_names_set)
+                is_known = not has_unknown
+                known_names = sorted([n for n in detected_names_set if n and n != 'Unknown'])
+                
+                if not is_known:
                     detected_name = 'Unknown'
-                    is_known = False
+                else:
+                    detected_name = ", ".join(known_names) if known_names else 'Unknown'
                 
                 # Skip low-confidence detections
                 if max_confidence < MIN_CONFIDENCE:
                     pass
                 # Skip known persons (no need to spam alerts for recognized people)
                 elif is_known:
-                    print(f"[Alert Skip] Known person '{detected_name}' detected on {camera_name} — no alert needed.")
+                    print(f"[Alert Skip] Known person(s) '{detected_name}' detected on {camera_name} — no alert needed.")
                 else:
                     # Cooldown check: prevent spam from same camera
                     import time as _time
@@ -596,7 +701,11 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                         threading.Thread(
                             target=send_alerts, 
                             args=(frame_bytes, detected_name, is_known, person_count, max_confidence),
-                            kwargs={"clean_frame_bytes": clean_frame_bytes, "camera_name": camera_name}
+                            kwargs={
+                                "clean_frame_bytes": clean_frame_bytes, 
+                                "camera_name": camera_name,
+                                "known_bystanders": known_names
+                            }
                         ).start()
                     else:
                         remaining = int(ALERT_COOLDOWN - (now - last_alert_time))
@@ -614,3 +723,4 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
             cap.remove_client()
         except Exception:
             pass
+

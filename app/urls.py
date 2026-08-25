@@ -44,7 +44,14 @@ urlpatterns = [
     path('start_video_feed/', views.start_video_feed, name='start_video_feed'),
     path('stop_video_feed/', views.stop_video_feed, name='stop_video_feed'),
     path('process_client_frame/', views.process_client_frame, name='process_client_frame'),
+    path('webrtc/offer/', views.webrtc_offer, name='webrtc_offer'),
     path('test_alert/', views.test_alert, name='test_alert'),
+
+    # Gallery Management API Endpoints (ArcFace Embedding Engine)
+    path('gallery/status/', views.GalleryStatusAPIView.as_view(), name='gallery_status'),
+    path('gallery/rebuild/', views.GalleryRebuildAPIView.as_view(), name='gallery_rebuild'),
+    path('gallery/compute/<int:person_id>/', views.ComputePersonEmbeddingsAPIView.as_view(), name='compute_person_embeddings'),
+
 
     # Router URLs for CRUD operations (cameras, persons, logs)
     path('', include(router.urls)),

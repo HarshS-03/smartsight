@@ -16,10 +16,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-        getWindow().setStatusBarColor(Color.BLACK);
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(0);
 
         // Create FCM Notification Channel with custom sound
         createNotificationChannel();
@@ -45,7 +41,7 @@ public class MainActivity extends BridgeActivity {
             channel.setDescription(channelDesc);
             channel.setSound(soundUri, audioAttributes);
             channel.enableVibration(true);
-            channel.setVibrationPattern(new long[]{0, 400, 200, 400});
+            channel.setVibrationPattern(new long[] { 0, 400, 200, 400 });
             channel.enableLights(true);
             channel.setLightColor(Color.parseColor("#0d6efd"));
             channel.setShowBadge(true);

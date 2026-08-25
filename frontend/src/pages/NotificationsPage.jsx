@@ -24,7 +24,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                   <button
                     type="button"
                     className="btn btn-primary btn-lg rounded-pill px-4 py-2-5 fw-bold shadow d-inline-flex align-items-center gap-2 transition-all"
-                    style={{ background: '#0d6efd', border: 'none' }}
+                    style={{ background: '#2563eb', border: 'none' }}
                     onClick={() => setActivePage ? setActivePage('login') : (window.location.hash = '#login')}
                   >
                     <i className="bi bi-box-arrow-in-right fs-5"></i>
@@ -157,8 +157,8 @@ export default function NotificationsPage({ setActivePage, user }) {
       const now = new Date();
       if (timeframeFilter === 'today') {
         const isToday = itemDate.getDate() === now.getDate() &&
-                        itemDate.getMonth() === now.getMonth() &&
-                        itemDate.getFullYear() === now.getFullYear();
+          itemDate.getMonth() === now.getMonth() &&
+          itemDate.getFullYear() === now.getFullYear();
         if (!isToday) return false;
       } else if (timeframeFilter === 'week') {
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -187,27 +187,27 @@ export default function NotificationsPage({ setActivePage, user }) {
   const totalCancelled = notifications.filter(n => n.status === 'CANCELLED').length;
 
   return (
-    <div className="notifications-page py-4 min-vh-100">
+    <div className="notifications-page min-vh-100">
 
       {/* Notifications Hero */}
-      <section className="reports-hero py-4 mb-4">
-        <div className="reports-hero-bg-wrapper">
-          <div className="reports-hero-bg"></div>
-          <div className="reports-orb"></div>
+      <section className="page-hero">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
 
-        <div className="container position-relative" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content" style={{ zIndex: 2 }}>
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="notif-title mb-2">
                 Notification <span className="accent">Alerts</span>
               </h1>
-              <p className="page-hero-sub reports-subtitle text-secondary mb-0">
+              <p className="page-hero-sub mx-auto ms-md-0 text-secondary mb-0">
                 Track, inspect, and filter security detection alerts processed via Mobile App vs Telegram Bot.
               </p>
             </div>
 
-            <div className="col-md-4 text-md-end">
+            <div className="col-md-4 text-center text-md-end mt-3 mt-md-0">
               <button
                 type="button"
                 className="btn btn-primary rounded-pill px-4 py-2.5 fw-bold d-inline-flex align-items-center gap-2 shadow-sm transition-all hover-scale"
@@ -229,15 +229,15 @@ export default function NotificationsPage({ setActivePage, user }) {
             <div className="stat-card-blue p-3 p-md-4 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: '20px' }}>
               <div className="d-flex align-items-center gap-3 min-w-0">
                 <div className="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0" style={{ width: '36px', height: '36px', background: 'rgba(13, 110, 253, 0.1)' }}>
-                  <i className="bi bi-bell-fill" style={{ color: '#0d6efd', fontSize: '1rem' }}></i>
+                  <i className="bi bi-bell-fill" style={{ color: '#2563eb', fontSize: '1rem' }}></i>
                 </div>
                 <div className="min-w-0">
                   <h6 className="mb-0 fw-bold text-dynamic text-truncate" style={{ fontSize: '0.95rem' }}>Total Alerts</h6>
                   <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>All Notifications</span>
                 </div>
               </div>
-              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0" 
-                   style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: '#0d6efd', border: '3px solid rgba(255,255,255,0.1)' }}>
+              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
+                style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: '#2563eb', border: '3px solid rgba(255,255,255,0.1)' }}>
                 {totalCount}
               </div>
             </div>
@@ -255,8 +255,8 @@ export default function NotificationsPage({ setActivePage, user }) {
                   <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Approved</span>
                 </div>
               </div>
-              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0" 
-                   style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #10b981, #34d399)', border: '3px solid rgba(255,255,255,0.1)' }}>
+              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
+                style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #10b981, #34d399)', border: '3px solid rgba(255,255,255,0.1)' }}>
                 {appApprovals}
               </div>
             </div>
@@ -274,8 +274,8 @@ export default function NotificationsPage({ setActivePage, user }) {
                   <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Approved</span>
                 </div>
               </div>
-              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0" 
-                   style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #06b6d4, #22d3ee)', border: '3px solid rgba(255,255,255,0.1)' }}>
+              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
+                style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #06b6d4, #22d3ee)', border: '3px solid rgba(255,255,255,0.1)' }}>
                 {telegramApprovals}
               </div>
             </div>
@@ -293,8 +293,8 @@ export default function NotificationsPage({ setActivePage, user }) {
                   <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Rejected</span>
                 </div>
               </div>
-              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0" 
-                   style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #ef4444, #f87171)', border: '3px solid rgba(255,255,255,0.1)' }}>
+              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
+                style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #ef4444, #f87171)', border: '3px solid rgba(255,255,255,0.1)' }}>
                 {totalCancelled}
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function NotificationsPage({ setActivePage, user }) {
         {/* Filter Toolbar (Segment Radio Group + UI Custom Dropdowns + Search) */}
         <div className="glass-card p-3 p-md-4 mb-4" style={{ position: 'relative', zIndex: 10 }}>
           <div className="row g-3 align-items-center">
-            
+
             {/* 1. Radio Button Segment Group for Action Source Filter */}
             <div className="col-12 col-lg-5">
               <label className="form-label text-secondary small fw-bold mb-2 d-block">Filter By Action Origin:</label>
@@ -341,7 +341,7 @@ export default function NotificationsPage({ setActivePage, user }) {
             {/* 2. Custom UI Dropdowns (Timeframe & Status) */}
             <div className="col-12 col-md-6 col-lg-4">
               <div className="row g-2">
-                
+
                 {/* Timeframe Custom UI Dropdown */}
                 <div className="col-6">
                   <label className="form-label text-secondary small fw-bold mb-1">Timeframe:</label>
@@ -474,73 +474,74 @@ export default function NotificationsPage({ setActivePage, user }) {
             </div>
           ) : filteredNotifications.length > 0 ? (
             filteredNotifications.map((notif) => (
-              <div key={notif.id} className="glass-card p-3 rounded-4 mb-3 border border-secondary border-opacity-25 shadow-sm overflow-hidden">
+              <div key={notif.id} className="notif-item-card">
                 <div className="d-flex align-items-start gap-3">
                   {/* Intruder Thumbnail */}
-                  <div className="flex-shrink-0">
+                  <div
+                    className="notif-thumb-box"
+                    onClick={() => notif.image_url && setSelectedImage(getImageUrl(notif.image_url))}
+                    title={notif.image_url ? "Click to view full photo" : "No snapshot"}
+                  >
                     {notif.image_url ? (
                       <img
                         src={getImageUrl(notif.image_url)}
                         alt="Intruder"
-                        className="rounded-3 shadow-sm cursor-pointer border border-primary border-opacity-30"
-                        style={{ width: '52px', height: '52px', objectFit: 'cover' }}
-                        onClick={() => setSelectedImage(getImageUrl(notif.image_url))}
                       />
                     ) : (
-                      <div className="rounded-3 d-flex align-items-center justify-content-center border border-secondary border-opacity-25" style={{ width: '52px', height: '52px', background: 'var(--bg-input)' }}>
+                      <div className="w-100 h-100 d-flex align-items-center justify-content-center">
                         <i className="bi bi-person-bounding-box text-secondary opacity-50 fs-5"></i>
                       </div>
                     )}
                   </div>
 
                   {/* Notification Info */}
-                  <div className="flex-grow-1 min-w-0 overflow-hidden">
-                    <div className="d-flex align-items-center justify-content-between gap-2 mb-1 w-100 min-w-0">
-                      <h6 className="fw-bold text-dynamic mb-0 text-truncate min-w-0 flex-grow-1" style={{ fontSize: '0.88rem' }}>
-                        <i className="bi bi-bell-fill me-2 text-primary" style={{ marginRight: '8px' }}></i>
-                        {notif.title}
-                      </h6>
-                      <span className={`badge rounded-pill px-2.5 py-1 fw-bold flex-shrink-0 ms-auto ${notif.status === 'APPROVED' ? 'bg-success text-white' : notif.status === 'CANCELLED' ? 'bg-danger text-white' : notif.status === 'EXPIRED' ? 'bg-secondary text-white' : 'bg-warning text-dark'}`} style={{ fontSize: '0.65rem' }}>
+                  <div className="flex-grow-1 min-w-0">
+                    <div className="d-flex align-items-center justify-content-between gap-2 mb-1.5 w-100">
+                      <div className="d-flex align-items-center gap-2 min-w-0">
+                        <div className="notif-bell-icon-badge">
+                          <i className="bi bi-bell-fill"></i>
+                        </div>
+                        <span className="fw-bold text-dynamic" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>
+                          {notif.title}
+                        </span>
+                      </div>
+
+                      <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
                         {notif.status}
                       </span>
                     </div>
 
-                    <p className="text-secondary small mb-2" style={{ fontSize: '0.8rem', lineHeight: '1.35', wordBreak: 'break-word' }}>
+                    <p className="text-secondary small mb-2" style={{ fontSize: '0.82rem', lineHeight: '1.45' }}>
                       {notif.message}
                     </p>
 
+                    {/* Quick Approval / Dismiss for PENDING Alerts */}
+
+
                     <div className="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-white border-opacity-10 w-100">
-                      <div className="d-flex align-items-center gap-1.5 min-w-0 flex-wrap">
+                      <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">
                         {notif.action_source === 'APP' ? (
-                          <span className="badge rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#0d6efd', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.65rem' }}>
-                            <i className="bi bi-phone-fill"></i> Mobile
+                          <span className="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.68rem' }}>
+                            <i className="bi bi-phone-fill"></i> Web / Mobile
                           </span>
                         ) : notif.action_source === 'TELEGRAM' ? (
-                          <span className="badge rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', border: '1px solid rgba(14, 165, 233, 0.3)', fontSize: '0.65rem' }}>
+                          <span className="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', border: '1px solid rgba(14, 165, 233, 0.3)', fontSize: '0.68rem' }}>
                             <i className="bi bi-telegram"></i> Telegram
                           </span>
-                        ) : notif.status === 'PENDING' ? (
-                          <div className="d-flex align-items-center gap-1.5">
-                            <button onClick={() => handleNotificationAction(notif.id, 'approve')} className="btn btn-sm btn-success rounded-pill px-2.5 py-1 fw-bold border-0 d-inline-flex align-items-center gap-1" style={{ fontSize: '0.65rem', background: 'rgba(25, 135, 84, 0.15)', color: '#198754' }}>
-                              <i className="bi bi-check-circle-fill"></i> Approve
-                            </button>
-                            <button onClick={() => handleNotificationAction(notif.id, 'cancel')} className="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fw-bold border-0 d-inline-flex align-items-center gap-1" style={{ fontSize: '0.65rem', background: 'rgba(220, 53, 69, 0.15)', color: '#dc3545' }}>
-                              <i className="bi bi-x-circle-fill"></i> Cancel
-                            </button>
-                          </div>
                         ) : (
-                          <span className="badge rounded-pill px-2 py-1 text-secondary border border-secondary border-opacity-25" style={{ background: 'var(--bg-input)', fontSize: '0.65rem' }}>
-                            Processed
+                          <span className="badge rounded-pill px-2.5 py-1 text-secondary border border-secondary border-opacity-25" style={{ background: 'var(--bg-input)', fontSize: '0.68rem' }}>
+                            {notif.status === 'PENDING' ? 'Pending Action' : 'System Log'}
                           </span>
                         )}
-                        <span className="text-muted small ms-1 font-mono" style={{ fontSize: '0.7rem' }}>
+                        <span className="text-muted small d-inline-flex align-items-center gap-1 font-mono" style={{ fontSize: '0.72rem' }}>
+                          <i className="bi bi-clock"></i>
                           {notif.created_at ? new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                         </span>
                       </div>
 
                       <button
                         onClick={() => promptDeleteNotif(notif)}
-                        className="btn btn-sm text-danger border-0 p-1 rounded-circle hover-scale flex-shrink-0"
+                        className="btn btn-sm text-danger border-0 p-1.5 rounded-circle hover-scale flex-shrink-0"
                         style={{ background: 'rgba(220, 53, 69, 0.1)' }}
                         title="Delete Alert"
                       >
@@ -565,13 +566,13 @@ export default function NotificationsPage({ setActivePage, user }) {
             <table className="table custom-table notif-table table-hover align-middle mb-0" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th scope="col" style={{ width: '55px' }} className="text-center">Image</th>
-                  <th scope="col" style={{ width: '22%' }}>Alert Title</th>
+                  <th scope="col" style={{ width: '65px' }} className="text-center">Image</th>
+                  <th scope="col" style={{ width: '24%' }}>Alert Title</th>
                   <th scope="col" style={{ width: '28%' }}>Message Detail</th>
                   <th scope="col" style={{ width: '12%' }} className="text-center">Status</th>
                   <th scope="col" style={{ width: '15%' }} className="text-center">Action Source</th>
-                  <th scope="col" style={{ width: '15%' }} className="text-center">Timestamp</th>
-                  <th scope="col" style={{ width: '55px' }} className="text-center">Action</th>
+                  <th scope="col" style={{ width: '13%' }} className="text-center">Timestamp</th>
+                  <th scope="col" style={{ width: '80px' }} className="text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -587,57 +588,60 @@ export default function NotificationsPage({ setActivePage, user }) {
                     <tr key={notif.id}>
                       {/* Intruder Image Thumbnail */}
                       <td className="text-center">
-                        {notif.image_url ? (
-                          <img
-                            src={getImageUrl(notif.image_url)}
-                            alt="Intruder"
-                            className="rounded-3 shadow-sm cursor-pointer border border-primary border-opacity-25 hover-scale"
-                            style={{ width: '46px', height: '46px', objectFit: 'cover' }}
-                            onClick={() => setSelectedImage(getImageUrl(notif.image_url))}
-                          />
-                        ) : (
-                          <div className="rounded-3 d-flex align-items-center justify-content-center mx-auto border border-secondary border-opacity-25" style={{ width: '46px', height: '46px', background: 'var(--bg-input)' }}>
-                            <i className="bi bi-person-bounding-box text-secondary opacity-50 fs-6"></i>
+                        <div
+                          className="notif-thumb-box mx-auto"
+                          style={{ width: '48px', height: '48px', borderRadius: '12px' }}
+                          onClick={() => notif.image_url && setSelectedImage(getImageUrl(notif.image_url))}
+                          title={notif.image_url ? "Click to view full photo" : "No snapshot"}
+                        >
+                          {notif.image_url ? (
+                            <img
+                              src={getImageUrl(notif.image_url)}
+                              alt="Intruder"
+                            />
+                          ) : (
+                            <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                              <i className="bi bi-person-bounding-box text-secondary opacity-50 fs-6"></i>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="notif-bell-icon-badge" style={{ width: '26px', height: '26px', fontSize: '0.85rem' }}>
+                            <i className="bi bi-bell-fill"></i>
                           </div>
-                        )}
+                          <span className="fw-bold text-dynamic" style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>
+                            {notif.title}
+                          </span>
+                        </div>
                       </td>
 
-                      <td className="fw-bold text-dynamic" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                        <i className="bi bi-bell-fill me-2 text-primary" style={{ marginRight: '8px' }}></i>
-                        {notif.title}
+                      <td className="text-secondary small" style={{ whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '0.82rem', lineHeight: '1.4' }}>
+                        {notif.message}
                       </td>
-
-                      <td className="text-secondary small" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{notif.message}</td>
 
                       {/* Status Badge */}
                       <td className="text-center">
-                        <span className={`badge rounded-pill px-2.5 py-1.5 fw-bold ${notif.status === 'APPROVED' ? 'bg-success text-white' : notif.status === 'CANCELLED' ? 'bg-danger text-white' : notif.status === 'EXPIRED' ? 'bg-secondary text-white' : 'bg-warning text-dark'}`} style={{ fontSize: '0.72rem' }}>
+                        <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
                           {notif.status}
                         </span>
                       </td>
 
-                      {/* Action Source Badge / Action Controls */}
+                      {/* Action Source Badge */}
                       <td className="text-center">
                         {notif.action_source === 'APP' ? (
-                          <span className="badge rounded-pill px-2.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#0d6efd', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.72rem' }}>
-                            <i className="bi bi-phone-fill"></i> Mobile App
+                          <span className="badge rounded-pill px-2.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.72rem' }}>
+                            <i className="bi bi-phone-fill"></i> Web / Mobile
                           </span>
                         ) : notif.action_source === 'TELEGRAM' ? (
                           <span className="badge rounded-pill px-2.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', border: '1px solid rgba(14, 165, 233, 0.3)', fontSize: '0.72rem' }}>
-                            <i className="bi bi-telegram"></i> Telegram Bot
+                            <i className="bi bi-telegram"></i> Telegram
                           </span>
-                        ) : notif.status === 'PENDING' ? (
-                          <div className="d-flex align-items-center justify-content-center gap-1.5">
-                            <button onClick={() => handleNotificationAction(notif.id, 'approve')} className="btn btn-sm btn-success rounded-pill px-2.5 py-1 fw-bold border-0 d-inline-flex align-items-center gap-1" style={{ fontSize: '0.65rem', background: 'rgba(25, 135, 84, 0.15)', color: '#198754' }}>
-                              <i className="bi bi-check-circle-fill"></i> Approve
-                            </button>
-                            <button onClick={() => handleNotificationAction(notif.id, 'cancel')} className="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fw-bold border-0 d-inline-flex align-items-center gap-1" style={{ fontSize: '0.65rem', background: 'rgba(220, 53, 69, 0.15)', color: '#dc3545' }}>
-                              <i className="bi bi-x-circle-fill"></i> Cancel
-                            </button>
-                          </div>
                         ) : (
                           <span className="badge rounded-pill px-2.5 py-1.5 text-secondary border border-secondary border-opacity-25" style={{ background: 'var(--bg-input)', fontSize: '0.72rem' }}>
-                            Processed
+                            {notif.status === 'PENDING' ? 'Pending' : 'Processed'}
                           </span>
                         )}
                       </td>
@@ -647,16 +651,19 @@ export default function NotificationsPage({ setActivePage, user }) {
                         <div className="x-small text-muted" style={{ fontSize: '0.7rem' }}>{notif.created_at ? new Date(notif.created_at).toLocaleDateString() : ''}</div>
                       </td>
 
-                      {/* Delete Single Alert Button */}
+                      {/* Action Controls */}
                       <td className="text-center">
-                        <button
-                          onClick={() => promptDeleteNotif(notif)}
-                          className="btn btn-sm text-danger border-0 p-1.5 rounded-circle hover-scale"
-                          style={{ background: 'rgba(220, 53, 69, 0.1)' }}
-                          title="Delete Alert"
-                        >
-                          <i className="bi bi-trash3-fill" style={{ fontSize: '0.9rem' }}></i>
-                        </button>
+                        <div className="d-flex align-items-center justify-content-center gap-1.5">
+
+                          <button
+                            onClick={() => promptDeleteNotif(notif)}
+                            className="btn btn-sm text-danger border-0 p-1.5 rounded-circle hover-scale"
+                            style={{ background: 'rgba(220, 53, 69, 0.1)' }}
+                            title="Delete Alert"
+                          >
+                            <i className="bi bi-trash3-fill" style={{ fontSize: '0.88rem' }}></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -681,8 +688,6 @@ export default function NotificationsPage({ setActivePage, user }) {
           style={{
             zIndex: 99999,
             backgroundColor: 'rgba(0, 0, 0, 0.95)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
             position: 'fixed',
             top: 0,
             left: 0,
@@ -726,7 +731,7 @@ export default function NotificationsPage({ setActivePage, user }) {
       {/* Single Delete Confirmation Modal - Mounted directly on document.body via React Portal */}
       {showDeleteModal && deleteNotif && createPortal(
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.75, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 10540 }} onClick={() => setShowDeleteModal(false)}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.75, zIndex: 10540 }} onClick={() => setShowDeleteModal(false)}></div>
           <div
             className="modal fade show"
             tabIndex="-1"
@@ -756,8 +761,6 @@ export default function NotificationsPage({ setActivePage, user }) {
                 background: 'var(--modal-bg)',
                 border: '1px solid var(--modal-border)',
                 borderRadius: '28px',
-                backdropFilter: 'blur(30px)',
-                WebkitBackdropFilter: 'blur(30px)'
               }}
             >
               <div className="modal-body p-4 text-center d-flex flex-column align-items-center justify-content-center">
@@ -785,7 +788,7 @@ export default function NotificationsPage({ setActivePage, user }) {
       {/* Clear All Confirmation Modal - Mounted directly on document.body via React Portal */}
       {showClearAllModal && createPortal(
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.75, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 10540 }} onClick={() => setShowClearAllModal(false)}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.75, zIndex: 10540 }} onClick={() => setShowClearAllModal(false)}></div>
           <div
             className="modal fade show"
             tabIndex="-1"
@@ -815,8 +818,6 @@ export default function NotificationsPage({ setActivePage, user }) {
                 background: 'var(--modal-bg)',
                 border: '1px solid var(--modal-border)',
                 borderRadius: '28px',
-                backdropFilter: 'blur(30px)',
-                WebkitBackdropFilter: 'blur(30px)'
               }}
             >
               <div className="modal-body p-4 text-center d-flex flex-column align-items-center justify-content-center">
@@ -845,10 +846,9 @@ export default function NotificationsPage({ setActivePage, user }) {
       {toastMessage && (
         <div className="position-fixed top-0 end-0 p-3 pt-4 me-2 me-md-3" style={{ zIndex: 10600 }}>
           <div
-            className={`glass-card p-3 px-4 rounded-pill shadow-2xl d-flex align-items-center gap-2.5 border ${
-              toastMessage.type === 'success' ? 'border-success text-success' : toastMessage.type === 'info' ? 'border-info text-info' : 'border-danger text-danger'
-            }`}
-            style={{ background: 'var(--bg-surface-solid)', backdropFilter: 'blur(20px)', boxShadow: '0 12px 35px rgba(0,0,0,0.3)' }}
+            className={`glass-card p-3 px-4 rounded-pill shadow-2xl d-flex align-items-center gap-2.5 border ${toastMessage.type === 'success' ? 'border-success text-success' : toastMessage.type === 'info' ? 'border-info text-info' : 'border-danger text-danger'
+              }`}
+            style={{ background: 'var(--bg-surface-solid)', boxShadow: '0 12px 35px rgba(0,0,0,0.3)' }}
           >
             <i className={`bi ${toastMessage.type === 'success' ? 'bi-check-circle-fill fs-5' : toastMessage.type === 'info' ? 'bi-info-circle-fill fs-5' : 'bi-exclamation-octagon-fill fs-5'}`}></i>
             <span className="fw-bold small text-dynamic">{toastMessage.text}</span>

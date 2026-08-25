@@ -19,7 +19,14 @@
       "sound": "smart_sight_alert.mp3"
     },
     "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "StatusBar": {
+      "overlaysWebView": false
     }
   }
 }

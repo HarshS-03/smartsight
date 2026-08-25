@@ -15,7 +15,7 @@ export default function UnknownCapturesModal({ show, onClose }) {
   };
 
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(8px)' }} tabIndex="-1">
+    <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', }} tabIndex="-1">
       <div className="modal-dialog modal-lg modal-dialog-centered">
         <div className="modal-content border-warning border-opacity-25 text-body" style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)' }}>
           <div className="modal-header border-secondary border-opacity-10 py-3">

@@ -39,7 +39,7 @@ class RecognitionLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecognitionLog
-        fields = ['id', 'person_name', 'camera_name', 'confidence', 'status', 'image_path', 'timestamp']
+        fields = ['id', 'person_name', 'camera_name', 'confidence', 'detection_confidence', 'recognition_similarity', 'status', 'image_path', 'timestamp']
 
 class NotificationSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%SZ", read_only=True)

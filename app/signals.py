@@ -1,9 +1,9 @@
 import os
 from urllib.parse import urlparse
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, pre_delete
 from django.dispatch import receiver
 from django.conf import settings
-from .models import Notification, RecognitionLog
+from .models import Notification, RecognitionLog, Person, PersonImage
 
 
 @receiver(post_delete, sender=Notification)
@@ -55,3 +55,32 @@ def auto_delete_file_on_recognition_log_delete(sender, instance, **kwargs):
             print(f"[Signal] Deleted log image file: {full_path}")
     except Exception as e:
         print(f"[Signal] Error deleting RecognitionLog image file: {e}")
+
+
+@receiver(post_delete, sender=Person)
+def clear_gallery_on_person_delete(sender, instance, **kwargs):
+    """
+    Remove all in-memory gallery embeddings when a Person is deleted.
+    DB embeddings are cascade-deleted automatically by Django.
+    """
+    try:
+        from app.utils.embedding_engine import get_gallery
+        get_gallery().remove_person(instance.id)
+        print(f"[Signal] Cleared gallery embeddings for deleted person: {instance.name}")
+    except Exception as e:
+        print(f"[Signal] Error clearing gallery on person delete: {e}")
+
+
+@receiver(post_delete, sender=PersonImage)
+def refresh_gallery_on_image_delete(sender, instance, **kwargs):
+    """
+    When a PersonImage is deleted, its PersonEmbedding rows are cascade-deleted.
+    Refresh the in-memory gallery for that person.
+    """
+    try:
+        from app.utils.embedding_engine import get_gallery
+        get_gallery().remove_embedding_by_source(instance.person_id, instance.id)
+        print(f"[Signal] Refreshed gallery embeddings after image delete for person ID: {instance.person_id}")
+    except Exception as e:
+        print(f"[Signal] Error refreshing gallery on image delete: {e}")
+

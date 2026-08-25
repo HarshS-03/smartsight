@@ -64,8 +64,6 @@ def cluster_faces():
     no_face_images = []
     cache_updated = False
     
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
     for filename in image_filenames:
         img_path = os.path.join(unknown_dir, filename)
         
@@ -81,27 +79,14 @@ def cluster_faces():
             img = cv2.imread(img_path)
             if img is None:
                 continue
-                
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
             
-            if len(faces) == 0:
-                cropped_face = img
-            else:
-                x, y, w, h = max(faces, key=lambda rect: rect[2] * rect[3])
-                pad_x, pad_y = int(w * 0.1), int(h * 0.1)
-                x1 = max(0, x - pad_x)
-                y1 = max(0, y - pad_y)
-                x2 = min(img.shape[1], x + w + pad_x)
-                y2 = min(img.shape[0], y + h + pad_y)
-                cropped_face = img[y1:y2, x1:x2]
-            
+            # Use RetinaFace for detection + ArcFace for embedding (via DeepFace)
             res = DeepFace.represent(
-                img_path=cropped_face,
+                img_path=img,
                 model_name='ArcFace',
                 enforce_detection=False,
-                detector_backend='skip',
-                align=False
+                detector_backend='retinaface',
+                align=True
             )
             
             if res and 'embedding' in res[0]:

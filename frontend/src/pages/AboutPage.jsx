@@ -40,15 +40,13 @@ export default function AboutPage() {
       <div className="about-container">
 
         {/* ═══ HERO ═══ */}
-        <section className="about-hero-section">
-          <div className="hero-bg-wrapper">
-            <div className="hero-bg"></div>
-            <div className="orb orb-1"></div>
-            <div className="orb orb-2"></div>
-            <div className="orb orb-3"></div>
+        <section className="page-hero">
+          <div className="page-hero-bg-wrapper">
+            <div className="page-hero-bg"></div>
+            <div className="page-hero-orb"></div>
           </div>
 
-          <div className="container hero-content">
+          <div className="container page-hero-content">
             <div className="row align-items-center g-5">
               <div className="col-lg-10 mx-auto text-center">
 
@@ -312,20 +310,20 @@ export default function AboutPage() {
                 <div className="tech-icon">
                   <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     {/* Top-Left Corner */}
-                    <path d="M12 32V20C12 15.58 15.58 12 20 12H32" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round"/>
+                    <path d="M12 32V20C12 15.58 15.58 12 20 12H32" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round" />
                     {/* Top-Right Corner */}
-                    <path d="M88 32V20C88 15.58 84.42 12 80 12H68" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round"/>
+                    <path d="M88 32V20C88 15.58 84.42 12 80 12H68" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round" />
                     {/* Bottom-Left Corner */}
-                    <path d="M12 68V80C12 84.42 15.58 88 20 88H32" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round"/>
+                    <path d="M12 68V80C12 84.42 15.58 88 20 88H32" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round" />
                     {/* Bottom-Right Corner */}
-                    <path d="M88 68V80C88 84.42 84.42 88 80 88H68" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round"/>
+                    <path d="M88 68V80C88 84.42 84.42 88 80 88H68" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round" />
                     {/* Eyes */}
-                    <circle cx="34" cy="30" r="5" fill="var(--text-heading)"/>
-                    <circle cx="66" cy="30" r="5" fill="var(--text-heading)"/>
+                    <circle cx="34" cy="30" r="5" fill="var(--text-heading)" />
+                    <circle cx="66" cy="30" r="5" fill="var(--text-heading)" />
                     {/* Nose */}
-                    <path d="M52 34C49 40 44 44 48 48C50 50 53 47 52 44" stroke="var(--text-heading)" strokeWidth="5.5" strokeLinecap="round"/>
+                    <path d="M52 34C49 40 44 44 48 48C50 50 53 47 52 44" stroke="var(--text-heading)" strokeWidth="5.5" strokeLinecap="round" />
                     {/* Smile */}
-                    <path d="M35 60C42 67 58 67 65 60" stroke="var(--text-heading)" strokeWidth="5.5" strokeLinecap="round"/>
+                    <path d="M35 60C42 67 58 67 65 60" stroke="var(--text-heading)" strokeWidth="5.5" strokeLinecap="round" />
                   </svg>
                 </div>
                 <div className="tech-name">DeepFace AI</div>
@@ -355,44 +353,44 @@ export default function AboutPage() {
                 <div className="tech-icon">
                   <svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     {/* Outer Document Border with Folded Top Right Corner */}
-                    <path d="M26 10 H64 L82 28 V82 C82 86.4 78.4 90 74 90 H26 C21.6 90 18 86.4 18 82 V18 C18 13.6 21.6 10 26 10 Z" stroke="#00945E" strokeWidth="5.5" fill="white"/>
+                    <path d="M26 10 H64 L82 28 V82 C82 86.4 78.4 90 74 90 H26 C21.6 90 18 86.4 18 82 V18 C18 13.6 21.6 10 26 10 Z" stroke="#00945E" strokeWidth="5.5" fill="white" />
                     {/* Folded Corner Triangle */}
-                    <path d="M64 10 V28 H82 Z" fill="#00945E"/>
-                    
+                    <path d="M64 10 V28 H82 Z" fill="#00945E" />
+
                     {/* Spreadsheet Table Grid */}
-                    <rect x="34" y="30" width="12" height="7" fill="#00945E"/>
-                    <rect x="48" y="30" width="12" height="7" fill="#00945E"/>
-                    <rect x="62" y="30" width="12" height="7" fill="#00945E"/>
-                    
-                    <rect x="34" y="39" width="12" height="6" fill="#86C59E"/>
-                    <rect x="48" y="39" width="12" height="6" fill="#86C59E"/>
-                    <rect x="62" y="39" width="12" height="6" fill="#86C59E"/>
-                    
-                    <rect x="34" y="47" width="12" height="6" fill="#B3E0C4"/>
-                    <rect x="48" y="47" width="12" height="6" fill="#B3E0C4"/>
-                    <rect x="62" y="47" width="12" height="6" fill="#B3E0C4"/>
+                    <rect x="34" y="30" width="12" height="7" fill="#00945E" />
+                    <rect x="48" y="30" width="12" height="7" fill="#00945E" />
+                    <rect x="62" y="30" width="12" height="7" fill="#00945E" />
 
-                    <rect x="34" y="55" width="12" height="6" fill="#86C59E"/>
-                    <rect x="48" y="55" width="12" height="6" fill="#86C59E"/>
-                    <rect x="62" y="55" width="12" height="6" fill="#86C59E"/>
+                    <rect x="34" y="39" width="12" height="6" fill="#86C59E" />
+                    <rect x="48" y="39" width="12" height="6" fill="#86C59E" />
+                    <rect x="62" y="39" width="12" height="6" fill="#86C59E" />
 
-                    <rect x="34" y="63" width="12" height="6" fill="#B3E0C4"/>
-                    <rect x="48" y="63" width="12" height="6" fill="#B3E0C4"/>
-                    <rect x="62" y="63" width="12" height="6" fill="#B3E3C4"/>
+                    <rect x="34" y="47" width="12" height="6" fill="#B3E0C4" />
+                    <rect x="48" y="47" width="12" height="6" fill="#B3E0C4" />
+                    <rect x="62" y="47" width="12" height="6" fill="#B3E0C4" />
 
-                    <rect x="34" y="71" width="12" height="6" fill="#86C59E"/>
-                    <rect x="48" y="71" width="12" height="6" fill="#86C59E"/>
-                    <rect x="62" y="71" width="12" height="6" fill="#86C59E"/>
+                    <rect x="34" y="55" width="12" height="6" fill="#86C59E" />
+                    <rect x="48" y="55" width="12" height="6" fill="#86C59E" />
+                    <rect x="62" y="55" width="12" height="6" fill="#86C59E" />
+
+                    <rect x="34" y="63" width="12" height="6" fill="#B3E0C4" />
+                    <rect x="48" y="63" width="12" height="6" fill="#B3E0C4" />
+                    <rect x="62" y="63" width="12" height="6" fill="#B3E3C4" />
+
+                    <rect x="34" y="71" width="12" height="6" fill="#86C59E" />
+                    <rect x="48" y="71" width="12" height="6" fill="#86C59E" />
+                    <rect x="62" y="71" width="12" height="6" fill="#86C59E" />
 
                     {/* Python Logo Overlay on Bottom Left with White Outline */}
                     <g transform="translate(0, 24) scale(0.46)">
                       {/* White border background outline */}
-                      <path d="M49.5 0C22.6 0 24.2 11.6 24.2 11.6L24.3 23.6H49.9V27.3H14.2C14.2 27.3 0 25.7 0 52.8C0 79.9 12.4 78.4 12.4 78.4H19.8V68C19.8 53.6 32.2 53.8 32.2 53.8H57.7C57.7 53.8 69.4 54.3 69.4 42.1V12.1C69.4 12.1 71.4 0 49.5 0Z" stroke="white" strokeWidth="8" strokeLinejoin="round" fill="white"/>
-                      <path d="M50.5 100C77.4 100 75.8 88.4 75.8 88.4L75.7 76.4H50.1V72.7H85.8C85.8 72.7 100 74.3 100 47.2C100 20.1 87.6 21.6 87.6 21.6H80.2V32C80.2 46.4 67.8 46.2 67.8 46.2H42.3C42.3 46.2 30.6 45.7 30.6 57.9V87.9C30.6 87.9 28.6 100 50.5 100Z" stroke="white" strokeWidth="8" strokeLinejoin="round" fill="white"/>
-                      
+                      <path d="M49.5 0C22.6 0 24.2 11.6 24.2 11.6L24.3 23.6H49.9V27.3H14.2C14.2 27.3 0 25.7 0 52.8C0 79.9 12.4 78.4 12.4 78.4H19.8V68C19.8 53.6 32.2 53.8 32.2 53.8H57.7C57.7 53.8 69.4 54.3 69.4 42.1V12.1C69.4 12.1 71.4 0 49.5 0Z" stroke="white" strokeWidth="8" strokeLinejoin="round" fill="white" />
+                      <path d="M50.5 100C77.4 100 75.8 88.4 75.8 88.4L75.7 76.4H50.1V72.7H85.8C85.8 72.7 100 74.3 100 47.2C100 20.1 87.6 21.6 87.6 21.6H80.2V32C80.2 46.4 67.8 46.2 67.8 46.2H42.3C42.3 46.2 30.6 45.7 30.6 57.9V87.9C30.6 87.9 28.6 100 50.5 100Z" stroke="white" strokeWidth="8" strokeLinejoin="round" fill="white" />
+
                       {/* Actual Blue & Yellow Snakes */}
-                      <path d="M49.5 0C22.6 0 24.2 11.6 24.2 11.6L24.3 23.6H49.9V27.3H14.2C14.2 27.3 0 25.7 0 52.8C0 79.9 12.4 78.4 12.4 78.4H19.8V68C19.8 53.6 32.2 53.8 32.2 53.8H57.7C57.7 53.8 69.4 54.3 69.4 42.1V12.1C69.4 12.1 71.4 0 49.5 0ZM36 7.5C38.5 7.5 40.5 9.5 40.5 12C40.5 14.5 38.5 16.5 36 16.5C33.5 16.5 31.5 14.5 31.5 12C31.5 9.5 33.5 7.5 36 7.5Z" fill="#1E689F"/>
-                      <path d="M50.5 100C77.4 100 75.8 88.4 75.8 88.4L75.7 76.4H50.1V72.7H85.8C85.8 72.7 100 74.3 100 47.2C100 20.1 87.6 21.6 87.6 21.6H80.2V32C80.2 46.4 67.8 46.2 67.8 46.2H42.3C42.3 46.2 30.6 45.7 30.6 57.9V87.9C30.6 87.9 28.6 100 50.5 100ZM64 92.5C61.5 92.5 59.5 90.5 59.5 88C59.5 85.5 61.5 83.5 64 83.5C66.5 83.5 68.5 85.5 68.5 88C68.5 90.5 66.5 92.5 64 92.5Z" fill="#FFC82F"/>
+                      <path d="M49.5 0C22.6 0 24.2 11.6 24.2 11.6L24.3 23.6H49.9V27.3H14.2C14.2 27.3 0 25.7 0 52.8C0 79.9 12.4 78.4 12.4 78.4H19.8V68C19.8 53.6 32.2 53.8 32.2 53.8H57.7C57.7 53.8 69.4 54.3 69.4 42.1V12.1C69.4 12.1 71.4 0 49.5 0ZM36 7.5C38.5 7.5 40.5 9.5 40.5 12C40.5 14.5 38.5 16.5 36 16.5C33.5 16.5 31.5 14.5 31.5 12C31.5 9.5 33.5 7.5 36 7.5Z" fill="#1E689F" />
+                      <path d="M50.5 100C77.4 100 75.8 88.4 75.8 88.4L75.7 76.4H50.1V72.7H85.8C85.8 72.7 100 74.3 100 47.2C100 20.1 87.6 21.6 87.6 21.6H80.2V32C80.2 46.4 67.8 46.2 67.8 46.2H42.3C42.3 46.2 30.6 45.7 30.6 57.9V87.9C30.6 87.9 28.6 100 50.5 100ZM64 92.5C61.5 92.5 59.5 90.5 59.5 88C59.5 85.5 61.5 83.5 64 83.5C66.5 83.5 68.5 85.5 68.5 88C68.5 90.5 66.5 92.5 64 92.5Z" fill="#FFC82F" />
                     </g>
                   </svg>
                 </div>

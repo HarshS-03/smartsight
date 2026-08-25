@@ -373,19 +373,19 @@ export default function DatasetPage() {
   return (
     <>
       {/* Dataset Hero */}
-      <section className="dataset-hero">
-        <div className="dataset-hero-bg-wrapper">
-          <div className="dataset-hero-bg"></div>
-          <div className="dataset-orb"></div>
+      <section className="page-hero">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
 
-        <div className="container position-relative" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content">
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="dataset-title mb-2">
                 Dataset <span className="accent">Directory</span>
               </h1>
-              <p className="mx-auto ms-md-0" style={{ color: 'var(--text-secondary)', fontSize: '.95rem', maxWidth: '500px' }}>Manage and organize
+              <p className="page-hero-sub mx-auto ms-md-0">Manage and organize
                 person-specific training samples for the recognition model.</p>
             </div>
             <div className="col-md-4 text-center text-md-end d-flex gap-3 flex-shrink-0 justify-content-center justify-content-md-end">
@@ -532,7 +532,7 @@ export default function DatasetPage() {
       {/* Add Person Modal */}
       {showAddPersonModal && (
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-lg">
               <div className="modal-content overflow-hidden shadow-2xl border-0">
@@ -605,7 +605,7 @@ export default function DatasetPage() {
       {/* Person Detail Modal - Mounted directly on document.body via React Portal */}
       {selectedPerson && createPortal(
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)', zIndex: 10540 }} onClick={() => setSelectedPerson(null)}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, zIndex: 10540 }} onClick={() => setSelectedPerson(null)}></div>
           <div className="modal fade show d-block" tabIndex="-1" aria-hidden="true" onClick={() => setSelectedPerson(null)} style={{ zIndex: 10550 }}>
             <div className="modal-dialog modal-xl modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content overflow-hidden shadow-2xl border-0">
@@ -731,11 +731,11 @@ export default function DatasetPage() {
       {/* Unknown Date Modal - Mounted directly on document.body via React Portal */}
       {selectedUnknownDate && createPortal(
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
               <div className="modal-content overflow-hidden"
-                style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', backdropFilter: 'blur(30px)' }}>
+                style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', }}>
                 <div className="modal-header border-0 p-4 d-flex align-items-start">
                   <div className="d-flex align-items-center">
                     <div className="bg-danger bg-opacity-10 rounded-4 p-3 me-3 border border-danger border-opacity-10">
@@ -803,11 +803,11 @@ export default function DatasetPage() {
       {/* Auto Classification Modal */}
       {showAutoClassifyModal && (
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" data-bs-backdrop="static" aria-hidden="true">
             <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
               <div className="modal-content overflow-hidden"
-                style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}>
+                style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', }}>
                 <div className="modal-header border-0 p-4">
                   <h5 className="modal-title fw-bold text-dynamic d-flex align-items-center">
                     <i className="bi bi-cpu-fill text-primary me-2"></i>
@@ -877,7 +877,7 @@ export default function DatasetPage() {
                             }
 
                             return (
-                              <div key={group.id} className="classify-group-card p-4 rounded-4 position-relative border border-secondary border-opacity-25" style={{ background: 'var(--bg-surface-solid)', backdropFilter: 'blur(16px)' }}>
+                              <div key={group.id} className="classify-group-card p-4 rounded-4 position-relative border border-secondary border-opacity-25" style={{ background: 'var(--bg-surface-solid)', }}>
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                   <h6 className="fw-bold text-dynamic mb-0 d-flex align-items-center gap-2">
                                     <i className={`bi ${headerIcon}`}></i> {title}
@@ -973,8 +973,6 @@ export default function DatasetPage() {
               style={{
                 zIndex: 99999,
                 backgroundColor: 'rgba(0, 0, 0, 0.95)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
                 position: 'fixed',
                 top: 0,
                 left: 0,

@@ -14,46 +14,11 @@ export default function LoginPage({ setActivePage, setUser }) {
   const [faceCheckInterval, setFaceCheckInterval] = useState(null);
   const faceFeedRef = useRef(null);
 
-  const [showIpModal, setShowIpModal] = useState(false);
-  const [serverIp, setServerIp] = useState(localStorage.getItem('server_ip') || '');
-
   useEffect(() => {
     return () => {
       if (faceCheckInterval) clearInterval(faceCheckInterval);
     };
   }, [faceCheckInterval]);
-
-  useEffect(() => {
-    const revealElements = document.querySelectorAll("[data-reveal]");
-    const revealOnScroll = function () {
-      const windowHeight = window.innerHeight;
-      revealElements.forEach(el => {
-        const elementTop = el.getBoundingClientRect().top;
-        const revealPoint = 150;
-        if (elementTop < windowHeight - revealPoint) {
-          el.classList.add("is-visible");
-        }
-      });
-    };
-
-    window.addEventListener("scroll", revealOnScroll);
-    revealOnScroll();
-    return () => window.removeEventListener("scroll", revealOnScroll);
-  }, []);
-
-  const handleSaveIp = (e) => {
-    e.preventDefault();
-    if (serverIp) {
-      localStorage.setItem('server_ip', serverIp);
-    } else {
-      localStorage.removeItem('server_ip');
-    }
-    if (API.updateBaseUrl) API.updateBaseUrl();
-    setShowIpModal(false);
-
-    // Re-trigger push token registration with newly saved IP
-    import('../utils/firebasePush').then(m => m.initFirebasePush()).catch(err => console.warn('Push init error:', err));
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -75,10 +40,6 @@ export default function LoginPage({ setActivePage, setUser }) {
       if (window.showToast) {
         window.showToast(`Welcome back, ${authenticatedName}! Access Granted.`, 'success', 'WELCOME');
       }
-
-      // Re-trigger push token registration on login success
-      import('../utils/firebasePush').then(m => m.initFirebasePush()).catch(err => console.warn('Push init error:', err));
-
       setActivePage('home');
     } catch (err) {
       setError('Invalid username or password.');
@@ -247,24 +208,11 @@ export default function LoginPage({ setActivePage, setUser }) {
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
               boxShadow: 'var(--shadow-lg)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)'
             }}>
 
               <div className="position-absolute top-0 start-50 translate-middle"
                 style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)', zIndex: -1 }}>
               </div>
-
-              {/* IP Settings Gear (Mobile Setup) */}
-              <button
-                type="button"
-                className="btn position-absolute top-0 end-0 m-3 text-secondary hover-glow border-0 d-md-none"
-                style={{ zIndex: 10 }}
-                onClick={() => setShowIpModal(true)}
-                title="Server Connection Settings"
-              >
-                <i className="bi bi-gear-fill fs-5"></i>
-              </button>
 
               <div className="mb-4 text-center mt-3">
                 <div className="shield-icon-wrap mx-auto mb-3">
@@ -331,7 +279,7 @@ export default function LoginPage({ setActivePage, setUser }) {
       {/* Biometric Face Scanner Modal */}
       {showFaceModal && (
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content overflow-hidden" style={{
@@ -339,8 +287,6 @@ export default function LoginPage({ setActivePage, setUser }) {
                 border: `1px solid ${scanState === 'success' ? 'rgba(25, 135, 84, 0.8)' : 'rgba(13, 110, 253, 0.25)'}`,
                 borderRadius: '24px',
                 boxShadow: scanState === 'success' ? '0 0 50px rgba(25, 135, 84, 0.4)' : '0 0 40px rgba(13, 110, 253, 0.15)',
-                backdropFilter: 'blur(25px)',
-                WebkitBackdropFilter: 'blur(25px)',
                 transition: 'border-color 0.5s ease, box-shadow 0.5s ease'
               }}>
 
@@ -397,7 +343,7 @@ export default function LoginPage({ setActivePage, setUser }) {
                       </div>
 
                       <div className="hud-laser position-absolute w-100 left-0 bg-primary opacity-75"
-                        style={{ height: '3px', boxShadow: '0 0 12px #0d6efd', animation: 'scanLine 3s ease-in-out infinite' }}>
+                        style={{ height: '3px', boxShadow: '0 0 12px #2563eb', animation: 'scanLine 3s ease-in-out infinite' }}>
                       </div>
 
                       <div className="d-flex justify-content-between">
@@ -434,56 +380,6 @@ export default function LoginPage({ setActivePage, setUser }) {
           </div>
         </>
       )}
-      {/* IP Configuration Modal */}
-      {showIpModal && (
-        <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
-          <div className="modal fade show d-block" tabIndex="-1" aria-hidden="true" style={{ overflowY: 'auto' }}>
-            <div className="modal-dialog modal-dialog-centered my-auto px-3" style={{ maxWidth: '440px' }}>
-              <div className="modal-content overflow-hidden" style={{
-                background: 'var(--modal-bg)',
-                border: '1px solid rgba(13, 110, 253, 0.25)',
-                borderRadius: '24px',
-                boxShadow: '0 0 40px rgba(13, 110, 253, 0.15)',
-                backdropFilter: 'blur(25px)',
-                WebkitBackdropFilter: 'blur(25px)',
-                maxHeight: '85vh',
-                overflowY: 'auto'
-              }}>
-                <div className="modal-header border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
-                  <h5 className="modal-title text-dynamic fw-bold d-flex align-items-center gap-2">
-                    <i className="bi bi-hdd-network text-primary"></i> Server Connection
-                  </h5>
-                  <button type="button" className="btn-close opacity-50 hover-glow" onClick={() => setShowIpModal(false)}></button>
-                </div>
-                <form onSubmit={handleSaveIp}>
-                  <div className="modal-body p-4 pt-3">
-                    <p className="small text-secondary mb-3">
-                      Enter the local Wi-Fi IP address of the PC running the backend server (e.g., 192.168.1.10:8000) to connect the Mobile App.
-                    </p>
-                    <div className="form-floating custom-form-floating mb-2">
-                      <input
-                        type="text"
-                        className="form-control font-mono"
-                        placeholder="192.168.1.X:8000"
-                        value={serverIp}
-                        onChange={e => setServerIp(e.target.value)}
-                      />
-                      <label style={{ color: 'var(--form-label)' }}>Server IP Address</label>
-                    </div>
-                  </div>
-                  <div className="modal-footer border-0 p-4 pt-0">
-                    <button type="submit" className="btn-detect-start w-100 d-flex align-items-center justify-content-center gap-2" style={{ height: '50px' }}>
-                      <i className="bi bi-save"></i> Save & Connect
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
     </>
   );
 }

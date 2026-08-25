@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import API from '../api/axios';
+import getImageUrl from '../utils/imageUrl';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 
 export default function ReportsPage() {
@@ -33,6 +34,9 @@ export default function ReportsPage() {
   const [activeChart, setActiveChart] = useState('bar');
   const [chartTimeframe, setChartTimeframe] = useState('7D');
   const [chartScope, setChartScope] = useState('ALL');
+  const [timelineFilter, setTimelineFilter] = useState('ALL'); // 'ALL', 'UNKNOWN', 'KNOWN'
+  const [hoveredScrubberEvent, setHoveredScrubberEvent] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   const barChartRef = useRef(null);
   const doughnutChartRef = useRef(null);
   const exportBtnRef = useRef(null);
@@ -163,14 +167,19 @@ export default function ReportsPage() {
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         return {
+          id: log.id,
           date: dateStr,
           rawTimestamp: dateObj.getTime(),
           camera_name: log.camera_name || "Default Camera",
           person_name: log.person_name || "Unknown Person",
+          name: log.person_name || "Unknown Person",
           status: log.status,
           entry_time: timeStr,
           exit_time: timeStr,
-          frequency: 1
+          frequency: 1,
+          image_path: log.image_path,
+          imageUrl: log.image_path ? getImageUrl(log.image_path) : null,
+          confidence: log.confidence
         };
       }).sort((a, b) => b.rawTimestamp - a.rawTimestamp);
 
@@ -344,13 +353,13 @@ export default function ReportsPage() {
     <>
 
       {/* Reports Hero */}
-      <section className="reports-hero">
-        <div className="reports-hero-bg-wrapper">
-          <div className="reports-hero-bg"></div>
-          <div className="reports-orb"></div>
+      <section className="page-hero">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
 
-        <div className="container position-relative" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content" style={{ zIndex: 2 }}>
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="reports-title mb-2">
@@ -428,14 +437,332 @@ export default function ReportsPage() {
       </section>
 
       <div className="container py-4">
+        {/* ── 24-HOUR INTERACTIVE SECURITY TIMELINE SCRUBBER ── */}
+        {(() => {
+          const todayReports = reports.filter(r => r.rawTimestamp && (new Date(r.rawTimestamp).toDateString() === new Date().toDateString()));
+          const todayIntruderCount = todayReports.filter(r => r.status === 'UNKNOWN').length;
+          const todayKnownCount = todayReports.filter(r => r.status === 'KNOWN').length;
+          const now = new Date();
+          const nowMins = now.getHours() * 60 + now.getMinutes();
+          const nowPosPct = Math.min(99, Math.max(1, (nowMins / 1440) * 100));
+          const nowTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          const visibleReports = todayReports.filter(r => {
+            if (timelineFilter === 'UNKNOWN') return r.status === 'UNKNOWN';
+            if (timelineFilter === 'KNOWN') return r.status === 'KNOWN';
+            return true;
+          });
+
+          // Sort ascending for proximity staggering calculation
+          const sortedList = [...visibleReports].sort((a, b) => a.rawTimestamp - b.rawTimestamp);
+          const staggeredReports = sortedList.map((rep, i) => {
+            const d = new Date(rep.rawTimestamp);
+            const mins = d.getHours() * 60 + d.getMinutes();
+            const posPct = Math.min(98.5, Math.max(1.5, (mins / 1440) * 100));
+            let offsetIdx = 0;
+            for (let j = Math.max(0, i - 3); j < i; j++) {
+              const prevD = new Date(sortedList[j].rawTimestamp);
+              const prevMins = prevD.getHours() * 60 + prevD.getMinutes();
+              const prevPos = (prevMins / 1440) * 100;
+              if (Math.abs(posPct - prevPos) < 2.5) {
+                offsetIdx = (offsetIdx + 1) % 3;
+              }
+            }
+            return { ...rep, posPct, offsetIdx, dateObj: d };
+          });
+
+          return (
+            <div className="card glass-card border-0 p-4 mb-4 rounded-4 shadow-sm position-relative" style={{ background: 'var(--bg-surface-solid)' }}>
+              <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+                <div className="d-flex align-items-center gap-3">
+                  <div
+                    className="rounded-3 d-flex align-items-center justify-content-center text-primary flex-shrink-0 shadow-sm"
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%)',
+                      border: '1px solid rgba(13, 110, 253, 0.25)',
+                      color: '#2563eb'
+                    }}
+                  >
+                    <i className="bi bi-clock-fill" style={{ fontSize: '1.2rem', lineHeight: 1 }}></i>
+                  </div>
+                  <div>
+                    <h6 className="fw-extrabold text-dynamic mb-0 d-flex align-items-center gap-2" style={{ fontSize: '1rem', letterSpacing: '-0.2px' }}>
+                      <span>24-HOUR SECURITY TIMELINE SCRUBBER</span>
+                      <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-bold" style={{ fontSize: '0.68rem', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
+                        Today ({todayReports.length})
+                      </span>
+                    </h6>
+                    <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>
+                      Interactive telemetry timeline for today's detections (00:00 - 23:59)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Filter & Legend Badges with Fixed Gapping */}
+                <div className="d-flex align-items-center gap-2 flex-wrap font-mono">
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${
+                      timelineFilter === 'ALL' ? 'shadow-sm' : 'border-0'
+                    }`}
+                    style={{
+                      background: timelineFilter === 'ALL' ? '#2563eb' : 'rgba(13, 110, 253, 0.08)',
+                      color: timelineFilter === 'ALL' ? '#ffffff' : '#2563eb',
+                      border: '1px solid rgba(13, 110, 253, 0.25)',
+                      fontSize: '0.78rem'
+                    }}
+                    onClick={() => setTimelineFilter('ALL')}
+                    title="Show all detections"
+                  >
+                    <span>All ({todayReports.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${
+                      timelineFilter === 'UNKNOWN' ? 'shadow-sm' : 'border-0'
+                    }`}
+                    style={{
+                      background: timelineFilter === 'UNKNOWN' ? '#dc3545' : 'rgba(220, 53, 69, 0.08)',
+                      color: timelineFilter === 'UNKNOWN' ? '#ffffff' : '#dc3545',
+                      border: '1px solid rgba(220, 53, 69, 0.25)',
+                      fontSize: '0.78rem'
+                    }}
+                    onClick={() => setTimelineFilter(timelineFilter === 'UNKNOWN' ? 'ALL' : 'UNKNOWN')}
+                    title="Click to filter Intruders"
+                  >
+                    <span className="rounded-circle d-inline-block" style={{ width: '8px', height: '8px', background: timelineFilter === 'UNKNOWN' ? '#ffffff' : '#dc3545', boxShadow: '0 0 6px rgba(220, 53, 69, 0.8)' }}></span>
+                    <span>Intruder</span>
+                    <span className={`badge rounded-pill ${timelineFilter === 'UNKNOWN' ? 'bg-white text-danger' : 'bg-danger text-white'}`} style={{ fontSize: '0.7rem' }}>
+                      {todayIntruderCount}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${
+                      timelineFilter === 'KNOWN' ? 'shadow-sm' : 'border-0'
+                    }`}
+                    style={{
+                      background: timelineFilter === 'KNOWN' ? '#198754' : 'rgba(25, 135, 84, 0.08)',
+                      color: timelineFilter === 'KNOWN' ? '#ffffff' : '#198754',
+                      border: '1px solid rgba(25, 135, 84, 0.25)',
+                      fontSize: '0.78rem'
+                    }}
+                    onClick={() => setTimelineFilter(timelineFilter === 'KNOWN' ? 'ALL' : 'KNOWN')}
+                    title="Click to filter Known personnel"
+                  >
+                    <span className="rounded-circle d-inline-block" style={{ width: '8px', height: '8px', background: timelineFilter === 'KNOWN' ? '#ffffff' : '#198754', boxShadow: '0 0 6px rgba(25, 135, 84, 0.8)' }}></span>
+                    <span>Known</span>
+                    <span className={`badge rounded-pill ${timelineFilter === 'KNOWN' ? 'bg-white text-success' : 'bg-success text-white'}`} style={{ fontSize: '0.7rem' }}>
+                      {todayKnownCount}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrubber Track Section */}
+              <div className="position-relative pt-2 pb-4 mb-2">
+                <div
+                  className="w-100 rounded-pill position-relative overflow-visible"
+                  style={{
+                    height: '28px',
+                    background: 'linear-gradient(90deg, rgba(13, 110, 253, 0.03) 0%, rgba(13, 110, 253, 0.08) 50%, rgba(13, 110, 253, 0.03) 100%)',
+                    border: '1px solid rgba(13, 110, 253, 0.2)',
+                    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)'
+                  }}
+                >
+                  {/* Subtle Grid Divider Lines */}
+                  {[0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100].map((pct, i) => (
+                    <div
+                      key={i}
+                      className="position-absolute"
+                      style={{
+                        left: `${pct}%`,
+                        top: '0',
+                        bottom: '0',
+                        width: '1px',
+                        background: 'rgba(13, 110, 253, 0.15)',
+                        pointerEvents: 'none'
+                      }}
+                    ></div>
+                  ))}
+
+                  {/* "NOW" Live Current Time Needle */}
+                  <div
+                    className="position-absolute"
+                    style={{
+                      left: `${nowPosPct}%`,
+                      top: '-6px',
+                      bottom: '-6px',
+                      width: '2px',
+                      background: '#0dcaf0',
+                      boxShadow: '0 0 8px #0dcaf0',
+                      zIndex: 3,
+                      pointerEvents: 'none',
+                      transform: 'translateX(-50%)'
+                    }}
+                  >
+                    <span
+                      className="position-absolute badge rounded-pill bg-info text-dark fw-bold px-1.5 py-0.5 shadow-sm"
+                      style={{
+                        top: '-20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        fontSize: '0.62rem',
+                        letterSpacing: '0.3px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      NOW {nowTimeStr}
+                    </span>
+                  </div>
+
+                  {/* Detection Markers */}
+                  {staggeredReports.length > 0 ? (
+                    staggeredReports.map((rep, idx) => {
+                      const isUnknown = rep.status === 'UNKNOWN';
+                      const topOffset = rep.offsetIdx === 1 ? '-6px' : (rep.offsetIdx === 2 ? '10px' : '2px');
+
+                      return (
+                        <div
+                          key={rep.id || idx}
+                          className="position-absolute rounded-circle cursor-pointer transition-all"
+                          style={{
+                            left: `${rep.posPct}%`,
+                            top: topOffset,
+                            width: '22px',
+                            height: '22px',
+                            background: isUnknown
+                              ? 'linear-gradient(135deg, #ef4444, #dc3545)'
+                              : 'linear-gradient(135deg, #10b981, #198754)',
+                            border: '2px solid #ffffff',
+                            boxShadow: isUnknown
+                              ? '0 0 10px rgba(220, 53, 69, 0.9), 0 2px 4px rgba(0,0,0,0.2)'
+                              : '0 0 10px rgba(25, 135, 84, 0.9), 0 2px 4px rgba(0,0,0,0.2)',
+                            zIndex: isUnknown ? 6 : 4,
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#ffffff',
+                            fontSize: '0.62rem'
+                          }}
+                          onMouseEnter={() => setHoveredScrubberEvent(rep)}
+                          onMouseLeave={() => setHoveredScrubberEvent(null)}
+                          onClick={() => {
+                            if (rep.imageUrl) setSelectedImage(rep.imageUrl);
+                          }}
+                        >
+                          <i className={`bi ${isUnknown ? 'bi-shield-fill-exclamation' : 'bi-check-lg'}`}></i>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                      <span className="small text-secondary fw-semibold" style={{ fontSize: '0.75rem' }}>
+                        No detections recorded for today yet.
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 24-Hour Time Marks */}
+                <div className="position-absolute w-100 d-flex justify-content-between px-1" style={{ top: '38px', fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'monospace' }}>
+                  <span>00:00</span>
+                  <span className="d-none d-sm-inline">03:00</span>
+                  <span>06:00</span>
+                  <span className="d-none d-sm-inline">09:00</span>
+                  <span>12:00</span>
+                  <span className="d-none d-sm-inline">15:00</span>
+                  <span>18:00</span>
+                  <span className="d-none d-sm-inline">21:00</span>
+                  <span>23:59</span>
+                </div>
+
+                {/* Floating Interactive Hover Tooltip */}
+                {hoveredScrubberEvent && (
+                  <div
+                    className="position-absolute card border shadow-lg p-2.5 rounded-3 animate-fade-in"
+                    style={{
+                      left: `${Math.min(85, Math.max(15, hoveredScrubberEvent.posPct))}%`,
+                      top: '-105px',
+                      transform: 'translateX(-50%)',
+                      zIndex: 20,
+                      minWidth: '220px',
+                      background: 'var(--bg-surface-solid, #ffffff)',
+                      borderColor: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220, 53, 69, 0.4)' : 'rgba(25, 135, 84, 0.4)',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    <div className="d-flex align-items-center gap-2.5">
+                      {hoveredScrubberEvent.imageUrl ? (
+                        <img
+                          src={hoveredScrubberEvent.imageUrl}
+                          alt="Capture"
+                          className="rounded-2 flex-shrink-0"
+                          style={{ width: '42px', height: '42px', objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                        />
+                      ) : (
+                        <div
+                          className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                          style={{
+                            width: '42px',
+                            height: '42px',
+                            background: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220,53,69,0.1)' : 'rgba(25,135,84,0.1)',
+                            color: hoveredScrubberEvent.status === 'UNKNOWN' ? '#dc3545' : '#198754'
+                          }}
+                        >
+                          <i className={`bi ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bi-shield-exclamation fs-5' : 'bi-person-check fs-5'}`}></i>
+                        </div>
+                      )}
+                      <div className="flex-grow-1 min-w-0">
+                        <div className="d-flex align-items-center justify-content-between gap-1 mb-0.5">
+                          <strong className="text-truncate fw-bold text-dynamic" style={{ fontSize: '0.82rem' }}>
+                            {hoveredScrubberEvent.person_name || 'Unknown Person'}
+                          </strong>
+                          <span
+                            className={`badge rounded-pill ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-success text-white'}`}
+                            style={{ fontSize: '0.62rem' }}
+                          >
+                            {hoveredScrubberEvent.status}
+                          </span>
+                        </div>
+                        <div className="text-secondary small d-flex align-items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
+                          <i className="bi bi-clock"></i>
+                          <span>{hoveredScrubberEvent.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        </div>
+                        <div className="text-secondary small text-truncate" style={{ fontSize: '0.68rem' }}>
+                          <i className="bi bi-camera me-1"></i>
+                          <span>{hoveredScrubberEvent.camera_name}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {hoveredScrubberEvent.imageUrl && (
+                      <div className="mt-1.5 pt-1.5 border-top border-secondary border-opacity-10 text-center">
+                        <span className="text-primary fw-semibold" style={{ fontSize: '0.68rem' }}>
+                          Click to inspect snapshot <i className="bi bi-box-arrow-up-right ms-0.5"></i>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Quick Stats Cards Section */}
         <div className="row g-3 mb-4">
+
           {/* Total Detections Card */}
           <div className="col-12 col-md-4" data-reveal="true" data-reveal-delay="0">
             <div className="stat-card stat-card-blue p-4 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: '20px' }}>
               <div className="d-flex align-items-center gap-2">
                 <div className="d-flex align-items-center justify-content-center rounded flex-shrink-0" style={{ width: '40px', height: '40px', background: 'rgba(13, 110, 253, 0.1)' }}>
-                  <i className="bi bi-cpu" style={{ color: '#0d6efd', fontSize: '1.15rem' }}></i>
+                  <i className="bi bi-cpu" style={{ color: '#2563eb', fontSize: '1.15rem' }}></i>
                 </div>
                 <div>
                   <h6 className="mb-0 fw-bold text-dynamic" style={{ fontSize: '0.95rem' }}>Total Detections</h6>
@@ -443,7 +770,7 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono"
-                style={{ width: '56px', height: '56px', fontSize: '1.4rem', fontWeight: '800', background: '#0d6efd', border: '3px solid rgba(255,255,255,0.1)' }}>
+                style={{ width: '56px', height: '56px', fontSize: '1.4rem', fontWeight: '800', background: '#2563eb', border: '3px solid rgba(255,255,255,0.1)' }}>
                 {totalDetections}
               </div>
             </div>
@@ -523,7 +850,7 @@ export default function ReportsPage() {
                             </div>
                           </div>
                           <span className="badge rounded-pill px-3 py-1.5 fw-bold text-uppercase"
-                            style={{ fontSize: '0.75rem', background: 'rgba(13, 110, 253, 0.15)', color: '#0d6efd', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
+                            style={{ fontSize: '0.75rem', background: 'rgba(13, 110, 253, 0.15)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
                             Total: {person.total_count}
                           </span>
                         </div>
@@ -588,7 +915,7 @@ export default function ReportsPage() {
                 <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 mb-3 px-1">
                   <div className="chart-switcher-container">
                     {[
-                      { id: 'ALL', label: 'All', color: '#0d6efd' },
+                      { id: 'ALL', label: 'All', color: '#2563eb' },
                       { id: 'KNOWN', label: 'Known', color: '#10b981' },
                       { id: 'UNKNOWN', label: 'Unknown', color: '#ef4444' }
                     ].map(scopeOpt => {
@@ -680,7 +1007,7 @@ export default function ReportsPage() {
                                       style={{
                                         height: `${knownPx}px`,
                                         width: '20px',
-                                        background: '#0d6efd',
+                                        background: '#2563eb',
                                         boxShadow: '0 4px 16px rgba(13, 110, 253, 0.45)',
                                         borderRadius: '6px 6px 3px 3px'
                                       }}
@@ -734,7 +1061,7 @@ export default function ReportsPage() {
                           cx="90"
                           cy="90"
                           r="70"
-                          stroke="#0d6efd"
+                          stroke="#2563eb"
                           strokeWidth="20"
                           fill="transparent"
                           strokeDasharray={439.8}
@@ -768,7 +1095,7 @@ export default function ReportsPage() {
 
                     <div className="d-flex flex-column gap-2 ms-sm-3">
                       <div className="d-flex align-items-center gap-3 p-3 rounded-3 bg-inner-card" style={{ minWidth: '200px' }}>
-                        <div className="rounded-circle bg-primary" style={{ width: '12px', height: '12px', boxShadow: '0 0 8px #0d6efd' }}></div>
+                        <div className="rounded-circle bg-primary" style={{ width: '12px', height: '12px', boxShadow: '0 0 8px #2563eb' }}></div>
                         <div>
                           <span className="d-block small text-secondary fw-semibold">Known Persons</span>
                           <strong className="fs-5 text-primary font-mono">{knownCount} <span className="small text-muted">({knownPct}%)</span></strong>
@@ -837,8 +1164,6 @@ export default function ReportsPage() {
                             zIndex: 1000,
                             background: 'var(--dropdown-bg, var(--bg-surface-solid, #0f172a))',
                             border: '1px solid var(--dropdown-border, rgba(255, 255, 255, 0.12))',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
                             boxShadow: 'var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.25))'
                           }}
                         >
@@ -890,8 +1215,6 @@ export default function ReportsPage() {
                             zIndex: 1000,
                             background: 'var(--dropdown-bg, var(--bg-surface-solid, #0f172a))',
                             border: '1px solid var(--dropdown-border, rgba(255, 255, 255, 0.12))',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
                             boxShadow: 'var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.25))'
                           }}
                         >
@@ -947,8 +1270,6 @@ export default function ReportsPage() {
                             zIndex: 1000,
                             background: 'var(--dropdown-bg, var(--bg-surface-solid, #0f172a))',
                             border: '1px solid var(--dropdown-border, rgba(255, 255, 255, 0.12))',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
                             boxShadow: 'var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.25))'
                           }}
                         >
@@ -1062,7 +1383,7 @@ export default function ReportsPage() {
                           </span>
                         </td>
                         <td className="text-center">
-                          <span className="badge rounded-pill px-3 py-2 fw-bold fs-6" style={{ background: 'rgba(13, 110, 253, 0.15)', color: '#0d6efd', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
+                          <span className="badge rounded-pill px-3 py-2 fw-bold fs-6" style={{ background: 'rgba(13, 110, 253, 0.15)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
                             {rep.frequency}
                           </span>
                         </td>
@@ -1099,8 +1420,6 @@ export default function ReportsPage() {
                           className="btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5 text-nowrap"
                           style={{
                             background: 'rgba(13, 110, 253, 0.05)',
-                            backdropFilter: 'blur(16px)',
-                            WebkitBackdropFilter: 'blur(16px)',
                             border: '1px solid rgba(13, 110, 253, 0.15)',
                             color: 'var(--text-heading)',
                             fontSize: '0.825rem',
@@ -1123,8 +1442,6 @@ export default function ReportsPage() {
                                 background: 'var(--bg-glass-card, #ffffff)',
                                 border: '1px solid var(--border-color, rgba(0, 0, 0, 0.12))',
                                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.18)',
-                                backdropFilter: 'blur(20px)',
-                                WebkitBackdropFilter: 'blur(20px)'
                               }}
                             >
                               {[5, 10, 20, 50].map((num) => (
@@ -1134,7 +1451,7 @@ export default function ReportsPage() {
                                   className="w-100 btn btn-sm text-start rounded-3 px-3 py-1.5 my-0.5 d-flex align-items-center justify-content-between transition-all"
                                   style={{
                                     fontSize: '0.8rem',
-                                    background: itemsPerPage === num ? '#0d6efd' : 'transparent',
+                                    background: itemsPerPage === num ? '#2563eb' : 'transparent',
                                     color: itemsPerPage === num ? '#ffffff' : 'var(--text-heading)',
                                     fontWeight: itemsPerPage === num ? 700 : 500
                                   }}
@@ -1185,8 +1502,8 @@ export default function ReportsPage() {
                                 style={{
                                   width: '34px',
                                   height: '34px',
-                                  background: currentPage === page ? '#0d6efd' : 'var(--bg-input)',
-                                  borderColor: currentPage === page ? '#0d6efd' : 'var(--border-subtle)',
+                                  background: currentPage === page ? '#2563eb' : 'var(--bg-input)',
+                                  borderColor: currentPage === page ? '#2563eb' : 'var(--border-subtle)',
                                 }}
                                 onClick={() => setCurrentPage(page)}
                               >
@@ -1227,8 +1544,6 @@ export default function ReportsPage() {
               right: 0,
               bottom: 0,
               background: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
               zIndex: 9999
             }}
             onClick={() => setShowExportModal(false)}
@@ -1245,301 +1560,362 @@ export default function ReportsPage() {
               zIndex: 10000,
               pointerEvents: 'none'
             }}
-               <div
-            className="w-100 my-auto"
-            style={{
-              maxWidth: '460px',
-              pointerEvents: 'auto'
-            }}
           >
             <div
-              className="modal-content export-modal-card overflow-hidden shadow-2xl"
+              className="w-100 my-auto"
               style={{
-                maxHeight: '90vh',
-                background: 'var(--bg-surface-solid, #ffffff)',
-                color: 'var(--text-heading, #0f172a)',
-                borderRadius: '24px',
-                border: '1px solid var(--border-color, rgba(13, 110, 253, 0.15))',
-                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)'
+                maxWidth: '520px',
+                pointerEvents: 'auto'
               }}
             >
-              {/* Header Bar */}
               <div
-                className="modal-header border-bottom border-secondary border-opacity-10 pb-3.5 pt-4 px-4 d-flex justify-content-between align-items-center"
+                className="modal-content export-modal-card overflow-hidden shadow-2xl"
+                style={{
+                  maxHeight: '90vh',
+                  background: 'var(--bg-surface-solid, #ffffff)',
+                  color: 'var(--text-heading, #0f172a)',
+                  borderRadius: '24px',
+                  border: '1px solid var(--border-color, rgba(13, 110, 253, 0.15))',
+                  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)'
+                }}
               >
-                <div className="d-flex align-items-center gap-3">
-                  <span
-                    className="d-inline-flex align-items-center justify-content-center rounded-4 flex-shrink-0 shadow-sm"
+                {/* Header Bar */}
+                <div
+                  className="modal-header border-bottom border-secondary border-opacity-10 pb-3.5 pt-4 px-4 d-flex justify-content-between align-items-center"
+                >
+                  <div className="d-flex align-items-center gap-3">
+                    <span
+                      className="d-inline-flex align-items-center justify-content-center rounded-4 flex-shrink-0 shadow-sm"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 202, 240, 0.15) 100%)',
+                        color: '#2563eb',
+                        width: '42px',
+                        height: '42px',
+                        border: '1px solid rgba(13, 110, 253, 0.2)'
+                      }}
+                    >
+                      <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#2563eb' }}></i>
+                    </span>
+                    <div>
+                      <h5 className="modal-title fw-extrabold text-dynamic mb-0" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
+                        EXPORT CONFIGURATION
+                      </h5>
+                      <p className="text-secondary small mb-0 mt-0.5" style={{ fontSize: '0.78rem' }}>
+                        Select timeframe &amp; event scope criteria
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Close Button */}
+                  <button
+                    type="button"
+                    className="btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0 transition-all text-dynamic"
+                    onClick={() => setShowExportModal(false)}
+                    aria-label="Close"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 202, 240, 0.15) 100%)',
-                      color: '#0d6efd',
-                      width: '42px',
-                      height: '42px',
-                      border: '1px solid rgba(13, 110, 253, 0.2)'
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      background: 'var(--bg-input, rgba(0, 0, 0, 0.06))',
+                      border: '1px solid var(--border-color, rgba(0, 0, 0, 0.1))',
+                      padding: 0
                     }}
                   >
-                    <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#0d6efd' }}></i>
-                  </span>
-                  <div>
-                    <h5 className="modal-title fw-extrabold text-dynamic mb-0" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
-                      EXPORT CONFIGURATION
-                    </h5>
-                    <p className="text-secondary small mb-0 mt-0.5" style={{ fontSize: '0.78rem' }}>
-                      Select timeframe &amp; event scope criteria
-                    </p>
-                  </div>
+                    <i className="bi bi-x-lg" style={{ fontSize: '0.85rem' }}></i>
+                  </button>
                 </div>
 
-                {/* Close Button */}
-                <button
-                  type="button"
-                  className="btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0 transition-all text-dynamic"
-                  onClick={() => setShowExportModal(false)}
-                  aria-label="Close"
-                  style={{
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '50%',
-                    background: 'var(--bg-input, rgba(0, 0, 0, 0.06))',
-                    border: '1px solid var(--border-color, rgba(0, 0, 0, 0.1))',
-                    padding: 0
-                  }}
-                >
-                  <i className="bi bi-x-lg" style={{ fontSize: '0.85rem' }}></i>
-                </button>
-              </div>
+                {/* Body Form */}
+                <form onSubmit={handleExportDownload} className="d-flex flex-column" style={{ overflowY: 'auto' }}>
+                  <div className="modal-body p-4 pb-4">
 
-              {/* Body Form */}
-              <form onSubmit={handleExportDownload} className="d-flex flex-column" style={{ overflowY: 'auto' }}>
-                <div className="modal-body p-4 pb-4">
+                    {/* Time Horizon Selection (5-Column Clean Equal Grid) */}
+                    <div style={{ marginBottom: '1.35rem' }}>
+                      <label
+                        className="form-label text-secondary small fw-bold text-uppercase mb-2.5 d-flex align-items-center gap-2"
+                        style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
+                      >
+                        <i className="bi bi-clock-history text-primary fs-6"></i> Report Time Horizon
+                      </label>
 
-                  {/* Time Horizon Selection (Single Balanced Row / Responsive Grid) */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label
-                      className="form-label text-secondary small fw-bold text-uppercase mb-2.5 d-flex align-items-center gap-2"
-                      style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
-                    >
-                      <i className="bi bi-clock-history text-primary fs-6"></i> Report Time Horizon
-                    </label>
-
-                    <div className="d-flex flex-wrap gap-2 w-100 justify-content-between">
-                      {[
-                        {
-                          id: 'daily',
-                          label: 'Daily',
-                          icon: 'bi-lightning-charge-fill',
-                          color: '#f59e0b',
-                          gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          shadow: '0 6px 18px rgba(245, 158, 11, 0.4)',
-                          softBg: 'rgba(245, 158, 11, 0.12)'
-                        },
-                        {
-                          id: 'weekly',
-                          label: 'Weekly',
-                          icon: 'bi-calendar-week-fill',
-                          color: '#3b82f6',
-                          gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                          shadow: '0 6px 18px rgba(59, 130, 246, 0.4)',
-                          softBg: 'rgba(59, 130, 246, 0.12)'
-                        },
-                        {
-                          id: 'monthly',
-                          label: 'Monthly',
-                          icon: 'bi-calendar-month-fill',
-                          color: '#a855f7',
-                          gradient: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
-                          shadow: '0 6px 18px rgba(168, 85, 247, 0.4)',
-                          softBg: 'rgba(168, 85, 247, 0.12)'
-                        },
-                        {
-                          id: 'yearly',
-                          label: 'Yearly',
-                          icon: 'bi-calendar2-event-fill',
-                          color: '#10b981',
-                          gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
-                          shadow: '0 6px 18px rgba(16, 185, 129, 0.4)',
-                          softBg: 'rgba(16, 185, 129, 0.12)'
-                        },
-                        {
-                          id: 'all',
-                          label: 'All Records',
-                          icon: 'bi-archive-fill',
-                          color: '#06b6d4',
-                          gradient: 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)',
-                          shadow: '0 6px 18px rgba(6, 182, 212, 0.4)',
-                          softBg: 'rgba(6, 182, 212, 0.12)'
-                        }
-                      ].map((rangeOpt) => {
-                        const isSelected = exportRange === rangeOpt.id;
-                        return (
-                          <button
-                            key={rangeOpt.id}
-                            type="button"
-                            onClick={() => setExportRange(rangeOpt.id)}
-                            className="btn py-2 px-2.5 rounded-pill d-flex align-items-center justify-content-center transition-all text-nowrap flex-fill"
-                            style={{
-                              fontSize: '0.8rem',
-                              fontWeight: isSelected ? 700 : 600,
-                              minWidth: '72px',
-                              background: isSelected
-                                ? rangeOpt.gradient
-                                : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
-                              border: isSelected
-                                ? '1px solid rgba(255, 255, 255, 0.3)'
-                                : `1px solid ${rangeOpt.color}35`,
-                              color: isSelected ? '#ffffff' : 'var(--text-heading, #0f172a)',
-                              boxShadow: isSelected ? rangeOpt.shadow : 'none',
-                              transform: isSelected ? 'translateY(-1px)' : 'none'
-                            }}
-                          >
-                            <span className="d-inline-flex align-items-center justify-content-center gap-1.5">
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(5, 1fr)',
+                          gap: '7px'
+                        }}
+                      >
+                        {[
+                          {
+                            id: 'daily',
+                            label: 'Daily',
+                            icon: 'bi-lightning-charge-fill',
+                            color: '#f59e0b',
+                            gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                            shadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                            softBg: 'rgba(245, 158, 11, 0.12)'
+                          },
+                          {
+                            id: 'weekly',
+                            label: 'Weekly',
+                            icon: 'bi-calendar-week-fill',
+                            color: '#3b82f6',
+                            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                            shadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                            softBg: 'rgba(59, 130, 246, 0.12)'
+                          },
+                          {
+                            id: 'monthly',
+                            label: 'Monthly',
+                            icon: 'bi-calendar-month-fill',
+                            color: '#a855f7',
+                            gradient: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+                            shadow: '0 4px 14px rgba(168, 85, 247, 0.35)',
+                            softBg: 'rgba(168, 85, 247, 0.12)'
+                          },
+                          {
+                            id: 'yearly',
+                            label: 'Yearly',
+                            icon: 'bi-calendar2-event-fill',
+                            color: '#10b981',
+                            gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                            shadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                            softBg: 'rgba(16, 185, 129, 0.12)'
+                          },
+                          {
+                            id: 'all',
+                            label: 'All Records',
+                            icon: 'bi-archive-fill',
+                            color: '#06b6d4',
+                            gradient: 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)',
+                            shadow: '0 4px 14px rgba(6, 182, 212, 0.35)',
+                            softBg: 'rgba(6, 182, 212, 0.12)'
+                          }
+                        ].map((rangeOpt) => {
+                          const isSelected = exportRange === rangeOpt.id;
+                          return (
+                            <button
+                              key={rangeOpt.id}
+                              type="button"
+                              onClick={() => setExportRange(rangeOpt.id)}
+                              className="btn p-2 rounded-4 d-flex flex-column align-items-center justify-content-center transition-all text-center"
+                              style={{
+                                minHeight: '62px',
+                                background: isSelected
+                                  ? rangeOpt.gradient
+                                  : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
+                                border: isSelected
+                                  ? '1px solid rgba(255, 255, 255, 0.3)'
+                                  : `1px solid ${rangeOpt.color}30`,
+                                color: isSelected ? '#ffffff' : 'var(--text-heading, #0f172a)',
+                                boxShadow: isSelected ? rangeOpt.shadow : 'none',
+                                transform: isSelected ? 'translateY(-2px)' : 'none'
+                              }}
+                            >
                               <span
-                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0 mb-1"
                                 style={{
-                                  width: '22px',
-                                  height: '22px',
-                                  background: isSelected ? 'rgba(255, 255, 255, 0.22)' : rangeOpt.softBg,
+                                  width: '24px',
+                                  height: '24px',
+                                  background: isSelected ? 'rgba(255, 255, 255, 0.25)' : rangeOpt.softBg,
                                   color: isSelected ? '#ffffff' : rangeOpt.color
                                 }}
                               >
                                 <i className={`bi ${rangeOpt.icon}`} style={{ fontSize: '0.75rem' }}></i>
                               </span>
-                              <span>{rangeOpt.label}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Custom Date Range Selection */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label
-                      className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-2"
-                      style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
-                    >
-                      <i className="bi bi-calendar-range text-primary fs-6"></i> Custom Date Filter <span className="fw-normal text-muted opacity-75">(Optional)</span>
-                    </label>
-
-                    <div className="custom-date-grid">
-                      <div>
-                        <label className="small text-secondary fw-semibold d-block mb-1" style={{ fontSize: '0.78rem' }}>Start Date</label>
-                        <input
-                          type="date"
-                          lang="en-GB"
-                          className="form-control text-dynamic py-2.5 px-3 rounded-3 font-mono w-100"
-                          value={startDate}
-                          onChange={e => setStartDate(e.target.value)}
-                          style={{
-                            background: 'var(--bg-input, rgba(0,0,0,0.04))',
-                            border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
-                            color: 'var(--text-heading, #0f172a)',
-                            fontSize: '0.85rem'
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="small text-secondary fw-semibold d-block mb-1" style={{ fontSize: '0.78rem' }}>End Date</label>
-                        <input
-                          type="date"
-                          lang="en-GB"
-                          className="form-control text-dynamic py-2.5 px-3 rounded-3 font-mono w-100"
-                          value={endDate}
-                          onChange={e => setEndDate(e.target.value)}
-                          style={{
-                            background: 'var(--bg-input, rgba(0,0,0,0.04))',
-                            border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
-                            color: 'var(--text-heading, #0f172a)',
-                            fontSize: '0.85rem'
-                          }}
-                        />
+                              <span style={{ fontSize: '0.72rem', fontWeight: isSelected ? 800 : 600, lineHeight: 1.15, whiteSpace: 'normal' }}>
+                                {rangeOpt.label}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Detection Type Filter */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label
-                      className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-2"
-                      style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
-                    >
-                      <i className="bi bi-funnel text-primary fs-6"></i> Detection Event Scope
-                    </label>
+                    {/* Custom Date Range Selection (Clean 2-Column Side-by-Side) */}
+                    <div style={{ marginBottom: '1.35rem' }}>
+                      <label
+                        className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-2"
+                        style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
+                      >
+                        <i className="bi bi-calendar-range text-primary fs-6"></i> Custom Date Filter <span className="fw-normal text-muted opacity-75">(Optional)</span>
+                      </label>
 
-                    <div className="d-flex flex-column gap-2">
-                      {[
-                        { id: 'all', label: 'All Detections (Known + Unknown)', icon: 'bi-people-fill', color: '#0d6efd', activeBg: 'rgba(13, 110, 253, 0.08)' },
-                        { id: 'known', label: 'Known Personnel Only', icon: 'bi-person-check-fill', color: '#10b981', activeBg: 'rgba(16, 185, 129, 0.08)' },
-                        { id: 'unknown', label: 'Unknown Intrusions Only', icon: 'bi-person-exclamation', color: '#ef4444', activeBg: 'rgba(239, 68, 68, 0.08)' }
-                      ].map((filterOpt) => {
-                        const isSelected = exportScope === filterOpt.id;
-                        return (
-                          <div
-                            key={filterOpt.id}
-                            onClick={() => setExportScope(filterOpt.id)}
-                            className="p-2.5 px-3 rounded-4 d-flex align-items-center justify-content-between transition-all"
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <label className="small text-secondary fw-semibold d-block mb-1" style={{ fontSize: '0.76rem' }}>Start Date</label>
+                          <input
+                            type="date"
+                            lang="en-GB"
+                            className="form-control text-dynamic py-2 px-3 rounded-3 font-mono w-100"
+                            value={startDate}
+                            onChange={e => setStartDate(e.target.value)}
                             style={{
-                              background: isSelected ? filterOpt.activeBg : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
-                              border: isSelected ? `1.5px solid ${filterOpt.color}` : '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
-                              cursor: 'pointer',
-                              boxShadow: isSelected ? `0 4px 14px ${filterOpt.color}15` : 'none'
+                              background: 'var(--bg-input, rgba(0,0,0,0.04))',
+                              border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
+                              color: 'var(--text-heading, #0f172a)',
+                              fontSize: '0.82rem',
+                              height: '42px'
                             }}
-                          >
-                            <div className="d-flex align-items-center" style={{ gap: '14px' }}>
-                              <span
-                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                                style={{
-                                  width: '32px',
-                                  height: '32px',
-                                  background: `${filterOpt.color}15`,
-                                  color: filterOpt.color
-                                }}
-                              >
-                                <i className={`bi ${filterOpt.icon} fs-6`}></i>
-                              </span>
-                              <span className="fw-bold text-dynamic" style={{ fontSize: '0.84rem' }}>{filterOpt.label}</span>
+                          />
+                        </div>
+                        <div>
+                          <label className="small text-secondary fw-semibold d-block mb-1" style={{ fontSize: '0.76rem' }}>End Date</label>
+                          <input
+                            type="date"
+                            lang="en-GB"
+                            className="form-control text-dynamic py-2 px-3 rounded-3 font-mono w-100"
+                            value={endDate}
+                            onChange={e => setEndDate(e.target.value)}
+                            style={{
+                              background: 'var(--bg-input, rgba(0,0,0,0.04))',
+                              border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
+                              color: 'var(--text-heading, #0f172a)',
+                              fontSize: '0.82rem',
+                              height: '42px'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detection Type Filter */}
+                    <div style={{ marginBottom: '1.35rem' }}>
+                      <label
+                        className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-2"
+                        style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
+                      >
+                        <i className="bi bi-funnel text-primary fs-6"></i> Detection Event Scope
+                      </label>
+
+                      <div className="d-flex flex-column gap-2">
+                        {[
+                          { id: 'all', label: 'All Detections (Known + Unknown)', icon: 'bi-people-fill', color: '#2563eb', activeBg: 'rgba(13, 110, 253, 0.08)' },
+                          { id: 'known', label: 'Known Personnel Only', icon: 'bi-person-check-fill', color: '#10b981', activeBg: 'rgba(16, 185, 129, 0.08)' },
+                          { id: 'unknown', label: 'Unknown Intrusions Only', icon: 'bi-person-exclamation', color: '#ef4444', activeBg: 'rgba(239, 68, 68, 0.08)' }
+                        ].map((filterOpt) => {
+                          const isSelected = exportScope === filterOpt.id;
+                          return (
+                            <div
+                              key={filterOpt.id}
+                              onClick={() => setExportScope(filterOpt.id)}
+                              className="p-2.5 px-3 rounded-4 d-flex align-items-center justify-content-between transition-all"
+                              style={{
+                                background: isSelected ? filterOpt.activeBg : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
+                                border: isSelected ? `1.5px solid ${filterOpt.color}` : '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
+                                cursor: 'pointer',
+                                boxShadow: isSelected ? `0 4px 14px ${filterOpt.color}15` : 'none'
+                              }}
+                            >
+                              <div className="d-flex align-items-center gap-2.5">
+                                <span
+                                  className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                  style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: `${filterOpt.color}15`,
+                                    color: filterOpt.color
+                                  }}
+                                >
+                                  <i className={`bi ${filterOpt.icon} fs-6`}></i>
+                                </span>
+                                <span className="fw-bold text-dynamic" style={{ fontSize: '0.84rem' }}>{filterOpt.label}</span>
+                              </div>
+                              {isSelected ? (
+                                <span
+                                  className="badge rounded-circle p-1 d-flex align-items-center justify-content-center text-white shadow-sm"
+                                  style={{ width: '20px', height: '20px', background: filterOpt.color }}
+                                >
+                                  <i className="bi bi-check-lg" style={{ fontSize: '0.75rem' }}></i>
+                                </span>
+                              ) : (
+                                <span
+                                  className="rounded-circle"
+                                  style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    border: '2px solid var(--border-color, rgba(0, 0, 0, 0.2))'
+                                  }}
+                                ></span>
+                              )}
                             </div>
-                            {isSelected ? (
-                              <span
-                                className="badge rounded-circle p-1 d-flex align-items-center justify-content-center text-white shadow-sm"
-                                style={{ width: '20px', height: '20px', background: filterOpt.color }}
-                              >
-                                <i className="bi bi-check2" style={{ fontSize: '0.75rem' }}></i>
-                              </span>
-                            ) : (
-                              <span className="rounded-circle border border-secondary border-opacity-40" style={{ width: '18px', height: '18px' }}></span>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Master Green Download CTA Button */}
+                    <div style={{ marginTop: '1.25rem', marginBottom: '0' }}>
+                      <button
+                        type="submit"
+                        className="btn w-100 rounded-pill fw-bold py-2.5 px-3 text-white d-flex align-items-center justify-content-center gap-2 transition-all shadow-lg hover-glow"
+                        style={{
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          boxShadow: '0 8px 25px -4px rgba(16, 185, 129, 0.45)',
+                          fontSize: '0.88rem',
+                          height: '46px'
+                        }}
+                      >
+                        <i className="bi bi-file-earmark-arrow-down-fill fs-5 flex-shrink-0"></i>
+                        <span className="fw-bold text-nowrap">Generate &amp; Download Excel Report</span>
+                      </button>
                     </div>
                   </div>
-
-                  {/* Master Green Download CTA Button */}
-                  <div style={{ marginTop: '1.25rem', marginBottom: '0' }}>
-                    <button
-                      type="submit"
-                      className="btn w-100 rounded-pill fw-bold py-2.5 px-3 text-white d-flex align-items-center justify-content-center gap-2 transition-all shadow-lg hover-glow"
-                      style={{
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        boxShadow: '0 8px 25px -4px rgba(16, 185, 129, 0.45)',
-                        fontSize: '0.85rem'
-                      }}
-                    >
-                      <i className="bi bi-file-earmark-arrow-down-fill fs-5 flex-shrink-0"></i>
-                      <span className="fw-bold text-nowrap">Generate &amp; Download Excel Report</span>
-                    </button>
-                  </div>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
           </div>
-        </div >
         </>,
-    document.body
-  )
-}
+        document.body
+      )}
+
+      {/* Snapshot Preview Modal */}
+      {selectedImage && createPortal(
+        <div
+          className="modal-backdrop-custom d-flex align-items-center justify-content-center"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0, 0, 0, 0.75)',
+            zIndex: 9999,
+            padding: '20px'
+          }}
+          onClick={() => setSelectedImage(null)}
+        >
+          <div
+            className="position-relative bg-dark rounded-4 overflow-hidden shadow-2xl border border-secondary border-opacity-50 animate-scale-up"
+            style={{ maxWidth: '600px', width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-3 d-flex align-items-center justify-content-between border-bottom border-secondary border-opacity-25 bg-dark">
+              <span className="fw-bold text-white fs-6 d-flex align-items-center gap-2">
+                <i className="bi bi-camera-fill text-primary"></i> Detection Snapshot
+              </span>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary rounded-circle border-0 text-white d-flex align-items-center justify-content-center"
+                onClick={() => setSelectedImage(null)}
+                style={{ width: '32px', height: '32px' }}
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div className="p-3 text-center bg-black d-flex align-items-center justify-content-center" style={{ minHeight: '260px' }}>
+              <img
+                src={selectedImage}
+                alt="Detection Capture"
+                className="img-fluid rounded-3 shadow"
+                style={{ maxHeight: '70vh', objectFit: 'contain' }}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

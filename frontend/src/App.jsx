@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import ParticleBackground from './components/ParticleBackground';
 import UnknownCapturesModal from './components/UnknownCapturesModal';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
@@ -137,7 +136,7 @@ export default function App() {
         /* ── Android Push Notification Styling (Matches base.html) ── */
         .android-notification-container {
           position: fixed;
-          top: 75px;
+          top: calc(75px + env(safe-area-inset-top, 0px));
           left: 50%;
           transform: translateX(-50%);
           z-index: 10800;
@@ -149,16 +148,14 @@ export default function App() {
         .android-notification-card {
           pointer-events: auto;
           background: var(--bg-surface-solid, #ffffff) !important;
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid var(--border-color, rgba(0,0,0,0.12)) !important;
-          border-radius: 22px !important;
+          border: 1px solid var(--border-color, #e2e8f0) !important;
+          border-radius: 16px !important;
           padding: 14px 18px !important;
           padding-right: 48px !important;
           display: flex !important;
           align-items: center !important;
           gap: 14px;
-          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25) !important;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
           position: relative;
           animation: androidNotificationSlide 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28);
         }
@@ -215,7 +212,7 @@ export default function App() {
           font-size: 0.72rem;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: #0d6efd;
+          color: #2563eb;
         }
 
         .android-notif-msg {
@@ -283,8 +280,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Global 60 FPS Fluid Moving Mesh Gradient Background */}
-      <ParticleBackground />
+      {/* Background is now solid per the new theme */}
 
       <Navbar
         activePage={activePage}

@@ -262,3 +262,13 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
+
+# ==============================================================================
+# SmartSight AI Recognition Engine Configuration (YOLOv8 Detection + ArcFace Recognition)
+# ==============================================================================
+RECOGNITION_ENGINE = 'arcface'                  # Detection: YOLOv8-Face, Recognition: ArcFace
+FACE_DETECTION_MODEL = str(BASE_DIR / 'app' / 'models' / 'yolo26n-face.onnx')
+ARCFACE_SIMILARITY_THRESHOLD = 0.50             # Gallery match threshold (0.0–1.0)
+ARCFACE_LOGIN_THRESHOLD = 0.60                  # Stricter threshold for face login
+ARCFACE_DETECTION_CONFIDENCE = 0.45             # YOLOv8-Face detection confidence threshold
+ARCFACE_MAX_FACES_PER_FRAME = 10                # Max faces to process per frame

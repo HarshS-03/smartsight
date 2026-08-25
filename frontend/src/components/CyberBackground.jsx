@@ -115,9 +115,11 @@ export default function CyberBackground() {
       mouse.x += (mouse.targetX - mouse.x) * 0.06;
       mouse.y += (mouse.targetY - mouse.y) * 0.06;
 
-      // 2. Draw Floating Aurora Orbs (Blend mode screen / lighter)
+      const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+      // 2. Draw Floating Aurora Orbs (Blend mode screen / lighter in dark mode, source-over in light)
       ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalCompositeOperation = isDark ? 'lighter' : 'source-over';
 
       for (let i = 0; i < blobs.length; i++) {
         const b = blobs[i];
@@ -155,8 +157,8 @@ export default function CyberBackground() {
           mouse.y,
           mouse.radius
         );
-        spotlightGrad.addColorStop(0, 'rgba(56, 189, 248, 0.18)'); // Soft sky blue highlight
-        spotlightGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.06)');
+        spotlightGrad.addColorStop(0, isDark ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.12)');
+        spotlightGrad.addColorStop(0.5, isDark ? 'rgba(14, 165, 233, 0.06)' : 'rgba(37, 99, 235, 0.04)');
         spotlightGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
 
         ctx.fillStyle = spotlightGrad;
@@ -169,7 +171,7 @@ export default function CyberBackground() {
       // 4. Subtle Cyber Tech Grid Pattern
       const gridSize = 64;
       ctx.save();
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.04)';
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.08)';
       ctx.lineWidth = 1;
 
       // Vertical lines

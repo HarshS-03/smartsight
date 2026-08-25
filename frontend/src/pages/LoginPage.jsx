@@ -208,8 +208,6 @@ export default function LoginPage({ setActivePage, setUser }) {
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
               boxShadow: 'var(--shadow-lg)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)'
             }}>
 
               <div className="position-absolute top-0 start-50 translate-middle"
@@ -281,7 +279,7 @@ export default function LoginPage({ setActivePage, setUser }) {
       {/* Biometric Face Scanner Modal */}
       {showFaceModal && (
         <>
-          <div className="modal-backdrop fade show glass-backdrop" style={{ opacity: 0.7, backdropFilter: 'blur(8px)' }}></div>
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content overflow-hidden" style={{
@@ -289,8 +287,6 @@ export default function LoginPage({ setActivePage, setUser }) {
                 border: `1px solid ${scanState === 'success' ? 'rgba(25, 135, 84, 0.8)' : 'rgba(13, 110, 253, 0.25)'}`,
                 borderRadius: '24px',
                 boxShadow: scanState === 'success' ? '0 0 50px rgba(25, 135, 84, 0.4)' : '0 0 40px rgba(13, 110, 253, 0.15)',
-                backdropFilter: 'blur(25px)',
-                WebkitBackdropFilter: 'blur(25px)',
                 transition: 'border-color 0.5s ease, box-shadow 0.5s ease'
               }}>
 
@@ -347,7 +343,7 @@ export default function LoginPage({ setActivePage, setUser }) {
                       </div>
 
                       <div className="hud-laser position-absolute w-100 left-0 bg-primary opacity-75"
-                        style={{ height: '3px', boxShadow: '0 0 12px #0d6efd', animation: 'scanLine 3s ease-in-out infinite' }}>
+                        style={{ height: '3px', boxShadow: '0 0 12px #2563eb', animation: 'scanLine 3s ease-in-out infinite' }}>
                       </div>
 
                       <div className="d-flex justify-content-between">

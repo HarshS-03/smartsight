@@ -4,7 +4,7 @@ import API from '../api/axios';
 export default function DetectionPage() {
   const [cameras, setCameras] = useState([]); // Loaded from API
   const [viewMode, setViewMode] = useState('single');
-  const [modelType, setModelType] = useState('yolov8n_onnx');
+  const [modelType, setModelType] = useState('yolo26n_face_onnx');
   const [cameraType, setCameraType] = useState('0');
   const [cameraUrl, setCameraUrl] = useState('');
 
@@ -12,7 +12,7 @@ export default function DetectionPage() {
   const [feedUrl, setFeedUrl] = useState('');
   const [feedError, setFeedError] = useState(false);
   const [isDetectionsMinimized, setIsDetectionsMinimized] = useState(false);
-  const [stats, setStats] = useState({ fps: 0.0, faces: 0, names: [] });
+  const [stats, setStats] = useState({ fps: 0.0, faces: 0, names: [], resolution: '' });
 
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [cameraDropdownOpen, setCameraDropdownOpen] = useState(false);
@@ -87,7 +87,9 @@ export default function DetectionPage() {
             fps: data.fps || 0,
             faces: data.faces || data.persons || 0,
             names: data.names || [],
+            resolution: data.resolution || '640x480',
           });
+
 
           // Allow 10 seconds grace period for camera & model initialization
           const isWarmingUp = (Date.now() - lastStartClickRef.current) < 10000;
@@ -161,22 +163,19 @@ export default function DetectionPage() {
   return (
     <>
       {/* ── Page Hero ────────────────────────────────────────── */}
-      <section className="detection-hero">
-        <div className="detection-hero-bg-wrapper">
-          <div className="detection-hero-bg"></div>
-          <div className="detection-orb detection-orb-1"></div>
+      <section className="page-hero text-center">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
-
-        <div className="container position-relative" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content">
           <div className="row justify-content-center text-center mb-2">
-            <div className="col-md-8">
-              <h1 className="detect-title mb-2">
+            <div className="col-lg-8 col-md-10 mx-auto">
+              <h1 className="detect-title mb-2 text-center">
                 Live <span className="accent">Detection</span>
               </h1>
-              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: '500px', margin: '0 auto' }}
-                data-reveal="true" data-reveal-delay="120">
-                AI-powered YOLOv8 face detection on live streams. Choose single feed or monitor multiple streams
-                simultaneously.
+              <p className="page-hero-sub mx-auto" data-reveal="true" data-reveal-delay="120">
+                AI-powered YOLOv8 face detection on live streams. Choose single feed or monitor multiple streams simultaneously.
               </p>
             </div>
           </div>
@@ -212,6 +211,10 @@ export default function DetectionPage() {
                       <div className="dropdown-selected d-flex align-items-center justify-content-between px-3"
                         style={{ minHeight: '48px' }}>
                         <span className="text-truncate me-2">
+                          {modelType === 'yolo26n_face_onnx' && 'YOLOv26 Face (ONNX)'}
+                          {modelType === 'yolo26n_face_pt' && 'YOLOv26 Face (PyTorch)'}
+                          {modelType === 'yolov8n_face_onnx' && 'YOLOv8 Face (ONNX)'}
+                          {modelType === 'yolov8n_face_pt' && 'YOLOv8 Face (PyTorch)'}
                           {modelType === 'yolov8n_onnx' && 'YOLOv8 Nano (ONNX)'}
                           {modelType === 'yolov8n_pt' && 'YOLOv8 Nano (PyTorch)'}
                           {modelType === 'yolov8s_onnx' && 'YOLOv8 Small (ONNX)'}
@@ -220,9 +223,25 @@ export default function DetectionPage() {
                         <i className="bi bi-chevron-down small opacity-50 flex-shrink-0"></i>
                       </div>
                       <div className={`dropdown-options ${modelDropdownOpen ? 'open' : ''}`}>
+                        <div className={`dropdown-option ${modelType === 'yolo26n_face_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolo26n_face_onnx')}>
+                          <div className="fw-semibold">YOLOv26 Face (ONNX)</div>
+                          <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Next-Gen Precision Engine • 30+ FPS (Recommended)</div>
+                        </div>
+                        <div className={`dropdown-option ${modelType === 'yolo26n_face_pt' ? 'active' : ''}`} onClick={() => setModelType('yolo26n_face_pt')}>
+                          <div className="fw-semibold">YOLOv26 Face (PyTorch)</div>
+                          <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Next-Gen Max Accuracy • PyTorch</div>
+                        </div>
+                        <div className={`dropdown-option ${modelType === 'yolov8n_face_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_face_onnx')}>
+                          <div className="fw-semibold">YOLOv8 Face (ONNX)</div>
+                          <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Legacy Precision Engine • High FPS</div>
+                        </div>
+                        <div className={`dropdown-option ${modelType === 'yolov8n_face_pt' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_face_pt')}>
+                          <div className="fw-semibold">YOLOv8 Face (PyTorch)</div>
+                          <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Legacy Max Accuracy • PyTorch</div>
+                        </div>
                         <div className={`dropdown-option ${modelType === 'yolov8n_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_onnx')}>
                           <div className="fw-semibold">YOLOv8 Nano (ONNX)</div>
-                          <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Ultra Fast • High FPS (Recommended)</div>
+                          <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Ultra Fast • High FPS</div>
                         </div>
                         <div className={`dropdown-option ${modelType === 'yolov8n_pt' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_pt')}>
                           <div className="fw-semibold">YOLOv8 Nano (PyTorch)</div>
@@ -243,6 +262,10 @@ export default function DetectionPage() {
                     style={{ background: 'rgba(13, 110, 253, 0.08)', border: '1px solid rgba(13, 110, 253, 0.25)', paddingLeft: '20px', paddingRight: '20px', fontSize: '0.78rem' }}>
                     <i className="bi bi-info-circle-fill text-primary flex-shrink-0"></i>
                     <div className="flex-grow-1 min-w-0" style={{ color: 'var(--text-heading)' }}>
+                      {modelType === 'yolo26n_face_onnx' && <span><strong className="text-primary">v26 Face ONNX:</strong> Direct facial detection & state-of-the-art recognition</span>}
+                      {modelType === 'yolo26n_face_pt' && <span><strong className="text-primary">v26 Face PyTorch:</strong> Maximum precision native detection</span>}
+                      {modelType === 'yolov8n_face_onnx' && <span><strong className="text-primary">v8 Face ONNX:</strong> Direct facial detection & high-accuracy ArcFace recognition</span>}
+                      {modelType === 'yolov8n_face_pt' && <span><strong className="text-primary">v8 Face PyTorch:</strong> Direct facial detection native</span>}
                       {modelType === 'yolov8n_onnx' && <span><strong className="text-primary">Nano ONNX:</strong> Ultra-fast & high FPS</span>}
                       {modelType === 'yolov8n_pt' && <span><strong className="text-primary">Nano PyTorch:</strong> Lightweight native model</span>}
                       {modelType === 'yolov8s_onnx' && <span><strong className="text-primary">Small ONNX:</strong> Higher precision engine</span>}
@@ -383,7 +406,16 @@ export default function DetectionPage() {
                               {cameraType === 'url' && 'IP Camera (URL)'}
                               {cameras.find(c => c.id === cameraType)?.name}
                             </span>
+                            <div className="d-flex align-items-center gap-2 ms-auto me-2">
+                              {isFeedRunning && (stats.resolution || '640x480') && (
+                                <span className="badge rounded-pill px-2.5 py-1 text-primary border border-primary border-opacity-25 font-mono fw-bold"
+                                  style={{ background: 'rgba(13, 110, 253, 0.12)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                                  <i className="bi bi-aspect-ratio me-1"></i>{stats.resolution || '640x480'}
+                                </span>
+                              )}
+                            </div>
                             <i className="bi bi-chevron-down small opacity-50 flex-shrink-0"></i>
+
                           </div>
                           <div className={`dropdown-options ${cameraDropdownOpen ? 'open' : ''}`}>
                             {cameras.map((camera, i) => (
@@ -477,8 +509,8 @@ export default function DetectionPage() {
                   </div>
                 </div>
                 <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                  <span className="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center" style={{ fontSize: '0.72rem', background: stats.names.length > 0 ? 'rgba(34, 197, 94, 0.12)' : 'rgba(13, 110, 253, 0.08)', color: stats.names.length > 0 ? '#22c55e' : '#0d6efd', border: `1px solid ${stats.names.length > 0 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(13, 110, 253, 0.2)'}` }}>
-                    <span className="rounded-circle flex-shrink-0" style={{ width: '6px', height: '6px', marginRight: '7px', background: stats.names.length > 0 ? '#22c55e' : '#0d6efd', boxShadow: stats.names.length > 0 ? '0 0 6px rgba(34, 197, 94, 0.8)' : '0 0 6px rgba(13, 110, 253, 0.8)' }}></span>
+                  <span className="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center" style={{ fontSize: '0.72rem', background: stats.names.length > 0 ? 'rgba(34, 197, 94, 0.12)' : 'rgba(13, 110, 253, 0.08)', color: stats.names.length > 0 ? '#22c55e' : '#2563eb', border: `1px solid ${stats.names.length > 0 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(13, 110, 253, 0.2)'}` }}>
+                    <span className="rounded-circle flex-shrink-0" style={{ width: '6px', height: '6px', marginRight: '7px', background: stats.names.length > 0 ? '#22c55e' : '#2563eb', boxShadow: stats.names.length > 0 ? '0 0 6px rgba(34, 197, 94, 0.8)' : '0 0 6px rgba(13, 110, 253, 0.8)' }}></span>
                     <span>{stats.names.length} Active</span>
                   </span>
                   <button type="button" className="btn btn-sm text-secondary p-1 border-0 rounded-circle flex-shrink-0" onClick={() => setIsDetectionsMinimized(!isDetectionsMinimized)} style={{ background: 'var(--bg-input)', lineHeight: 1 }}>

@@ -235,6 +235,7 @@ def check_alert_timeouts():
                 notif = Notification.objects.filter(telegram_message_id=str(message_id)).first()
             if notif:
                 notif.status = 'EXPIRED'
+                notif.is_read = True
                 notif.processed_at = timezone.now()
                 notif.save()
             else:
@@ -243,6 +244,7 @@ def check_alert_timeouts():
                     message=f"No response received within timeout for {camera_name}.",
                     image_url=f"/media/{relative_image_path}" if relative_image_path else None,
                     status='EXPIRED',
+                    is_read=True,
                     processed_at=timezone.now()
                 )
         except Exception as e:
@@ -362,7 +364,13 @@ def send_alerts(*args, **kwargs):
     if not telegram_bot_api or not telegram_chat_id:
         print(f"[Alert System Warning] Telegram credentials missing! bot_api={telegram_bot_api}, chat_id={telegram_chat_id}")
 
+    known_bystanders = kwargs.get('known_bystanders', [])
+
     if not is_known:
+        # Guarantee clean intruder name (never comma-separated list of known names)
+        if 'unknown' in str(person_name).lower():
+            person_name = 'Unknown'
+
         current_time = time.time()
         cooldown_active = False
         if person_name in _unknown_cooldowns:
@@ -403,11 +411,16 @@ def send_alerts(*args, **kwargs):
         else:
             alert_id = uuid.uuid4().hex[:12]
             status_icon = "\U0001f6a8"
+            
+            bystanders_line = f"\n👥 <b>Known Present:</b> {', '.join(known_bystanders)}" if known_bystanders else ""
+            bystanders_msg = f" alongside {', '.join(known_bystanders)}" if known_bystanders else ""
+
             alert_details = (
                 f"{status_icon} <b>Security Alert - Smart Sight</b>\n"
                 f"\n"
                 f"\U0001f4f9 <b>Camera:</b> {camera_name}\n"
-                f"\U0001f464 <b>Person:</b> {person_name}\n"
+                f"\U0001f464 <b>Intruder:</b> Unknown Person\n"
+                f"{bystanders_line}"
                 f"\U0001f465 <b>Count:</b> {person_count} person(s) detected\n"
                 f"\U0001f3af <b>Confidence:</b> {confidence_pct}%\n"
                 f"\U0001f552 <b>Time:</b> {timestamp_str}\n"
@@ -444,8 +457,8 @@ def send_alerts(*args, **kwargs):
             # Immediately log PENDING Notification in DB for Web/Mobile Realtime Audit Log
             try:
                 notif = Notification.objects.create(
-                    title=f"Intruder Alert ({person_name})",
-                    message=f"Unrecognized person detected on {camera_name} (Confidence: {confidence_pct}%).",
+                    title="Intruder Alert (Unknown)",
+                    message=f"Unrecognized person detected{bystanders_msg} on {camera_name} (Confidence: {confidence_pct}%).",
                     image_url=f"/media/{relative_image_path}" if relative_image_path else None,
                     status='PENDING'
                 )
@@ -521,7 +534,26 @@ def send_alerts(*args, **kwargs):
                                 f.write(clean_frame_bytes)
                                 
                             relative_path = f"dataset/{person.name}/{filename}"
-                            PersonImage.objects.create(person=person, image=relative_path)
+                            pi_obj = PersonImage.objects.create(person=person, image=relative_path)
                             print(f"[Self-Learning Engine] Automatically saved training sample for {person.name}: {relative_path}")
+
+                            # Auto-compute ArcFace embedding for the self-learned image
+                            try:
+                                from django.conf import settings as django_settings
+                                if getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface':
+                                    from app.utils.embedding_engine import compute_embedding, get_gallery
+                                    from app.models import PersonEmbedding as PE
+                                    emb_result = compute_embedding(file_path)
+                                    if emb_result is not None:
+                                        emb, det_conf, _ = emb_result
+                                        PE.objects.create(
+                                            person=person,
+                                            source_image=pi_obj,
+                                            embedding=emb.tolist(),
+                                        )
+                                        get_gallery().add_embedding(person.id, person.name, emb)
+                                        print(f"[Self-Learning Engine] Auto-computed ArcFace embedding for {person.name}")
+                            except Exception as emb_err:
+                                print(f"[Self-Learning Engine] Auto-embedding error: {emb_err}")
         except Exception as e:
             print(f"[Self-Learning Engine] Error saving auto-training image: {e}")

@@ -42,26 +42,21 @@ export default function HomePage({ setActivePage }) {
       {/* ════════════════════════════════════════════════════════ */}
       {/* HERO SECTION */}
       {/* ════════════════════════════════════════════════════════ */}
-      <section className="hero-section">
-        <div className="hero-bg-wrapper">
-
-          <div className="hero-bg"></div>
-          <div className="orb orb-1"></div>
-          <div className="orb orb-2"></div>
-          <div className="orb orb-3"></div>
+      <section className="page-hero">
+        <div className="page-hero-bg-wrapper">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
         </div>
-
-        <div className="container hero-content">
+        <div className="container page-hero-content">
           <div className="row align-items-center g-5">
             {/* Center: Copy */}
             <div className="col-lg-10 mx-auto text-center">
-              <h1 className="hero-title mb-4" data-reveal="true" data-reveal-delay="0">
+              <h1 className="hero-title mb-3 mb-md-4" data-reveal="true" data-reveal-delay="0">
                 Smart <span className="accent">Sight</span>
               </h1>
 
-              <p className="hero-sub mb-5 mx-auto" style={{ maxWidth: '650px' }} data-reveal="true" data-reveal-delay="100">
-                Harnessing YOLO object detection and state-of-the-art Computer Vision to automate tracking, detect faces, and
-                ensure smarter monitoring in real-time.
+              <p className="hero-sub mb-4 mb-md-5 mx-auto" data-reveal="true" data-reveal-delay="100">
+                Harnessing YOLO object detection and <span className="text-nowrap">state-of-the-art</span> Computer Vision to automate tracking, detect faces, and ensure smarter monitoring in real-time.
               </p>
 
               <div className="hero-cta-group mb-5 justify-content-center" data-reveal="true" data-reveal-delay="200">
