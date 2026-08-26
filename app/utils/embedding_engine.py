@@ -57,7 +57,29 @@ def _get_face_detector(model_name=None):
                 except Exception:
                     pass
                 from ultralytics import YOLO
-                _face_detector_models[cache_key] = YOLO(model_path, task='detect', verbose=False)
+                try:
+                    _face_detector_models[cache_key] = YOLO(model_path, task='detect', verbose=False)
+                except Exception as load_err:
+                    logger.warning(f"[EmbeddingEngine] Failed to load detector {model_path}: {load_err}. Falling back to stable models...")
+                    fallback_paths = [
+                        model_path.replace('.onnx', '.pt'),
+                        'app/models/yolo26n-face.pt',
+                        'app/models/yolov8n-face.onnx',
+                        'app/models/yolov8n-face.pt',
+                        'app/models/nano/weights/best.onnx',
+                    ]
+                    loaded = False
+                    for fb in fallback_paths:
+                        if os.path.exists(fb):
+                            try:
+                                _face_detector_models[cache_key] = YOLO(fb, task='detect', verbose=False)
+                                logger.info(f"[EmbeddingEngine] Successfully loaded fallback detector: {fb}")
+                                loaded = True
+                                break
+                            except Exception:
+                                continue
+                    if not loaded:
+                        raise load_err
     return _face_detector_models[cache_key]
 
 

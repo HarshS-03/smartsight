@@ -2,13 +2,16 @@
    SMART SIGHT — Modern Solid-Surface Design System
    ══════════════════════════════════════════════════════ */
 
+/* ── Google Fonts Inter Import (Online Only) ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
 :root,
 [data-bs-theme="dark"] {
-  --bs-body-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-  --font-brand: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-interface: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bs-body-font-family: 'Inter', sans-serif !important;
+  --font-brand: 'Inter', sans-serif;
+  --font-heading: 'Inter', sans-serif;
+  --font-interface: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
   --font-telemetry: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -803,6 +806,8 @@ p, .lead {
   justify-content: center;
   gap: 4px;
   font-weight: 600 !important;
+  height: 100% !important;
+  min-height: 80px !important;
 }
 
 [data-bs-theme="dark"] .view-toggle-card-btn {

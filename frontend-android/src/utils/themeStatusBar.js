@@ -40,8 +40,6 @@ export async function syncThemeAndStatusBar(theme) {
       // Style.Dark: Light text for dark backgrounds
       // Style.Light: Dark text for light backgrounds
       await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
-      await StatusBar.setBackgroundColor({ color: bgColor }).catch(() => {});
-      await StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
     }
   } catch (e) {
     // Non-native / Web environment - silently ignore

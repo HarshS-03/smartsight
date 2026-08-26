@@ -1,0 +1,17 @@
+# Next / Pending Commit:
+fix(typography): separate web and android font strategies and force strict Inter sans-serif fallback
+
+# Commit Messages History:
+feat(typography): apply Google Fonts Inter via dual CDN import and local discrete woff2 + variable TTF suite
+feat(android): download official Google Fonts Inter variable TTFs and configure global @font-face typography
+fix(camera): resolve MSMF grabFrame error by disabling MSMF priority, enforcing DSHOW backend, and adding backoff polling
+fix(camera): optimize ffmpeg network timeout and auto-resolve ip webcam stream urls
+fix(ai): repair corrupted yolo26n-face.onnx model and add automated fallback detector loader
+docs: add comprehensive project documentation and commits tracker
+fix(android): resolve status bar overlap, hide mobile scrollbars, and add dynamic server config modal
+fix(branding): update high-resolution app icons, round icons, and favicons for web and android
+fix(android): resolve viewport height bugs and improve layout responsiveness
+feat(ai,ui): integrate YOLO26/YOLOv8 face detection, ArcFace embedding engine, and glassmorphic reports
+fix(backend): correct datetime import syntax and resolve log query exceptions
+merge: synchronize remote changes from main branch
+feat(core): initial commit - core platform architecture, django backend, and frontend

@@ -36,18 +36,49 @@ def get_yolo_model(model_name):
         if not os.path.exists(model_path):
             model_path = 'app/models/yolo26n-face.onnx' if os.path.exists('app/models/yolo26n-face.onnx') else 'app/models/nano/weights/best.onnx'
             
-        if model_path.endswith('.onnx'):
-            YOLO_MODELS[model_name] = YOLO(model_path, task='detect')
-        else:
-            YOLO_MODELS[model_name] = YOLO(model_path)
+        try:
+            if model_path.endswith('.onnx'):
+                YOLO_MODELS[model_name] = YOLO(model_path, task='detect')
+            else:
+                YOLO_MODELS[model_name] = YOLO(model_path)
+        except Exception as load_err:
+            fallback = model_path.replace('.onnx', '.pt') if model_path.endswith('.onnx') else 'app/models/yolov8n-face.pt'
+            if os.path.exists(fallback):
+                YOLO_MODELS[model_name] = YOLO(fallback)
+            else:
+                raise load_err
     return YOLO_MODELS[model_name]
+
+
+# Set FFmpeg network timeout options globally (2 seconds timeout) to prevent blocking on offline streams
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "timeout;2000000|rtsp_transport;tcp"
+# Disable MSMF priority on Windows to prefer robust DirectShow backend
+os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
+try:
+    cv.utils.logging.setLogLevel(cv.utils.logging.LOG_LEVEL_ERROR)
+except Exception:
+    pass
 
 
 def _fix_camera_url(url):
     if not url:
         return url
-    if url.startswith("rtsp://") or url.startswith("http://") or url.startswith("https://"):
-        return url
+    url = str(url).strip()
+    if url.isdigit():
+        return int(url)
+    if not (url.startswith("rtsp://") or url.startswith("http://") or url.startswith("https://")):
+        url = f"http://{url}"
+
+    # Auto-format IP Webcam endpoints (port 8080/4747 often stream on /video)
+    try:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme in ('http', 'https') and (not parsed.path or parsed.path == '/'):
+            if parsed.port in (8080, 4747):
+                url = f"{url.rstrip('/')}/video"
+    except Exception:
+        pass
+
     return url
 
 
@@ -83,13 +114,12 @@ class ThreadedCamera:
             if not self.cap.isOpened():
                 if self.cap:
                     self.cap.release()
-                self.cap = cv.VideoCapture(src)
+                self.cap = cv.VideoCapture(src, cv.CAP_MSMF)
         else:
             self.cap = cv.VideoCapture(src)
             
         if self.cap and self.cap.isOpened():
             try:
-                self.cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc('M', 'J', 'P', 'G'))
                 self.cap.set(cv.CAP_PROP_FRAME_WIDTH, 640)
                 self.cap.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
                 self.cap.set(cv.CAP_PROP_FPS, 30)
@@ -135,6 +165,7 @@ class ThreadedCamera:
         return self
         
     def update(self):
+        consecutive_failures = 0
         while self.started:
             if self.active_clients <= 0 and (time.time() - self.last_access > 3.0):
                 self.release()
@@ -142,6 +173,7 @@ class ThreadedCamera:
             if self.cap and self.cap.isOpened():
                 grabbed, frame = self.cap.read()
                 if grabbed and frame is not None:
+                    consecutive_failures = 0
                     with self.read_lock:
                         self.grabbed = grabbed
                         self.frame = frame
@@ -149,9 +181,15 @@ class ThreadedCamera:
                     with self.condition:
                         self.condition.notify_all()
                 else:
-                    time.sleep(0.005)
+                    consecutive_failures += 1
+                    if consecutive_failures < 5:
+                        time.sleep(0.01)
+                    elif consecutive_failures < 20:
+                        time.sleep(0.1)
+                    else:
+                        time.sleep(0.5)
             else:
-                time.sleep(0.01)
+                time.sleep(0.05)
             time.sleep(0.001)
             
     def read(self):
