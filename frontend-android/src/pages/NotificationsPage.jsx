@@ -8,29 +8,31 @@ export default function NotificationsPage({ setActivePage, user }) {
 
   if (!isLoggedIn) {
     return (
-      <div className="notifications-page py-5">
-        <div className="container">
-          <div className="row justify-content-center py-4 py-md-5">
-            <div className="col-12 col-md-8 col-lg-6">
-              <div className="glass-card p-4 p-md-5 text-center position-relative overflow-hidden shadow-lg border border-secondary border-opacity-25" style={{ borderRadius: '24px' }}>
-                <div className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 p-4 mb-4" style={{ width: '84px', height: '84px', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
-                  <i className="bi bi-shield-lock-fill text-primary" style={{ fontSize: '2.4rem' }}></i>
-                </div>
-                <h3 className="fw-bold text-dynamic mb-2">Authentication Required</h3>
-                <p className="text-secondary small mb-4 px-md-3" style={{ lineHeight: '1.6' }}>
-                  You must be logged in to access live intruder detection alerts, view notification audit feeds, and manage security actions.
-                </p>
-                <div className="d-flex justify-content-center">
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-lg rounded-pill px-4 py-2-5 fw-bold shadow d-inline-flex align-items-center gap-2 transition-all"
-                    style={{ background: '#2563eb', border: 'none' }}
-                    onClick={() => setActivePage ? setActivePage('login') : (window.location.hash = '#login')}
-                  >
-                    <i className="bi bi-box-arrow-in-right fs-5"></i>
-                    <span>Log In to View Alerts</span>
-                  </button>
-                </div>
+      <div className="notifications-page position-relative overflow-hidden container py-4 py-md-5 flex-grow-1 d-flex flex-column justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 160px)' }}>
+        <div className="page-hero-bg-wrapper" style={{ maskImage: 'none', WebkitMaskImage: 'none' }}>
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
+        </div>
+        <div className="row justify-content-center w-100 position-relative" style={{ zIndex: 1 }}>
+          <div className="col-11 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+            <div className="glass-card p-4 p-md-5 text-center position-relative overflow-hidden shadow-lg border border-secondary border-opacity-25" style={{ borderRadius: '24px' }}>
+              <div className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 p-4 mb-4" style={{ width: '84px', height: '84px', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
+                <i className="bi bi-shield-lock-fill text-primary" style={{ fontSize: '2.4rem' }}></i>
+              </div>
+              <h3 className="fw-bold text-dynamic mb-2">Authentication Required</h3>
+              <p className="text-secondary small mb-4 px-md-3" style={{ lineHeight: '1.6' }}>
+                You must be logged in to access live intruder detection alerts, view notification audit feeds, and manage security actions.
+              </p>
+              <div className="d-flex justify-content-center">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg rounded-pill px-4 py-2-5 fw-bold shadow d-inline-flex align-items-center gap-2 transition-all"
+                  style={{ background: '#2563eb', border: 'none' }}
+                  onClick={() => setActivePage ? setActivePage('login') : (window.location.hash = '#login')}
+                >
+                  <i className="bi bi-box-arrow-in-right fs-5"></i>
+                  <span>Log In to View Alerts</span>
+                </button>
               </div>
             </div>
           </div>

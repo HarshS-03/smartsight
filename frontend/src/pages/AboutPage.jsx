@@ -113,13 +113,7 @@ export default function AboutPage() {
                     <span>Intelligent Processing Core</span>
                   </div>
                   <p className="detail-text">
-                    At the heart of the system is the combination of OpenCV and YOLOv8 deep learning models.
-                    Traditional systems simply record footage, placing the burden of analysis on humans. Our
-                    system
-                    ingests live RTSP or local video streams, normalizes the frames, and runs inference
-                    pipelines
-                    in milliseconds to detect and identify faces, tracking occurrences instantly with zero frame
-                    drop.
+                    At the heart of the system is the combination of OpenCV and YOLOv8 deep learning models. Traditional systems simply record footage, placing the burden of analysis on humans. Our system ingests live RTSP or local video streams, normalizes the frames, and runs inference pipelines in milliseconds to detect and identify faces, tracking occurrences instantly with zero frame drop.
                   </p>
                 </div>
               </div>
@@ -131,12 +125,7 @@ export default function AboutPage() {
                     <span>Robust Security Framework</span>
                   </div>
                   <p className="detail-text">
-                    Security is built directly into every tier. Authorized personnel access the platform via an
-                    encrypted role-based login system. The dataset storage, detection consoles, and report
-                    aggregators
-                    remain locked behind Django middleware guards. Bulk dataset imports are protected by custom
-                    system
-                    synchronization protocols that validate file trees programmatically before accepting logs.
+                    Security is built directly into every tier. Authorized personnel access the platform via an encrypted role-based login system. The dataset storage, detection consoles, and report aggregators remain locked behind Django middleware guards. Bulk dataset imports are protected by custom system synchronization protocols that validate file trees programmatically before accepting logs.
                   </p>
                 </div>
               </div>
@@ -148,13 +137,7 @@ export default function AboutPage() {
                     <span>Dataset & Model Training</span>
                   </div>
                   <p className="detail-text">
-                    We designed a streamlined, folder-based bulk import protocol that allows administrators to
-                    upload person
-                    datasets containing multiple training images with a simple drag-and-drop mechanism. The
-                    system
-                    automatically processes these images, updates database associations, and maps them to the
-                    recognition
-                    pipeline, ensuring seamless integration of newly authorized personnel without downtime.
+                    We designed a streamlined, folder-based bulk import protocol that allows administrators to upload person datasets containing multiple training images with a simple drag-and-drop mechanism. The system automatically processes these images, updates database associations, and maps them to the recognition pipeline, ensuring seamless integration of newly authorized personnel without downtime.
                   </p>
                 </div>
               </div>
@@ -166,13 +149,7 @@ export default function AboutPage() {
                     <span>Advanced Reports & Insights</span>
                   </div>
                   <p className="detail-text">
-                    Detection events are compiled into structured, searchable database tables with entry and
-                    exit
-                    timestamps. The reports panel features a modern dashboard displaying metrics like total
-                    system
-                    detections, known vs. unknown intrusions, and daily attendance aggregations. This data can
-                    be
-                    filtered by dates or classification and exported directly to Microsoft Excel reports.
+                    Detection events are compiled into structured, searchable database tables with entry and exit timestamps. The reports panel features a modern dashboard displaying metrics like total system detections, known vs. unknown intrusions, and daily attendance aggregations. This data can be filtered by dates or classification and exported directly to Microsoft Excel reports.
                   </p>
                 </div>
               </div>
@@ -413,7 +390,7 @@ export default function AboutPage() {
                   </div>
                   <h3 className="pillar-title">Active Monitoring</h3>
                   <p className="pillar-desc">
-                    Automatically flags events and anomalies in real-time, shifting surveillance from passive recording to active intelligence.
+                    Detects and flags events in real-time, turning passive camera feeds into an active security layer.
                   </p>
                 </div>
               </div>
@@ -426,7 +403,7 @@ export default function AboutPage() {
                   </div>
                   <h3 className="pillar-title">AI at the Core</h3>
                   <p className="pillar-desc">
-                    Powered by YOLOv8 deep-learning models trained on diverse datasets for robust face and object detection accuracy.
+                    AI-driven face and object recognition delivers fast, accurate detection across all connected camera feeds.
                   </p>
                 </div>
               </div>
@@ -439,7 +416,7 @@ export default function AboutPage() {
                   </div>
                   <h3 className="pillar-title">Secure by Design</h3>
                   <p className="pillar-desc">
-                    Role-based access, encrypted sessions, and a privacy-first architecture ensure your surveillance data stays protected.
+                    Role-based access and encrypted sessions keep your surveillance data private and fully protected.
                   </p>
                 </div>
               </div>

@@ -22,9 +22,14 @@ export default function ForgotPasswordPage({ setActivePage }) {
   return (
     <>
 
-      <div className="container py-5 flex-grow-1 d-flex flex-column justify-content-center" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="row justify-content-center">
-          <div className="col-11 col-md-6 col-lg-4">
+      <div className="w-100 flex-grow-1 d-flex flex-column justify-content-center position-relative overflow-hidden py-5" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        <div className="page-hero-bg-wrapper full-page">
+          <div className="page-hero-bg"></div>
+          <div className="page-hero-orb"></div>
+        </div>
+        <div className="container position-relative" style={{ zIndex: 1 }}>
+          <div className="row justify-content-center">
+            <div className="col-11 col-md-6 col-lg-4">
             <div className="login-card p-4 p-md-5 rounded-5 position-relative overflow-hidden" style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
@@ -106,6 +111,7 @@ export default function ForgotPasswordPage({ setActivePage }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
+  </>
   );
 }

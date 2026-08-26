@@ -189,27 +189,40 @@ export default function DetectionPage() {
             <div className="video-panel">
 
               {/* Controls View Mode and Model selectors */}
-              <div className="row mb-4 align-items-center g-3">
-                <div className="col-md-6 d-flex flex-wrap gap-2">
-                  <button onClick={() => setViewMode('single')} className={`btn view-toggle-btn ${viewMode === 'single' ? 'active' : ''} rounded-pill px-4 flex-grow-1 d-flex align-items-center justify-content-center gap-2`}
-                    style={{ minHeight: '48px', fontSize: '0.9rem' }}>
-                    <i className="bi bi-camera-video"></i> Single Camera
-                  </button>
-                  <button onClick={() => setViewMode('grid')} className={`btn view-toggle-btn ${viewMode === 'grid' ? 'active' : ''} rounded-pill px-4 flex-grow-1 d-flex align-items-center justify-content-center gap-2`}
-                    style={{ minHeight: '48px', fontSize: '0.9rem' }}>
-                    <i className="bi bi-grid-3x3-gap"></i> Multi-Camera Grid
-                  </button>
+              <div className="row mb-4 g-3">
+                {/* Left: Camera View Card */}
+                <div className="col-md-5 col-lg-4">
+                  <div className="detection-control-card h-100 d-flex flex-column justify-content-between">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <i className="bi bi-camera-video text-primary"></i>
+                      <span className="fw-semibold text-heading" style={{ fontSize: '0.92rem' }}>Camera View</span>
+                    </div>
+                    <div className="d-flex gap-2 flex-grow-1">
+                      <button onClick={() => setViewMode('single')} className={`btn view-toggle-card-btn ${viewMode === 'single' ? 'active' : ''} flex-grow-1`}>
+                        <i className="bi bi-camera-video"></i>
+                        <span style={{ fontSize: '0.82rem' }}>Single Camera</span>
+                      </button>
+                      <button onClick={() => setViewMode('grid')} className={`btn view-toggle-card-btn ${viewMode === 'grid' ? 'active' : ''} flex-grow-1`}>
+                        <i className="bi bi-grid-3x3-gap"></i>
+                        <span style={{ fontSize: '0.82rem' }}>Multi-Camera Grid</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                {/* YOLO Model Column */}
-                <div className="col-md-6">
-                  <div className="d-flex gap-2">
-                    <span className="d-none d-sm-flex align-items-center px-4 rounded-pill font-mono fw-bold"
-                      style={{ background: 'rgba(255, 255, 255, 0.45)', border: '1px solid rgba(255, 255, 255, 0.7)', whiteSpace: 'nowrap', fontSize: '.85rem', color: 'var(--text-heading)', letterSpacing: '0.05em', minHeight: '48px' }}>
-                      <i className="bi bi-cpu me-2 text-primary"></i> MODEL
+
+                {/* Right: Model Selection & Info */}
+                <div className="col-md-7 col-lg-8 d-flex flex-column gap-3">
+                  {/* Model Selector Card */}
+                  <div className="detection-control-card py-2 px-3 d-flex align-items-center gap-2"
+                    style={{ position: 'relative', zIndex: modelDropdownOpen ? 100 : 2 }}>
+                    <span className="control-pill-badge-rect d-none d-sm-inline-flex align-items-center px-3 fw-bold">
+                      <span className="control-pill-icon d-inline-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px' }}>
+                        <i className="bi bi-cpu" style={{ fontSize: '0.9rem' }}></i>
+                      </span>
+                      MODEL
                     </span>
                     <div className="custom-dropdown flex-grow-1" onClick={() => { setModelDropdownOpen(!modelDropdownOpen); setCameraDropdownOpen(false); }}>
-                      <div className="dropdown-selected d-flex align-items-center justify-content-between px-3"
-                        style={{ minHeight: '48px' }}>
+                      <div className="dropdown-selected-rect">
                         <span className="text-truncate me-2">
                           {modelType === 'yolo26n_face_onnx' && 'YOLOv26 Face (ONNX)'}
                           {modelType === 'yolo26n_face_pt' && 'YOLOv26 Face (PyTorch)'}
@@ -258,10 +271,14 @@ export default function DetectionPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 py-2 rounded-pill d-flex align-items-center gap-2 w-100"
-                    style={{ background: 'rgba(13, 110, 253, 0.08)', border: '1px solid rgba(13, 110, 253, 0.25)', paddingLeft: '20px', paddingRight: '20px', fontSize: '0.78rem' }}>
-                    <i className="bi bi-info-circle-fill text-primary flex-shrink-0"></i>
-                    <div className="flex-grow-1 min-w-0" style={{ color: 'var(--text-heading)' }}>
+
+                  {/* Info Bar Card */}
+                  <div className="detection-control-card py-2 px-3 d-flex align-items-center gap-3"
+                    style={{ position: 'relative', zIndex: 1, minHeight: '66px' }}>
+                    <span className="model-info-icon-wrapper flex-shrink-0" style={{ width: '28px', height: '28px', borderRadius: '8px' }}>
+                      <i className="bi bi-info-circle-fill"></i>
+                    </span>
+                    <div className="flex-grow-1 min-w-0" style={{ color: 'var(--text-heading)', fontSize: '0.8rem' }}>
                       {modelType === 'yolo26n_face_onnx' && <span><strong className="text-primary">v26 Face ONNX:</strong> Direct facial detection & state-of-the-art recognition</span>}
                       {modelType === 'yolo26n_face_pt' && <span><strong className="text-primary">v26 Face PyTorch:</strong> Maximum precision native detection</span>}
                       {modelType === 'yolov8n_face_onnx' && <span><strong className="text-primary">v8 Face ONNX:</strong> Direct facial detection & high-accuracy ArcFace recognition</span>}
@@ -393,14 +410,15 @@ export default function DetectionPage() {
                         <span className="hud-label" style={{ margin: 0 }}>Active Camera Source</span>
                       </div>
                       <div className="d-flex gap-2">
-                        <span className="d-none d-sm-flex align-items-center px-4 rounded-pill font-mono fw-bold"
-                          style={{ background: 'rgba(255, 255, 255, 0.45)', border: '1px solid rgba(255, 255, 255, 0.7)', whiteSpace: 'nowrap', fontSize: '.85rem', color: 'var(--text-heading)', letterSpacing: '0.05em' }}>
-                          <i className="bi bi-camera me-2 text-primary"></i> SOURCE
+                        <span className="control-pill-badge-rect d-none d-sm-inline-flex align-items-center px-3 fw-bold">
+                          <span className="control-pill-icon d-inline-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px' }}>
+                            <i className="bi bi-camera" style={{ fontSize: '0.85rem' }}></i>
+                          </span>
+                          SOURCE
                         </span>
 
                         <div className="custom-dropdown flex-grow-1" onClick={() => { setCameraDropdownOpen(!cameraDropdownOpen); setModelDropdownOpen(false); }}>
-                          <div className="dropdown-selected d-flex align-items-center justify-content-between px-3"
-                            style={{ minHeight: '48px' }}>
+                          <div className="dropdown-selected-rect">
                             <span className="text-truncate me-2">
                               {cameraType === '0' && 'Default Webcam'}
                               {cameraType === 'url' && 'IP Camera (URL)'}

@@ -3,8 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/favicon.png?v=3" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=3" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=5" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=5" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
   <script>
@@ -19,18 +20,133 @@
       } catch(e) {}
     })();
   </script>
+  <title>Smart Sight</title>
   <link rel="stylesheet" href="/fonts/fonts.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&display=swap"
-    rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-AurAmL_R.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BXb4ne3K.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0b0f19;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    .app-preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0b0f19;
+      z-index: 99999;
+      user-select: none;
+    }
+    .preloader-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 24px;
+      max-width: 320px;
+    }
+    .preloader-logo-wrap {
+      position: relative;
+      width: 108px;
+      height: 108px;
+      margin-bottom: 24px;
+    }
+    .preloader-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 26px;
+      position: relative;
+      z-index: 2;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 35px rgba(37, 99, 235, 0.35);
+      animation: preloaderPulse 2.2s ease-in-out infinite alternate;
+    }
+    .preloader-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.45) 0%, rgba(56, 189, 248, 0.15) 50%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(16px);
+      z-index: 1;
+      animation: preloaderGlowPulse 2.2s ease-in-out infinite alternate;
+    }
+    .preloader-brand {
+      color: #ffffff;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .preloader-tagline {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-bottom: 26px;
+    }
+    .preloader-spinner-bar {
+      width: 130px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .preloader-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
+      border-radius: 999px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      animation: preloaderBar 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    }
+    @keyframes preloaderPulse {
+      0% { transform: scale(0.97); }
+      100% { transform: scale(1.03); }
+    }
+    @keyframes preloaderGlowPulse {
+      0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    }
+    @keyframes preloaderBar {
+      0% { left: -40%; width: 40%; }
+      50% { left: 30%; width: 60%; }
+      100% { left: 100%; width: 40%; }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-DiNg6KBf.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D3WhGlFL.css">
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="app-preloader">
+      <div class="preloader-content">
+        <div class="preloader-logo-wrap">
+          <img src="/app_icon.png" alt="SmartSight" class="preloader-logo" />
+          <div class="preloader-glow"></div>
+        </div>
+        <div class="preloader-brand">SMARTSIGHT</div>
+        <div class="preloader-tagline">AI Vision & Surveillance</div>
+        <div class="preloader-spinner-bar">
+          <div class="preloader-progress"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

@@ -172,9 +172,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           width: 100%;
           margin: 0;
           border-radius: 0 !important;
-          background: var(--navbar-bg, #ffffff) !important;
-          border-bottom: 1px solid var(--navbar-border, #e2e8f0) !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+          background: rgba(255, 255, 255, 0.8) !important;
+          backdrop-filter: blur(16px) saturate(180%) !important;
+          -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+          border-bottom: 1px solid rgba(226, 232, 240, 0.7) !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
           z-index: 1050;
           transition: all 0.2s ease;
           padding-top: max(0.65rem, env(safe-area-inset-top, 0.65rem));
@@ -184,13 +186,15 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         }
 
         [data-bs-theme="dark"] .navbar {
-          background: var(--navbar-bg, #0b0f19) !important;
-          border-bottom-color: var(--navbar-border) !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          background: rgba(11, 15, 25, 0.8) !important;
+          backdrop-filter: blur(16px) saturate(180%) !important;
+          -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+          border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         }
 
         .navbar-brand {
-          font-family: 'Inter', sans-serif !important;
+          font-family: var(--font-brand) !important;
           font-weight: var(--fw-bold, 700);
           letter-spacing: var(--ls-heading, -0.03em);
         }

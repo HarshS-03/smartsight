@@ -382,10 +382,10 @@ export default function CamerasPage() {
                 style={{
                   width: '100%',
                   maxWidth: '340px',
-                  background: 'rgba(255, 255, 255, 0.45)',
-                  border: '1px solid rgba(255, 255, 255, 0.8)',
+                  background: 'var(--bg-surface-solid)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '28px',
-                  boxShadow: '0 20px 45px rgba(31, 38, 135, 0.08)'
+                  boxShadow: 'var(--shadow-lg)'
                 }}
               >
                 <div className="modal-body p-4 text-center d-flex flex-column align-items-center justify-content-center">
