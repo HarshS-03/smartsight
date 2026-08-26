@@ -174,15 +174,14 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           border-radius: 0 !important;
           background: rgba(255, 255, 255, 0.8) !important;
           backdrop-filter: blur(16px) saturate(180%) !important;
-          -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
           border-bottom: 1px solid rgba(226, 232, 240, 0.7) !important;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
           z-index: 1050;
           transition: all 0.2s ease;
-          padding-top: max(0.65rem, env(safe-area-inset-top, 0.65rem));
-          padding-bottom: 0.65rem;
-          padding-left: env(safe-area-inset-left, 0px);
-          padding-right: env(safe-area-inset-right, 0px);
+          padding-top: 0.65rem !important;
+          padding-bottom: 0.65rem !important;
+          padding-left: 1rem;
+          padding-right: 1rem;
         }
 
         [data-bs-theme="dark"] .navbar {

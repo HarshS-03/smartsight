@@ -21,8 +21,19 @@ const getPageFromPath = () => {
 };
 
 export default function App() {
+  const [appBooting, setAppBooting] = useState(true);
+  const [bootFadeOut, setBootFadeOut] = useState(false);
   const [activePage, setActivePageState] = useState(getPageFromPath);
   const [showCapturesModal, setShowCapturesModal] = useState(false);
+
+  React.useEffect(() => {
+    const fadeTimer = setTimeout(() => setBootFadeOut(true), 1100);
+    const removeTimer = setTimeout(() => setAppBooting(false), 1500);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
 
   const setActivePage = (newPage) => {
     setActivePageState(newPage);
@@ -131,12 +142,47 @@ export default function App() {
 
   return (
     <div className="d-flex flex-column min-vh-100 position-relative">
+      {/* Branded App Launch Loading Screen (Mode-wise) */}
+      {appBooting && (
+        <div 
+          className="app-preloader" 
+          style={{ 
+            opacity: bootFadeOut ? 0 : 1, 
+            pointerEvents: bootFadeOut ? 'none' : 'auto',
+            transition: 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)' 
+          }}
+        >
+          <div className="preloader-ambient-aura"></div>
+
+          <div className="preloader-content">
+            {/* Center Logo */}
+            <div className="preloader-logo-wrap">
+              <div className="preloader-logo-card">
+                <img src="/app_icon.png" alt="SmartSight" className="preloader-logo" />
+              </div>
+            </div>
+
+            {/* Brand Title (Solid color, no gradient) */}
+            <h1 className="preloader-brand">
+              Smart <span>Sight</span>
+            </h1>
+
+            {/* Subtitle */}
+            <div className="preloader-tagline">AI Vision & Surveillance</div>
+
+            {/* Stylish Animated Loading Progress Track */}
+            <div className="preloader-spinner-bar">
+              <div className="preloader-progress"></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* ── Android Push Notification Styling (Matches base.html) ── */
         .android-notification-container {
           position: fixed;
-          top: calc(75px + env(safe-area-inset-top, 0px));
+          top: 75px;
           left: 50%;
           transform: translateX(-50%);
           z-index: 10800;

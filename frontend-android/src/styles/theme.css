@@ -1,5 +1,3 @@
-@import url('/fonts/fonts.css');
-
 /* ══════════════════════════════════════════════════════
    SMART SIGHT — Modern Solid-Surface Design System
    ══════════════════════════════════════════════════════ */
@@ -17,11 +15,12 @@
   height: 0 !important;
 }
 
-/* ── Safe-area protection: prevent content from going behind Android status bar ── */
+/* ── Prevent elastic bounce on Android WebView ── */
 html {
-  padding-top: env(safe-area-inset-top, 0px);
+  margin: 0;
+  padding: 0;
   background: var(--bg-body, #0b0f19);
-  overscroll-behavior: none; /* Prevent elastic overscroll that can expose content behind status bar */
+  overscroll-behavior: none;
 }
 body {
   overscroll-behavior-y: none; /* Prevent pull-to-refresh / overscroll bounce */
@@ -37,11 +36,11 @@ html[data-bs-theme="light"] {
 
 :root,
 [data-bs-theme="dark"] {
-  --bs-body-font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-  --font-brand: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-interface: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bs-body-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  --font-brand: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-telemetry: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -118,6 +117,22 @@ html[data-bs-theme="light"] {
   --dropdown-bg: #0f172a;
   --dropdown-border: rgba(255, 255, 255, 0.12);
   --dropdown-hover: rgba(255, 255, 255, 0.08);
+
+  /* Preloader Variables (Dark Mode) */
+  --preloader-bg: #070a13;
+  --preloader-text: #ffffff;
+  --preloader-subtext: #94a3b8;
+  --preloader-dot-color: rgba(56, 189, 248, 0.08);
+  --preloader-aura: radial-gradient(circle 320px at 50% 45%, rgba(37, 99, 235, 0.28) 0%, rgba(56, 189, 248, 0.08) 50%, transparent 75%);
+  --preloader-hud-ring: rgba(56, 189, 248, 0.3);
+  --preloader-hud-corner: #38bdf8;
+  --preloader-badge-bg: rgba(37, 99, 235, 0.18);
+  --preloader-badge-border: rgba(56, 189, 248, 0.35);
+  --preloader-badge-text: #60a5fa;
+  --preloader-bar-bg: rgba(255, 255, 255, 0.08);
+  --preloader-bar-border: rgba(255, 255, 255, 0.12);
+  --preloader-logo-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 40px rgba(37, 99, 235, 0.45);
+  --preloader-laser: #38bdf8;
 }
 
 [data-bs-theme="light"] {
@@ -150,6 +165,22 @@ html[data-bs-theme="light"] {
   --dropdown-bg: #ffffff;
   --dropdown-border: #e2e8f0;
   --dropdown-hover: #f1f5f9;
+
+  /* Preloader Variables (Light Mode) */
+  --preloader-bg: #f8fafc;
+  --preloader-text: #0f172a;
+  --preloader-subtext: #64748b;
+  --preloader-dot-color: rgba(37, 99, 235, 0.06);
+  --preloader-aura: radial-gradient(circle 320px at 50% 45%, rgba(37, 99, 235, 0.14) 0%, rgba(56, 189, 248, 0.05) 50%, transparent 75%);
+  --preloader-hud-ring: rgba(37, 99, 235, 0.25);
+  --preloader-hud-corner: #2563eb;
+  --preloader-badge-bg: rgba(37, 99, 235, 0.08);
+  --preloader-badge-border: rgba(37, 99, 235, 0.25);
+  --preloader-badge-text: #2563eb;
+  --preloader-bar-bg: #e2e8f0;
+  --preloader-bar-border: rgba(37, 99, 235, 0.15);
+  --preloader-logo-shadow: 0 20px 40px rgba(37, 99, 235, 0.22), 0 6px 16px rgba(0, 0, 0, 0.06);
+  --preloader-laser: #2563eb;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -3117,21 +3148,21 @@ td {
   /* Firefox */
 }
 
-/* Glassmorphism Modals & Solid Red Cancel Button */
+/* Solid Surface Modals & Solid Red Cancel Button */
 .modal-content {
-  background: rgba(248, 250, 252, 0.75) !important;
-  
-  border: 1px solid var(--border-color) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), var(--shadow-xs) !important;
+  background: var(--bg-surface-solid, #ffffff) !important;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
   transition: all 0.3s ease !important;
+  color: var(--text-heading, #0f172a) !important;
 }
 
 [data-bs-theme="dark"] .modal-content {
-  background: var(--bg-surface-solid) !important;
-  
-  border: 1px solid var(--border-color) !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), var(--shadow-xs) !important;
+  background: var(--bg-surface-solid, #0f172a) !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
+  color: #ffffff !important;
 }
 
 /* Dynamic Responsive Card for Export Modal (Supports both Light and Dark mode) */
@@ -3154,16 +3185,16 @@ td {
 
 .modal-content .form-control,
 .modal-content .form-select {
-  background: var(--bg-surface-solid) !important;
-  
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: var(--bg-input, #f8fafc) !important;
+  border: 1.5px solid var(--border-color, #cbd5e1) !important;
+  color: var(--text-heading, #0f172a) !important;
 }
 
 [data-bs-theme="dark"] .modal-content .form-control,
 [data-bs-theme="dark"] .modal-content .form-select {
-  background: rgba(30, 41, 59, 0.65) !important;
-  
-  border: 1px solid var(--border-color) !important;
+  background: var(--bg-input, #1e293b) !important;
+  border: 1.5px solid var(--border-color, rgba(255, 255, 255, 0.15)) !important;
+  color: #ffffff !important;
 }
 
 .btn-cancel-red {
@@ -4172,9 +4203,9 @@ td {
 
 /* ── From ForgotPasswordPage.jsx ── */
 .login-card .custom-form-floating .form-control {
-  background-color: var(--bg-input) !important;
-  border: 1px solid var(--border-input) !important;
-  color: var(--text-heading) !important;
+  background-color: var(--bg-input, #ffffff) !important;
+  border: 1.5px solid var(--border-color, #e2e8f0) !important;
+  color: var(--text-heading, #0f172a) !important;
   border-radius: 14px;
   padding-left: 1.25rem !important;
   padding-right: 1.25rem !important;
@@ -4182,15 +4213,26 @@ td {
   height: 58px;
 }
 
+[data-bs-theme="dark"] .login-card .custom-form-floating .form-control {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
 .login-card .custom-form-floating .form-control:focus {
   border-color: #2563eb !important;
-  box-shadow: 0 0 20px rgba(13, 110, 253, 0.2) !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
+  background-color: var(--bg-input-focus, #ffffff) !important;
+}
+
+[data-bs-theme="dark"] .login-card .custom-form-floating .form-control:focus {
   background-color: var(--bg-input-focus) !important;
+  box-shadow: 0 0 20px rgba(13, 110, 253, 0.2) !important;
 }
 
 .login-card .custom-form-floating label {
   padding-left: 1.25rem;
-  color: var(--form-label) !important;
+  color: var(--text-secondary, #64748b) !important;
   transition: all 0.3s ease;
 }
 
@@ -4768,24 +4810,35 @@ td {
 
 /* ── From LoginPage.jsx ── */
 .login-card .custom-form-floating .form-control {
-  background-color: var(--bg-input) !important;
-  border: 1px solid var(--border-input) !important;
-  color: var(--text-heading) !important;
+  background-color: var(--bg-input, #ffffff) !important;
+  border: 1.5px solid var(--border-color, #e2e8f0) !important;
+  color: var(--text-heading, #0f172a) !important;
   border-radius: 12px;
   padding-left: 1.25rem !important;
   padding-right: 1.25rem !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-bs-theme="dark"] .login-card .custom-form-floating .form-control {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
 .login-card .custom-form-floating .form-control:focus {
   border-color: #2563eb !important;
-  box-shadow: 0 0 20px rgba(13, 110, 253, 0.2) !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
+  background-color: var(--bg-input-focus, #ffffff) !important;
+}
+
+[data-bs-theme="dark"] .login-card .custom-form-floating .form-control:focus {
   background-color: var(--bg-input-focus) !important;
+  box-shadow: 0 0 20px rgba(13, 110, 253, 0.2) !important;
 }
 
 .login-card .custom-form-floating label {
   padding-left: 1.25rem;
-  color: var(--form-label) !important;
+  color: var(--text-secondary, #64748b) !important;
   transition: all 0.3s ease;
 }
 
@@ -5844,5 +5897,128 @@ td {
 
 [data-bs-theme="dark"] .btn-glass-primary:hover {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.6) 0%, rgba(14, 165, 233, 0.6) 100%) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   MODERN PRELOADER (MODE-WISE)
+   ══════════════════════════════════════════════════════ */
+.app-preloader {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--preloader-bg);
+  z-index: 999999;
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 24px;
+}
+
+.preloader-ambient-aura {
+  position: absolute;
+  inset: 0;
+  background: var(--preloader-aura);
+  pointer-events: none;
+}
+
+.preloader-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+}
+
+/* 3D Camera Logo Card */
+.preloader-logo-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.preloader-logo-card {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--preloader-card-bg);
+  border: 1px solid var(--preloader-logo-border);
+  box-shadow: var(--preloader-logo-shadow);
+  animation: logoPulse 2.8s ease-in-out infinite alternate;
+  z-index: 3;
+}
+
+.preloader-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@keyframes logoPulse {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-4px) scale(1.02); }
+}
+
+/* Brand Typography (Solid, crisp colors - no gradient clipping) */
+.preloader-brand {
+  color: var(--preloader-text);
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 6px 0;
+}
+.preloader-brand span {
+  color: #2563eb;
+}
+
+/* Subtitle */
+.preloader-tagline {
+  color: var(--preloader-subtext);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+/* Loading Progress Bar */
+.preloader-spinner-bar {
+  width: 140px;
+  height: 4px;
+  background: var(--preloader-bar-bg);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.preloader-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  background: #2563eb;
+  border-radius: 999px;
+  animation: modernProgress 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes modernProgress {
+  0% { left: -40%; width: 40%; }
+  50% { left: 20%; width: 60%; }
+  100% { left: 100%; width: 40%; }
 }
 

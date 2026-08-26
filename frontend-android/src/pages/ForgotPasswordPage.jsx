@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import ServerConfigModal from '../components/ServerConfigModal';
 
 export default function ForgotPasswordPage({ setActivePage }) {
   const [username, setUsername] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [verified, setVerified] = useState(false);
   const [success, setSuccess] = useState(null);
 
@@ -35,6 +37,25 @@ export default function ForgotPasswordPage({ setActivePage }) {
               border: '1px solid var(--border-color)',
               boxShadow: 'var(--shadow-lg)',
             }}>
+
+              {/* Server IP Config Gear Button */}
+              <button 
+                type="button" 
+                className="btn position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center hover-glow" 
+                onClick={() => setShowConfigModal(true)}
+                style={{ 
+                  zIndex: 5, 
+                  background: 'var(--bg-input, rgba(128,128,128,0.1))', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '50%', 
+                  width: '40px', 
+                  height: '40px',
+                  padding: 0
+                }}
+                title="Server IP Configuration"
+              >
+                <i className="bi bi-gear-fill" style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}></i>
+              </button>
 
               <div className="position-absolute top-0 start-50 translate-middle"
                 style={{ width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.15) 0%, transparent 70%)', zIndex: -1 }}>
@@ -112,6 +133,9 @@ export default function ForgotPasswordPage({ setActivePage }) {
         </div>
       </div>
     </div>
+
+    {/* IP Config Modal */}
+    <ServerConfigModal show={showConfigModal} onClose={() => setShowConfigModal(false)} />
   </>
   );
 }
