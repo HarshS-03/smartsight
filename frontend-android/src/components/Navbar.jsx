@@ -165,31 +165,82 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
   return (
     <>
       <style>{`
-        /* ── Navbar ── */
-        .navbar {
+        /* ── Solid Status Bar Scrim (100% Opaque Native Status Bar Background) ── */
+        .status-bar-solid-scrim {
           position: sticky;
           top: 0;
+          left: 0;
+          width: 100%;
+          height: var(--status-bar-height, env(safe-area-inset-top, 0px));
+          background: #ffffff !important;
+          z-index: 1060;
+          transition: background 0.2s ease;
+        }
+
+        [data-bs-theme="dark"] .status-bar-solid-scrim {
+          background: #0b0f19 !important;
+        }
+
+        /* ── 100% Solid Opaque Navbar (No Transparency / No Blur) ── */
+        .navbar {
+          position: sticky;
+          top: var(--status-bar-height, env(safe-area-inset-top, 0px)) !important;
           width: 100%;
           margin: 0;
           border-radius: 0 !important;
-          background: rgba(255, 255, 255, 0.8) !important;
-          backdrop-filter: blur(16px) saturate(180%) !important;
-          border-bottom: 1px solid rgba(226, 232, 240, 0.7) !important;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+          background: #ffffff !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
           z-index: 1050;
-          transition: all 0.2s ease;
-          padding-top: calc(env(safe-area-inset-top, 0px) + 0.65rem) !important;
-          padding-bottom: 0.65rem !important;
-          padding-left: 1rem;
-          padding-right: 1rem;
+          transition: background 0.2s ease, border-color 0.2s ease;
+          padding-top: 0.5rem !important;
+          padding-bottom: 0.5rem !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          min-height: 52px;
         }
 
         [data-bs-theme="dark"] .navbar {
-          background: rgba(11, 15, 25, 0.8) !important;
-          backdrop-filter: blur(16px) saturate(180%) !important;
-          -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-          border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+          background: #0b0f19 !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ── Mobile Header Icon Buttons (Matching Size, Border & Alignment) ── */
+        .mobile-nav-btn,
+        .navbar-toggler.mobile-nav-btn {
+          width: 38px !important;
+          height: 38px !important;
+          min-width: 38px !important;
+          max-width: 38px !important;
+          border-radius: 12px !important;
+          border: 1px solid var(--border-color, #e2e8f0) !important;
+          background: var(--bg-surface-solid, #ffffff) !important;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+          padding: 0 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          color: var(--text-heading) !important;
+          transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
+          outline: none !important;
+        }
+
+        .mobile-nav-btn:active,
+        .navbar-toggler.mobile-nav-btn:active {
+          transform: scale(0.94) !important;
+          background: var(--bg-surface-hover, #f1f5f9) !important;
+        }
+
+        .mobile-nav-btn:focus,
+        .navbar-toggler.mobile-nav-btn:focus {
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+        }
+
+        [data-bs-theme="dark"] .mobile-nav-btn,
+        [data-bs-theme="dark"] .navbar-toggler.mobile-nav-btn {
+          background: #111827 !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
         }
 
         .navbar-brand {
@@ -414,6 +465,24 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(15, 23, 42, 0.6)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
         }
 
+        /* ── Mobile Nav Collapse (Seamless Unified Header Extension) ── */
+        @media (max-width: 991.98px) {
+          #navbarNav.collapse.show,
+          #navbarNav.collapsing {
+            background: transparent !important;
+            border: none !important;
+            border-top: 1px solid var(--border-color, #e2e8f0) !important;
+            margin-top: 0.6rem !important;
+            padding: 0.6rem 0 0.5rem 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          [data-bs-theme="dark"] #navbarNav.collapse.show,
+          [data-bs-theme="dark"] #navbarNav.collapsing {
+            border-top-color: rgba(255, 255, 255, 0.08) !important;
+          }
+        }
+
         /* ── User Profile Pill ── */
         .user-profile-pill {
           display: inline-flex;
@@ -463,6 +532,8 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           line-height: 1;
         }
       `}</style>
+      {/* 100% Solid Opaque Status Bar Scrim */}
+      <div className="status-bar-solid-scrim" />
       <nav className="navbar navbar-expand-lg sticky-top">
         <div className="container">
           <a
@@ -473,30 +544,38 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
 
-          <div className="d-flex align-items-center gap-2 ms-auto d-lg-none me-2">
+          <div className="d-flex align-items-center ms-auto d-lg-none" style={{ gap: '4px' }}>
             {/* Notification Bell Icon for Mobile Header */}
             <button
               type="button"
-              className="btn p-0 border-0 position-relative me-1 d-flex align-items-center justify-content-center"
+              className="btn p-0 border-0 position-relative d-inline-flex align-items-center justify-content-center"
               onClick={(e) => { e.preventDefault(); setActivePage('notifications'); closeMobileNav(); }}
               title="Notifications"
-              style={{ background: 'transparent', width: '42px', height: '42px', boxShadow: 'none' }}
+              style={{
+                background: 'transparent',
+                width: '34px',
+                height: '38px',
+                minWidth: '34px',
+                boxShadow: 'none',
+                color: '#2563eb',
+                padding: 0
+              }}
             >
-              <i className="bi bi-bell-fill" style={{ fontSize: '2.15rem', color: '#2563eb', lineHeight: 1 }}></i>
+              <i className="bi bi-bell-fill" style={{ fontSize: '1.55rem', color: '#2563eb', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
               {unreadCount > 0 && (
                 <span
                   className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
                   style={{
-                    top: '-2px',
-                    right: '-2px',
-                    width: '21px',
-                    height: '21px',
-                    minWidth: '21px',
+                    top: '0px',
+                    right: '-3px',
+                    width: '18px',
+                    height: '18px',
+                    minWidth: '18px',
                     padding: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.68rem',
+                    fontSize: '0.6rem',
                     fontWeight: '800',
                     lineHeight: '1',
                     boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
@@ -508,8 +587,16 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               )}
             </button>
 
-            <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-              <span className="navbar-toggler-icon"></span>
+            <button
+              className="navbar-toggler mobile-nav-btn"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navbarNav"
+              aria-controls="navbarNav"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon" style={{ width: '20px', height: '20px' }}></span>
             </button>
           </div>
 

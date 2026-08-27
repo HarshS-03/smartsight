@@ -182,7 +182,7 @@ export default function App() {
         /* ── Android Push Notification Styling (Matches base.html) ── */
         .android-notification-container {
           position: fixed;
-          top: 75px;
+          top: calc(var(--status-bar-height, env(safe-area-inset-top, 0px)) + 62px);
           left: 50%;
           transform: translateX(-50%);
           z-index: 10800;

@@ -18,7 +18,7 @@ export default function ReportsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [cameraQuery, setCameraQuery] = useState('all');
   const [statusQuery, setStatusQuery] = useState('all');
-  const [timeframeQuery, setTimeframeQuery] = useState('week');
+  const [timeframeQuery, setTimeframeQuery] = useState('all');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -40,8 +40,20 @@ export default function ReportsPage() {
   const barChartRef = useRef(null);
   const doughnutChartRef = useRef(null);
   const exportBtnRef = useRef(null);
+  const timelineScrollRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    if (timelineScrollRef.current) {
+      const scrollContainer = timelineScrollRef.current;
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      const nowPct = nowMins / 1440;
+      const targetScroll = (650 * nowPct) - (scrollContainer.clientWidth / 2);
+      scrollContainer.scrollLeft = Math.max(0, targetScroll);
+    }
+  }, []);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
@@ -353,13 +365,13 @@ export default function ReportsPage() {
     <>
 
       {/* Reports Hero */}
-      <section className="page-hero">
+      <section className="page-hero text-center text-md-start" style={{ position: 'relative', zIndex: 1050, overflow: 'visible' }}>
         <div className="page-hero-bg-wrapper">
           <div className="page-hero-bg"></div>
-          <div className="page-hero-orb"></div>
+          <div className="page-hero-orb reports-orb"></div>
         </div>
 
-        <div className="container page-hero-content" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content" style={{ position: 'relative', zIndex: 1050 }}>
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="reports-title mb-2">
@@ -370,7 +382,7 @@ export default function ReportsPage() {
               </p>
             </div>
             <div className="col-md-4 text-center text-md-end">
-              <div className="d-inline-block position-relative" id="exportDropdownContainer">
+              <div className="d-inline-block position-relative" id="exportDropdownContainer" style={{ zIndex: 1051 }}>
                 <button
                   ref={exportBtnRef}
                   className="btn btn-excel px-4 py-2 rounded-pill d-inline-flex align-items-center justify-content-center gap-2"
@@ -385,18 +397,8 @@ export default function ReportsPage() {
 
                 {showExportDropdown && (
                   <ul
-                    className="glass-dropdown-menu shadow-lg text-start"
-                    aria-labelledby="exportDropdown"
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '8px',
-                      minWidth: '230px',
-                      zIndex: 9999,
-                      display: 'block',
-                      listStyle: 'none'
-                    }}>
+                    className="glass-dropdown-menu export-dropdown-menu shadow-lg text-start"
+                    aria-labelledby="exportDropdown">
                     <li>
                       <a className="dropdown-item py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('daily'); }}>
                         <i className="bi bi-calendar-day me-2 text-success"></i> Daily Report
@@ -488,8 +490,8 @@ export default function ReportsPage() {
                     <i className="bi bi-clock-fill" style={{ fontSize: '1.2rem', lineHeight: 1 }}></i>
                   </div>
                   <div>
-                    <h6 className="fw-extrabold text-dynamic mb-0 d-flex align-items-center gap-2" style={{ fontSize: '1rem', letterSpacing: '-0.2px' }}>
-                      <span>24-HOUR SECURITY TIMELINE SCRUBBER</span>
+                    <h6 className="fw-bold text-dynamic mb-0 d-flex align-items-center gap-2" style={{ fontSize: '1rem', letterSpacing: '-0.2px' }}>
+                      <span>24-Hour Security Timeline Scrubber</span>
                       <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-bold" style={{ fontSize: '0.68rem', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
                         Today ({todayReports.length})
                       </span>
@@ -504,9 +506,8 @@ export default function ReportsPage() {
                 <div className="d-flex align-items-center gap-2 flex-wrap font-mono">
                   <button
                     type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${
-                      timelineFilter === 'ALL' ? 'shadow-sm' : 'border-0'
-                    }`}
+                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${timelineFilter === 'ALL' ? 'shadow-sm' : 'border-0'
+                      }`}
                     style={{
                       background: timelineFilter === 'ALL' ? '#2563eb' : 'rgba(13, 110, 253, 0.08)',
                       color: timelineFilter === 'ALL' ? '#ffffff' : '#2563eb',
@@ -521,9 +522,8 @@ export default function ReportsPage() {
 
                   <button
                     type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${
-                      timelineFilter === 'UNKNOWN' ? 'shadow-sm' : 'border-0'
-                    }`}
+                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${timelineFilter === 'UNKNOWN' ? 'shadow-sm' : 'border-0'
+                      }`}
                     style={{
                       background: timelineFilter === 'UNKNOWN' ? '#dc3545' : 'rgba(220, 53, 69, 0.08)',
                       color: timelineFilter === 'UNKNOWN' ? '#ffffff' : '#dc3545',
@@ -542,9 +542,8 @@ export default function ReportsPage() {
 
                   <button
                     type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${
-                      timelineFilter === 'KNOWN' ? 'shadow-sm' : 'border-0'
-                    }`}
+                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${timelineFilter === 'KNOWN' ? 'shadow-sm' : 'border-0'
+                      }`}
                     style={{
                       background: timelineFilter === 'KNOWN' ? '#198754' : 'rgba(25, 135, 84, 0.08)',
                       color: timelineFilter === 'KNOWN' ? '#ffffff' : '#198754',
@@ -563,192 +562,219 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Scrubber Track Section */}
-              <div className="position-relative pt-2 pb-4 mb-2">
+              {/* Scrubber Track Section with Horizontal Smooth Scroll */}
+              <div className="position-relative pt-2 pb-2">
+                <div className="d-flex justify-content-between align-items-center mb-1 text-muted d-sm-none">
+                  <span className="small d-inline-flex align-items-center gap-1 opacity-75" style={{ fontSize: '0.7rem' }}>
+                    <i className="bi bi-arrows-expand"></i> Swipe to scroll full 24h timeline
+                  </span>
+                </div>
+
                 <div
-                  className="w-100 rounded-pill position-relative overflow-visible"
+                  ref={timelineScrollRef}
+                  className="timeline-horizontal-scroll"
                   style={{
-                    height: '28px',
-                    background: 'linear-gradient(90deg, rgba(13, 110, 253, 0.03) 0%, rgba(13, 110, 253, 0.08) 50%, rgba(13, 110, 253, 0.03) 100%)',
-                    border: '1px solid rgba(13, 110, 253, 0.2)',
-                    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)'
+                    overflowX: 'auto',
+                    overflowY: 'visible',
+                    WebkitOverflowScrolling: 'touch',
+                    paddingTop: '26px',
+                    paddingBottom: '32px',
+                    paddingLeft: '10px',
+                    paddingRight: '10px'
                   }}
                 >
-                  {/* Subtle Grid Divider Lines */}
-                  {[0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100].map((pct, i) => (
+                  <div style={{ minWidth: '650px', position: 'relative' }}>
                     <div
-                      key={i}
-                      className="position-absolute"
+                      className="w-100 rounded-pill position-relative overflow-visible"
                       style={{
-                        left: `${pct}%`,
-                        top: '0',
-                        bottom: '0',
-                        width: '1px',
-                        background: 'rgba(13, 110, 253, 0.15)',
-                        pointerEvents: 'none'
-                      }}
-                    ></div>
-                  ))}
-
-                  {/* "NOW" Live Current Time Needle */}
-                  <div
-                    className="position-absolute"
-                    style={{
-                      left: `${nowPosPct}%`,
-                      top: '-6px',
-                      bottom: '-6px',
-                      width: '2px',
-                      background: '#0dcaf0',
-                      boxShadow: '0 0 8px #0dcaf0',
-                      zIndex: 3,
-                      pointerEvents: 'none',
-                      transform: 'translateX(-50%)'
-                    }}
-                  >
-                    <span
-                      className="position-absolute badge rounded-pill bg-info text-dark fw-bold px-1.5 py-0.5 shadow-sm"
-                      style={{
-                        top: '-20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        fontSize: '0.62rem',
-                        letterSpacing: '0.3px',
-                        whiteSpace: 'nowrap'
+                        height: '30px',
+                        background: 'linear-gradient(90deg, rgba(13, 110, 253, 0.04) 0%, rgba(13, 110, 253, 0.09) 50%, rgba(13, 110, 253, 0.04) 100%)',
+                        border: '1.5px solid rgba(13, 110, 253, 0.22)',
+                        boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)'
                       }}
                     >
-                      NOW {nowTimeStr}
-                    </span>
-                  </div>
-
-                  {/* Detection Markers */}
-                  {staggeredReports.length > 0 ? (
-                    staggeredReports.map((rep, idx) => {
-                      const isUnknown = rep.status === 'UNKNOWN';
-                      const topOffset = rep.offsetIdx === 1 ? '-6px' : (rep.offsetIdx === 2 ? '10px' : '2px');
-
-                      return (
+                      {/* Subtle Grid Divider Lines (every 2 hours) */}
+                      {[0, 8.33, 16.66, 25, 33.33, 41.66, 50, 58.33, 66.66, 75, 83.33, 91.66, 100].map((pct, i) => (
                         <div
-                          key={rep.id || idx}
-                          className="position-absolute rounded-circle cursor-pointer transition-all"
+                          key={i}
+                          className="position-absolute"
                           style={{
-                            left: `${rep.posPct}%`,
-                            top: topOffset,
-                            width: '22px',
-                            height: '22px',
-                            background: isUnknown
-                              ? 'linear-gradient(135deg, #ef4444, #dc3545)'
-                              : 'linear-gradient(135deg, #10b981, #198754)',
-                            border: '2px solid #ffffff',
-                            boxShadow: isUnknown
-                              ? '0 0 10px rgba(220, 53, 69, 0.9), 0 2px 4px rgba(0,0,0,0.2)'
-                              : '0 0 10px rgba(25, 135, 84, 0.9), 0 2px 4px rgba(0,0,0,0.2)',
-                            zIndex: isUnknown ? 6 : 4,
+                            left: `${pct}%`,
+                            top: '0',
+                            bottom: '0',
+                            width: '1px',
+                            background: 'rgba(13, 110, 253, 0.16)',
+                            pointerEvents: 'none'
+                          }}
+                        ></div>
+                      ))}
+
+                      {/* "NOW" Live Current Time Needle */}
+                      <div
+                        className="position-absolute"
+                        style={{
+                          left: `${nowPosPct}%`,
+                          top: '-6px',
+                          bottom: '-6px',
+                          width: '2px',
+                          background: '#0dcaf0',
+                          boxShadow: '0 0 10px #0dcaf0',
+                          zIndex: 8,
+                          pointerEvents: 'none',
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
+                        <span
+                          className="position-absolute badge rounded-pill bg-info text-dark fw-bold px-2 py-0.5 shadow-sm"
+                          style={{
+                            top: '-22px',
+                            left: '50%',
                             transform: 'translateX(-50%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                            fontSize: '0.62rem'
-                          }}
-                          onMouseEnter={() => setHoveredScrubberEvent(rep)}
-                          onMouseLeave={() => setHoveredScrubberEvent(null)}
-                          onClick={() => {
-                            if (rep.imageUrl) setSelectedImage(rep.imageUrl);
+                            fontSize: '0.64rem',
+                            letterSpacing: '0.3px',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 8px rgba(13, 202, 240, 0.4)'
                           }}
                         >
-                          <i className={`bi ${isUnknown ? 'bi-shield-fill-exclamation' : 'bi-check-lg'}`}></i>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="w-100 h-100 d-flex align-items-center justify-content-center">
-                      <span className="small text-secondary fw-semibold" style={{ fontSize: '0.75rem' }}>
-                        No detections recorded for today yet.
-                      </span>
-                    </div>
-                  )}
-                </div>
+                          NOW {nowTimeStr}
+                        </span>
+                      </div>
 
-                {/* 24-Hour Time Marks */}
-                <div className="position-absolute w-100 d-flex justify-content-between px-1" style={{ top: '38px', fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'monospace' }}>
-                  <span>00:00</span>
-                  <span className="d-none d-sm-inline">03:00</span>
-                  <span>06:00</span>
-                  <span className="d-none d-sm-inline">09:00</span>
-                  <span>12:00</span>
-                  <span className="d-none d-sm-inline">15:00</span>
-                  <span>18:00</span>
-                  <span className="d-none d-sm-inline">21:00</span>
-                  <span>23:59</span>
-                </div>
+                      {/* Detection Markers */}
+                      {staggeredReports.length > 0 ? (
+                        staggeredReports.map((rep, idx) => {
+                          const isUnknown = rep.status === 'UNKNOWN';
+                          const topOffset = rep.offsetIdx === 1 ? '-4px' : (rep.offsetIdx === 2 ? '12px' : '3px');
 
-                {/* Floating Interactive Hover Tooltip */}
-                {hoveredScrubberEvent && (
-                  <div
-                    className="position-absolute card border shadow-lg p-2.5 rounded-3 animate-fade-in"
-                    style={{
-                      left: `${Math.min(85, Math.max(15, hoveredScrubberEvent.posPct))}%`,
-                      top: '-105px',
-                      transform: 'translateX(-50%)',
-                      zIndex: 20,
-                      minWidth: '220px',
-                      background: 'var(--bg-surface-solid, #ffffff)',
-                      borderColor: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220, 53, 69, 0.4)' : 'rgba(25, 135, 84, 0.4)',
-                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
-                    }}
-                  >
-                    <div className="d-flex align-items-center gap-2.5">
-                      {hoveredScrubberEvent.imageUrl ? (
-                        <img
-                          src={hoveredScrubberEvent.imageUrl}
-                          alt="Capture"
-                          className="rounded-2 flex-shrink-0"
-                          style={{ width: '42px', height: '42px', objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
-                        />
+                          return (
+                            <div
+                              key={rep.id || idx}
+                              className="position-absolute rounded-circle cursor-pointer transition-all"
+                              style={{
+                                left: `${rep.posPct}%`,
+                                top: topOffset,
+                                width: '24px',
+                                height: '24px',
+                                background: isUnknown
+                                  ? 'linear-gradient(135deg, #ef4444, #dc3545)'
+                                  : 'linear-gradient(135deg, #10b981, #198754)',
+                                border: '2px solid #ffffff',
+                                boxShadow: isUnknown
+                                  ? '0 0 10px rgba(220, 53, 69, 0.9), 0 2px 4px rgba(0,0,0,0.2)'
+                                  : '0 0 10px rgba(25, 135, 84, 0.9), 0 2px 4px rgba(0,0,0,0.2)',
+                                zIndex: isUnknown ? 6 : 4,
+                                transform: 'translateX(-50%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ffffff',
+                                fontSize: '0.66rem'
+                              }}
+                              onMouseEnter={() => setHoveredScrubberEvent(rep)}
+                              onMouseLeave={() => setHoveredScrubberEvent(null)}
+                              onClick={() => {
+                                if (rep.imageUrl) setSelectedImage(rep.imageUrl);
+                              }}
+                            >
+                              <i className={`bi ${isUnknown ? 'bi-shield-fill-exclamation' : 'bi-check-lg'}`}></i>
+                            </div>
+                          );
+                        })
                       ) : (
-                        <div
-                          className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                          style={{
-                            width: '42px',
-                            height: '42px',
-                            background: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220,53,69,0.1)' : 'rgba(25,135,84,0.1)',
-                            color: hoveredScrubberEvent.status === 'UNKNOWN' ? '#dc3545' : '#198754'
-                          }}
-                        >
-                          <i className={`bi ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bi-shield-exclamation fs-5' : 'bi-person-check fs-5'}`}></i>
-                        </div>
-                      )}
-                      <div className="flex-grow-1 min-w-0">
-                        <div className="d-flex align-items-center justify-content-between gap-1 mb-0.5">
-                          <strong className="text-truncate fw-bold text-dynamic" style={{ fontSize: '0.82rem' }}>
-                            {hoveredScrubberEvent.person_name || 'Unknown Person'}
-                          </strong>
-                          <span
-                            className={`badge rounded-pill ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-success text-white'}`}
-                            style={{ fontSize: '0.62rem' }}
-                          >
-                            {hoveredScrubberEvent.status}
+                        <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                          <span className="small text-secondary fw-semibold" style={{ fontSize: '0.78rem' }}>
+                            No detections recorded for today yet.
                           </span>
                         </div>
-                        <div className="text-secondary small d-flex align-items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
-                          <i className="bi bi-clock"></i>
-                          <span>{hoveredScrubberEvent.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                        </div>
-                        <div className="text-secondary small text-truncate" style={{ fontSize: '0.68rem' }}>
-                          <i className="bi bi-camera me-1"></i>
-                          <span>{hoveredScrubberEvent.camera_name}</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                    {hoveredScrubberEvent.imageUrl && (
-                      <div className="mt-1.5 pt-1.5 border-top border-secondary border-opacity-10 text-center">
-                        <span className="text-primary fw-semibold" style={{ fontSize: '0.68rem' }}>
-                          Click to inspect snapshot <i className="bi bi-box-arrow-up-right ms-0.5"></i>
-                        </span>
+
+                    {/* 24-Hour Time Marks */}
+                    <div className="position-absolute w-100 d-flex justify-content-between px-1" style={{ top: '38px', fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'monospace' }}>
+                      <span>00:00</span>
+                      <span>02:00</span>
+                      <span>04:00</span>
+                      <span>06:00</span>
+                      <span>08:00</span>
+                      <span>10:00</span>
+                      <span>12:00</span>
+                      <span>14:00</span>
+                      <span>16:00</span>
+                      <span>18:00</span>
+                      <span>20:00</span>
+                      <span>22:00</span>
+                      <span>23:59</span>
+                    </div>
+
+                    {/* Floating Interactive Hover Tooltip */}
+                    {hoveredScrubberEvent && (
+                      <div
+                        className="position-absolute card border shadow-lg p-2.5 rounded-3 animate-fade-in"
+                        style={{
+                          left: `${Math.min(85, Math.max(15, hoveredScrubberEvent.posPct))}%`,
+                          top: '-100px',
+                          transform: 'translateX(-50%)',
+                          zIndex: 20,
+                          minWidth: '220px',
+                          background: 'var(--bg-surface-solid, #ffffff)',
+                          borderColor: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220, 53, 69, 0.4)' : 'rgba(25, 135, 84, 0.4)',
+                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        <div className="d-flex align-items-center gap-2.5">
+                          {hoveredScrubberEvent.imageUrl ? (
+                            <img
+                              src={hoveredScrubberEvent.imageUrl}
+                              alt="Capture"
+                              className="rounded-2 flex-shrink-0"
+                              style={{ width: '42px', height: '42px', objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
+                            />
+                          ) : (
+                            <div
+                              className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                              style={{
+                                width: '42px',
+                                height: '42px',
+                                background: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220,53,69,0.1)' : 'rgba(25,135,84,0.1)',
+                                color: hoveredScrubberEvent.status === 'UNKNOWN' ? '#dc3545' : '#198754'
+                              }}
+                            >
+                              <i className={`bi ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bi-shield-exclamation fs-5' : 'bi-person-check fs-5'}`}></i>
+                            </div>
+                          )}
+                          <div className="flex-grow-1 min-w-0">
+                            <div className="d-flex align-items-center justify-content-between gap-1 mb-0.5">
+                              <strong className="text-truncate fw-bold text-dynamic" style={{ fontSize: '0.82rem' }}>
+                                {hoveredScrubberEvent.person_name || 'Unknown Person'}
+                              </strong>
+                              <span
+                                className={`badge rounded-pill ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-success text-white'}`}
+                                style={{ fontSize: '0.62rem' }}
+                              >
+                                {hoveredScrubberEvent.status}
+                              </span>
+                            </div>
+                            <div className="text-secondary small d-flex align-items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
+                              <i className="bi bi-clock"></i>
+                              <span>{hoveredScrubberEvent.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            </div>
+                            <div className="text-secondary small text-truncate" style={{ fontSize: '0.68rem' }}>
+                              <i className="bi bi-camera me-1"></i>
+                              <span>{hoveredScrubberEvent.camera_name}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {hoveredScrubberEvent.imageUrl && (
+                          <div className="mt-1.5 pt-1.5 border-top border-secondary border-opacity-10 text-center">
+                            <span className="text-primary fw-semibold" style={{ fontSize: '0.68rem' }}>
+                              Click to inspect snapshot <i className="bi bi-box-arrow-up-right ms-0.5"></i>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           );
@@ -1303,11 +1329,11 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Apply & Reset Filter Actions */}
-                <div className="col-lg-2 col-md-3 d-flex align-items-center gap-2">
+                <div className="col-lg-2 col-md-3 d-flex align-items-center gap-2 pt-md-4 mt-md-1 mt-2">
                   <button
                     type="button"
-                    className="btn btn-primary rounded-pill py-2 px-3 flex-grow-1 fw-bold text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-primary"
-                    style={{ fontSize: '0.85rem' }}
+                    className="btn btn-primary rounded-pill fw-bold text-nowrap d-inline-flex align-items-center justify-content-center gap-2 shadow-primary"
+                    style={{ fontSize: '0.85rem', height: '40px', padding: '0 22px', width: 'auto' }}
                     onClick={() => setCurrentPage(1)}
                   >
                     <i className="bi bi-funnel-fill"></i>
@@ -1316,9 +1342,9 @@ export default function ReportsPage() {
                   <button
                     type="button"
                     className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-glow"
-                    style={{ width: '38px', height: '38px', border: '1px solid var(--border-input)', background: 'var(--bg-input)' }}
+                    style={{ width: '40px', height: '40px', border: '1px solid var(--border-input)', background: 'var(--bg-input)' }}
                     title="Reset All Filters"
-                    onClick={() => { setSearchQuery(''); setCameraQuery('all'); setStatusQuery('all'); setTimeframeQuery('week'); setCurrentPage(1); }}
+                    onClick={() => { setSearchQuery(''); setCameraQuery('all'); setStatusQuery('all'); setTimeframeQuery('all'); setCurrentPage(1); }}
                   >
                     <i className="bi bi-arrow-counterclockwise text-secondary fs-6"></i>
                   </button>
@@ -1569,7 +1595,7 @@ export default function ReportsPage() {
               }}
             >
               <div
-                className="modal-content export-modal-card overflow-hidden shadow-2xl"
+                className="export-modal-card overflow-hidden shadow-2xl"
                 style={{
                   maxHeight: '90vh',
                   background: 'var(--bg-surface-solid, #ffffff)',
@@ -1589,18 +1615,18 @@ export default function ReportsPage() {
                       style={{
                         background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 202, 240, 0.15) 100%)',
                         color: '#2563eb',
-                        width: '42px',
-                        height: '42px',
+                        width: '44px',
+                        height: '44px',
                         border: '1px solid rgba(13, 110, 253, 0.2)'
                       }}
                     >
                       <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#2563eb' }}></i>
                     </span>
                     <div>
-                      <h5 className="modal-title fw-extrabold text-dynamic mb-0" style={{ fontSize: '1.05rem', letterSpacing: '-0.2px' }}>
-                        EXPORT CONFIGURATION
+                      <h5 className="fw-bold text-dynamic mb-0" style={{ fontSize: '1.1rem', letterSpacing: '-0.3px' }}>
+                        Export Configuration
                       </h5>
-                      <p className="text-secondary small mb-0 mt-0.5" style={{ fontSize: '0.78rem' }}>
+                      <p className="text-secondary small mb-0 mt-0.5" style={{ fontSize: '0.8rem' }}>
                         Select timeframe &amp; event scope criteria
                       </p>
                     </div>
@@ -1609,31 +1635,31 @@ export default function ReportsPage() {
                   {/* Close Button */}
                   <button
                     type="button"
-                    className="btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0 transition-all text-dynamic"
+                    className="btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0 transition-all text-dynamic shadow-sm"
                     onClick={() => setShowExportModal(false)}
                     aria-label="Close"
                     style={{
-                      width: '34px',
-                      height: '34px',
+                      width: '36px',
+                      height: '36px',
                       borderRadius: '50%',
-                      background: 'var(--bg-input, rgba(0, 0, 0, 0.06))',
-                      border: '1px solid var(--border-color, rgba(0, 0, 0, 0.1))',
+                      background: 'var(--bg-input, rgba(0, 0, 0, 0.04))',
+                      border: '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
                       padding: 0
                     }}
                   >
-                    <i className="bi bi-x-lg" style={{ fontSize: '0.85rem' }}></i>
+                    <i className="bi bi-x-lg" style={{ fontSize: '0.9rem' }}></i>
                   </button>
                 </div>
 
                 {/* Body Form */}
                 <form onSubmit={handleExportDownload} className="d-flex flex-column" style={{ overflowY: 'auto' }}>
-                  <div className="modal-body p-4 pb-4">
+                  <div className="p-4 pb-4">
 
                     {/* Time Horizon Selection (5-Column Clean Equal Grid) */}
-                    <div style={{ marginBottom: '1.35rem' }}>
+                    <div style={{ marginBottom: '1.5rem' }}>
                       <label
-                        className="form-label text-secondary small fw-bold text-uppercase mb-2.5 d-flex align-items-center gap-2"
-                        style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
+                        className="form-label text-secondary small fw-bold mb-3 d-flex align-items-center gap-2"
+                        style={{ fontSize: '0.82rem' }}
                       >
                         <i className="bi bi-clock-history text-primary fs-6"></i> Report Time Horizon
                       </label>
@@ -1642,7 +1668,7 @@ export default function ReportsPage() {
                         style={{
                           display: 'grid',
                           gridTemplateColumns: 'repeat(5, 1fr)',
-                          gap: '7px'
+                          gap: '6px'
                         }}
                       >
                         {[
@@ -1684,7 +1710,7 @@ export default function ReportsPage() {
                           },
                           {
                             id: 'all',
-                            label: 'All Records',
+                            label: 'All Time',
                             icon: 'bi-archive-fill',
                             color: '#06b6d4',
                             gradient: 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)',
@@ -1698,32 +1724,32 @@ export default function ReportsPage() {
                               key={rangeOpt.id}
                               type="button"
                               onClick={() => setExportRange(rangeOpt.id)}
-                              className="btn p-2 rounded-4 d-flex flex-column align-items-center justify-content-center transition-all text-center"
+                              className="btn p-1.5 rounded-4 d-flex flex-column align-items-center justify-content-center transition-all text-center"
                               style={{
-                                minHeight: '62px',
+                                minHeight: '66px',
                                 background: isSelected
                                   ? rangeOpt.gradient
                                   : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
                                 border: isSelected
                                   ? '1px solid rgba(255, 255, 255, 0.3)'
-                                  : `1px solid ${rangeOpt.color}30`,
+                                  : `1px solid ${rangeOpt.color}25`,
                                 color: isSelected ? '#ffffff' : 'var(--text-heading, #0f172a)',
                                 boxShadow: isSelected ? rangeOpt.shadow : 'none',
                                 transform: isSelected ? 'translateY(-2px)' : 'none'
                               }}
                             >
                               <span
-                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0 mb-1"
+                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0 mb-1.5"
                                 style={{
-                                  width: '24px',
-                                  height: '24px',
+                                  width: '26px',
+                                  height: '26px',
                                   background: isSelected ? 'rgba(255, 255, 255, 0.25)' : rangeOpt.softBg,
                                   color: isSelected ? '#ffffff' : rangeOpt.color
                                 }}
                               >
-                                <i className={`bi ${rangeOpt.icon}`} style={{ fontSize: '0.75rem' }}></i>
+                                <i className={`bi ${rangeOpt.icon}`} style={{ fontSize: '0.8rem' }}></i>
                               </span>
-                              <span style={{ fontSize: '0.72rem', fontWeight: isSelected ? 800 : 600, lineHeight: 1.15, whiteSpace: 'normal' }}>
+                              <span style={{ fontSize: '0.68rem', fontWeight: isSelected ? 800 : 600, lineHeight: 1.1, whiteSpace: 'nowrap' }}>
                                 {rangeOpt.label}
                               </span>
                             </button>
@@ -1733,46 +1759,46 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Custom Date Range Selection (Clean 2-Column Side-by-Side) */}
-                    <div style={{ marginBottom: '1.35rem' }}>
+                    <div style={{ marginBottom: '1.5rem' }}>
                       <label
-                        className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-2"
-                        style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
+                        className="form-label text-secondary small fw-bold mb-3 d-flex align-items-center gap-2"
+                        style={{ fontSize: '0.82rem' }}
                       >
                         <i className="bi bi-calendar-range text-primary fs-6"></i> Custom Date Filter <span className="fw-normal text-muted opacity-75">(Optional)</span>
                       </label>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <div>
-                          <label className="small text-secondary fw-semibold d-block mb-1" style={{ fontSize: '0.76rem' }}>Start Date</label>
+                          <label className="small text-secondary fw-semibold d-block mb-1.5" style={{ fontSize: '0.78rem' }}>Start Date</label>
                           <input
                             type="date"
                             lang="en-GB"
-                            className="form-control text-dynamic py-2 px-3 rounded-3 font-mono w-100"
+                            className="form-control text-dynamic py-2 px-3 rounded-4 font-mono w-100 shadow-sm"
                             value={startDate}
                             onChange={e => setStartDate(e.target.value)}
                             style={{
-                              background: 'var(--bg-input, rgba(0,0,0,0.04))',
+                              background: 'var(--bg-input, rgba(0,0,0,0.03))',
                               border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
                               color: 'var(--text-heading, #0f172a)',
-                              fontSize: '0.82rem',
-                              height: '42px'
+                              fontSize: '0.85rem',
+                              height: '46px'
                             }}
                           />
                         </div>
                         <div>
-                          <label className="small text-secondary fw-semibold d-block mb-1" style={{ fontSize: '0.76rem' }}>End Date</label>
+                          <label className="small text-secondary fw-semibold d-block mb-1.5" style={{ fontSize: '0.78rem' }}>End Date</label>
                           <input
                             type="date"
                             lang="en-GB"
-                            className="form-control text-dynamic py-2 px-3 rounded-3 font-mono w-100"
+                            className="form-control text-dynamic py-2 px-3 rounded-4 font-mono w-100 shadow-sm"
                             value={endDate}
                             onChange={e => setEndDate(e.target.value)}
                             style={{
-                              background: 'var(--bg-input, rgba(0,0,0,0.04))',
+                              background: 'var(--bg-input, rgba(0,0,0,0.03))',
                               border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
                               color: 'var(--text-heading, #0f172a)',
-                              fontSize: '0.82rem',
-                              height: '42px'
+                              fontSize: '0.85rem',
+                              height: '46px'
                             }}
                           />
                         </div>
@@ -1780,15 +1806,15 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Detection Type Filter */}
-                    <div style={{ marginBottom: '1.35rem' }}>
+                    <div style={{ marginBottom: '1.5rem' }}>
                       <label
-                        className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-2"
-                        style={{ letterSpacing: '0.7px', fontSize: '0.725rem' }}
+                        className="form-label text-secondary small fw-bold mb-3 d-flex align-items-center gap-2"
+                        style={{ fontSize: '0.82rem' }}
                       >
                         <i className="bi bi-funnel text-primary fs-6"></i> Detection Event Scope
                       </label>
 
-                      <div className="d-flex flex-column gap-2">
+                      <div className="d-flex flex-column gap-2.5">
                         {[
                           { id: 'all', label: 'All Detections (Known + Unknown)', icon: 'bi-people-fill', color: '#2563eb', activeBg: 'rgba(13, 110, 253, 0.08)' },
                           { id: 'known', label: 'Known Personnel Only', icon: 'bi-person-check-fill', color: '#10b981', activeBg: 'rgba(16, 185, 129, 0.08)' },
@@ -1799,42 +1825,42 @@ export default function ReportsPage() {
                             <div
                               key={filterOpt.id}
                               onClick={() => setExportScope(filterOpt.id)}
-                              className="p-2.5 px-3 rounded-4 d-flex align-items-center justify-content-between transition-all"
+                              className="p-3 px-3.5 rounded-4 d-flex align-items-center justify-content-between transition-all"
                               style={{
-                                background: isSelected ? filterOpt.activeBg : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
+                                background: isSelected ? filterOpt.activeBg : 'var(--bg-input, rgba(0, 0, 0, 0.02))',
                                 border: isSelected ? `1.5px solid ${filterOpt.color}` : '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
                                 cursor: 'pointer',
-                                boxShadow: isSelected ? `0 4px 14px ${filterOpt.color}15` : 'none'
+                                boxShadow: isSelected ? `0 6px 20px ${filterOpt.color}15` : '0 2px 5px rgba(0,0,0,0.02)'
                               }}
                             >
-                              <div className="d-flex align-items-center gap-2.5">
+                              <div className="d-flex align-items-center gap-3">
                                 <span
                                   className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
                                   style={{
-                                    width: '32px',
-                                    height: '32px',
+                                    width: '34px',
+                                    height: '34px',
                                     background: `${filterOpt.color}15`,
                                     color: filterOpt.color
                                   }}
                                 >
                                   <i className={`bi ${filterOpt.icon} fs-6`}></i>
                                 </span>
-                                <span className="fw-bold text-dynamic" style={{ fontSize: '0.84rem' }}>{filterOpt.label}</span>
+                                <span className="fw-bold text-dynamic" style={{ fontSize: '0.86rem' }}>{filterOpt.label}</span>
                               </div>
                               {isSelected ? (
                                 <span
                                   className="badge rounded-circle p-1 d-flex align-items-center justify-content-center text-white shadow-sm"
-                                  style={{ width: '20px', height: '20px', background: filterOpt.color }}
+                                  style={{ width: '22px', height: '22px', background: filterOpt.color }}
                                 >
-                                  <i className="bi bi-check-lg" style={{ fontSize: '0.75rem' }}></i>
+                                  <i className="bi bi-check-lg" style={{ fontSize: '0.8rem' }}></i>
                                 </span>
                               ) : (
                                 <span
                                   className="rounded-circle"
                                   style={{
-                                    width: '20px',
-                                    height: '20px',
-                                    border: '2px solid var(--border-color, rgba(0, 0, 0, 0.2))'
+                                    width: '22px',
+                                    height: '22px',
+                                    border: '2px solid var(--border-color, rgba(0, 0, 0, 0.15))'
                                   }}
                                 ></span>
                               )}
@@ -1845,16 +1871,16 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Master Green Download CTA Button */}
-                    <div style={{ marginTop: '1.25rem', marginBottom: '0' }}>
+                    <div style={{ marginTop: '2rem', marginBottom: '0' }}>
                       <button
                         type="submit"
-                        className="btn w-100 rounded-pill fw-bold py-2.5 px-3 text-white d-flex align-items-center justify-content-center gap-2 transition-all shadow-lg hover-glow"
+                        className="btn w-100 rounded-pill fw-bold py-3 px-3 text-white d-flex align-items-center justify-content-center gap-2 transition-all shadow-lg hover-glow"
                         style={{
                           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                           border: '1px solid rgba(255, 255, 255, 0.3)',
-                          boxShadow: '0 8px 25px -4px rgba(16, 185, 129, 0.45)',
-                          fontSize: '0.88rem',
-                          height: '46px'
+                          boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
+                          fontSize: '0.92rem',
+                          height: '52px'
                         }}
                       >
                         <i className="bi bi-file-earmark-arrow-down-fill fs-5 flex-shrink-0"></i>

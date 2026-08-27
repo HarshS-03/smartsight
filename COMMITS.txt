@@ -1,5 +1,5 @@
 # Next / Pending Commit:
-fix(typography): separate web and android font strategies and force strict Inter sans-serif fallback
+fix(android): make status bar solid, remove navbar safe-area top gap, and preserve frosted translucent navbar styling
 
 # Commit Messages History:
 feat(typography): apply Google Fonts Inter via dual CDN import and local discrete woff2 + variable TTF suite

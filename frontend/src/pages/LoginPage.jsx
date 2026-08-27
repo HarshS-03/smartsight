@@ -209,77 +209,77 @@ export default function LoginPage({ setActivePage, setUser }) {
         <div className="container position-relative" style={{ zIndex: 1 }}>
           <div className="row justify-content-center">
             <div className="col-11 col-md-6 col-lg-4">
-            <div className="login-card p-4 p-md-5 rounded-5 position-relative overflow-hidden" data-reveal="true" style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              boxShadow: 'var(--shadow-lg)',
-            }}>
+              <div className="login-card p-4 p-md-5 rounded-5 position-relative overflow-hidden" data-reveal="true" style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-color)',
+                boxShadow: 'var(--shadow-lg)',
+              }}>
 
-              <div className="position-absolute top-0 start-50 translate-middle"
-                style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)', zIndex: -1 }}>
-              </div>
-
-              <div className="mb-4 text-center mt-3">
-                <div className="shield-icon-wrap mx-auto mb-3">
-                  <i className="bi bi-shield-lock-fill text-primary" style={{ fontSize: '2rem' }}></i>
+                <div className="position-absolute top-0 start-50 translate-middle"
+                  style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)', zIndex: -1 }}>
                 </div>
-                <h2 className="fw-bold mb-1" style={{ fontSize: '1.7rem', letterSpacing: '-0.02em', color: 'var(--text-heading)' }}>Welcome Back</h2>
-                <p className="small" style={{ color: 'var(--text-secondary)' }}>Access the Smart Sight dashboard</p>
-              </div>
 
-              <form onSubmit={handleLogin} className="needs-validation">
-                <div className="mb-3">
-                  <div className="form-floating custom-form-floating">
-                    <input type="text" className="form-control" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
-                    <label style={{ color: 'var(--form-label)' }}>Username</label>
+                <div className="mb-4 text-center mt-3">
+                  <div className="shield-icon-wrap mx-auto mb-3">
+                    <i className="bi bi-shield-lock-fill text-primary" style={{ fontSize: '2rem' }}></i>
                   </div>
+                  <h2 className="fw-bold mb-1" style={{ fontSize: '1.7rem', letterSpacing: '-0.02em', color: 'var(--text-heading)' }}>Welcome Back</h2>
+                  <p className="small" style={{ color: 'var(--text-secondary)' }}>Access the Smart Sight dashboard</p>
                 </div>
 
-                <div className="mb-3">
-                  <div className="form-floating custom-form-floating position-relative">
-                    <input type={showPassword ? "text" : "password"} className="form-control pe-5" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
-                    <label style={{ color: 'var(--form-label)' }}>Password</label>
-                    <button type="button" className="btn position-absolute top-50 end-0 translate-middle-y border-0 hover-glow" onClick={() => setShowPassword(!showPassword)} style={{ background: 'transparent', zIndex: 10, paddingRight: '1.25rem', color: 'var(--text-secondary)' }}>
-                      <i className={`bi ${showPassword ? 'bi-eye' : 'bi-eye-slash'}`}></i>
-                    </button>
+                <form onSubmit={handleLogin} className="needs-validation">
+                  <div className="mb-3">
+                    <div className="form-floating custom-form-floating">
+                      <input type="text" className="form-control" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+                      <label style={{ color: 'var(--form-label)' }}>Username</label>
+                    </div>
                   </div>
-                </div>
 
-                <div className="d-flex justify-content-end mb-4">
-                  <a href="#" className="small text-primary text-decoration-none hover-glow" onClick={(e) => { e.preventDefault(); setActivePage('forgot_password'); }}>Forgot Password?</a>
-                </div>
-
-                {error && (
-                  <div className="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-3 rounded-3 d-flex align-items-center" role="alert">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
+                  <div className="mb-3">
+                    <div className="form-floating custom-form-floating position-relative">
+                      <input type={showPassword ? "text" : "password"} className="form-control pe-5" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+                      <label style={{ color: 'var(--form-label)' }}>Password</label>
+                      <button type="button" className="btn position-absolute top-50 end-0 translate-middle-y border-0 hover-glow" onClick={() => setShowPassword(!showPassword)} style={{ background: 'transparent', zIndex: 10, paddingRight: '1.25rem', color: 'var(--text-secondary)' }}>
+                        <i className={`bi ${showPassword ? 'bi-eye' : 'bi-eye-slash'}`}></i>
+                      </button>
+                    </div>
                   </div>
-                )}
 
-                <button type="submit" className="btn-detect-start w-100 d-flex align-items-center justify-content-center gap-2" style={{ height: '58px', letterSpacing: '0.1em' }}>
-                  <span>Login</span>
+                  <div className="d-flex justify-content-end mb-4">
+                    <a href="#" className="small text-primary text-decoration-none hover-glow" onClick={(e) => { e.preventDefault(); setActivePage('forgot_password'); }}>Forgot Password?</a>
+                  </div>
+
+                  {error && (
+                    <div className="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-3 rounded-3 d-flex align-items-center" role="alert">
+                      <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
+                    </div>
+                  )}
+
+                  <button type="submit" className="btn-detect-start w-100 d-flex align-items-center justify-content-center gap-2" style={{ height: '58px', letterSpacing: '0.1em' }}>
+                    <span>Login</span>
+                  </button>
+                </form>
+
+                <div className="d-flex align-items-center my-3">
+                  <hr className="flex-grow-1" style={{ borderColor: 'var(--border-color)', opacity: 0.5 }} />
+                  <span className="mx-3 small fw-bold" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>OR</span>
+                  <hr className="flex-grow-1" style={{ borderColor: 'var(--border-color)', opacity: 0.5 }} />
+                </div>
+
+                <button type="button" className="view-toggle-btn w-100 d-flex align-items-center justify-content-center gap-2 hover-glow" onClick={startFaceLogin} style={{ height: '58px', width: '100%' }}>
+                  <i className="bi bi-person-bounding-box text-primary fs-5"></i>
+                  <span style={{ color: 'var(--text-heading)' }}>Login with Face</span>
                 </button>
-              </form>
 
-              <div className="d-flex align-items-center my-3">
-                <hr className="flex-grow-1" style={{ borderColor: 'var(--border-color)', opacity: 0.5 }} />
-                <span className="mx-3 small fw-bold" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>OR</span>
-                <hr className="flex-grow-1" style={{ borderColor: 'var(--border-color)', opacity: 0.5 }} />
-              </div>
-
-              <button type="button" className="view-toggle-btn w-100 d-flex align-items-center justify-content-center gap-2 hover-glow" onClick={startFaceLogin} style={{ height: '58px', width: '100%' }}>
-                <i className="bi bi-person-bounding-box text-primary fs-5"></i>
-                <span style={{ color: 'var(--text-heading)' }}>Login with Face</span>
-              </button>
-
-              <div className="text-center mt-4">
-                <p className="opacity-50 x-small mb-0" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  Encryption active. System activity is logged.
-                </p>
+                <div className="text-center mt-4">
+                  <p className="opacity-50 x-small mb-0" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Encryption active. System activity is logged.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
 
       {/* Biometric Face Scanner Modal */}
@@ -308,7 +308,7 @@ export default function LoginPage({ setActivePage, setUser }) {
                   <p className="small mb-4" style={{ color: 'var(--text-secondary)' }}>Smart Sight Admin Biometric Authentication</p>
 
                   <div className="position-relative mx-auto mb-4 overflow-hidden rounded-4 border"
-                    style={{ width: '320px', height: '320px', background: '#000', borderColor: 'var(--border-color) !important' }}>
+                    style={{ width: '100%', maxWidth: '300px', aspectRatio: '1/1', background: '#000', borderColor: 'var(--border-color) !important' }}>
 
                     {/* Real Webcam Stream Feed */}
                     {useLocalCam ? (

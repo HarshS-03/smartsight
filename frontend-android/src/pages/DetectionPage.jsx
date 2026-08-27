@@ -197,12 +197,12 @@ export default function DetectionPage() {
                       <i className="bi bi-camera-video text-primary"></i>
                       <span className="fw-semibold text-heading" style={{ fontSize: '0.92rem' }}>Camera View</span>
                     </div>
-                    <div className="d-flex gap-2 flex-grow-1">
-                      <button onClick={() => setViewMode('single')} className={`btn view-toggle-card-btn ${viewMode === 'single' ? 'active' : ''} flex-grow-1`}>
+                    <div className="d-flex gap-2 flex-grow-1 w-100">
+                      <button onClick={() => setViewMode('single')} className={`btn view-toggle-card-btn w-50 ${viewMode === 'single' ? 'active' : ''}`}>
                         <i className="bi bi-camera-video"></i>
                         <span style={{ fontSize: '0.82rem' }}>Single Camera</span>
                       </button>
-                      <button onClick={() => setViewMode('grid')} className={`btn view-toggle-card-btn ${viewMode === 'grid' ? 'active' : ''} flex-grow-1`}>
+                      <button onClick={() => setViewMode('grid')} className={`btn view-toggle-card-btn w-50 ${viewMode === 'grid' ? 'active' : ''}`}>
                         <i className="bi bi-grid-3x3-gap"></i>
                         <span style={{ fontSize: '0.82rem' }}>Multi-Camera Grid</span>
                       </button>
@@ -503,11 +503,11 @@ export default function DetectionPage() {
               )}
 
               {/* Controls */}
-              <div className="d-flex justify-content-center gap-2 mt-4 flex-nowrap w-100">
-                <button onClick={(e) => { e.currentTarget.blur(); handleStartFeed(); }} className="btn-detect-start flex-fill" style={{ padding: '0 10px', maxWidth: '200px' }}>
+              <div className="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap w-100">
+                <button onClick={(e) => { e.currentTarget.blur(); handleStartFeed(); }} className="btn-detect-start">
                   <i className="bi bi-play-fill fs-5"></i> Start Feed
                 </button>
-                <button onClick={(e) => { e.currentTarget.blur(); handleStopFeed(); }} className="btn-detect-stop flex-fill" style={{ padding: '0 10px', maxWidth: '200px' }}>
+                <button onClick={(e) => { e.currentTarget.blur(); handleStopFeed(); }} className="btn-detect-stop">
                   <i className="bi bi-stop-fill fs-5"></i> Stop Feed
                 </button>
               </div>

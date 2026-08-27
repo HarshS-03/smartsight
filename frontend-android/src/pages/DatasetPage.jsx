@@ -682,7 +682,7 @@ export default function DatasetPage() {
                     />
 
                     {/* Glassy Pill Upload Selector */}
-                    <div className="upload-pill-bar p-1.5 rounded-pill d-flex align-items-center justify-content-between gap-2"
+                    <div className="upload-pill-bar p-1.5 rounded-4 rounded-sm-pill d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2"
                       style={{
                         background: 'rgba(13, 110, 253, 0.06)',
                         border: '1px solid rgba(13, 110, 253, 0.2)',

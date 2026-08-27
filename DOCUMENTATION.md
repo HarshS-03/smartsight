@@ -286,6 +286,7 @@ All historic fixes and improvements are tracked here and in `COMMITS.txt`:
 
 | Commit / Date | Category | Summary of Implementation |
 | :--- | :--- | :--- |
+| **Pending** (2026-08-26) | Android / UI | Made native status bar solid opaque (`#ffffff` / `#0b0f19`) and non-overlapping; removed excessive navbar `safe-area-inset-top` gap (`padding-top: 0.65rem`); maintained frosted translucent navbar (`backdrop-filter: blur(16px)`). |
 | **Pending** (2026-08-26) | UI / Typography | Configured Google Fonts `Inter` via dual pipeline: live `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap')` for immediate online browser rendering + offline discrete weights (`400`, `500`, `600`, `700` woff2) and variable TTF `@font-face` suite. |
 | **Pending** (2026-08-26) | Android / Assets | Downloaded official `google/fonts` repository `Inter-VariableFont.ttf` & `Inter-Italic-VariableFont.ttf` (weights 100–900 with full optical size glyphs), configured `@font-face` definitions directly inside `fonts.css` and `theme.css`, and mapped global CSS variables. |
 | **Pending** (2026-08-26) | Camera / Windows | Resolved MSMF `grabFrame` Error `-1072873821` by setting `OPENCV_VIDEOIO_PRIORITY_MSMF=0` to enforce DirectShow (`CAP_DSHOW`), removing problematic `FOURCC('MJPG')` requests on raw YUY2 webcams, and implementing adaptive poll backoff to stop console warning spam. |

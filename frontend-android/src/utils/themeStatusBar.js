@@ -37,9 +37,17 @@ export async function syncThemeAndStatusBar(theme) {
   // 3. Update Capacitor Native Android Status Bar (if running in Capacitor native app)
   try {
     if (Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
+      await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
       // Style.Dark: Light text for dark backgrounds
       // Style.Light: Dark text for light backgrounds
       await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+      await StatusBar.setBackgroundColor({ color: bgColor }).catch(() => {});
+
+      // Query native status bar height and expose as CSS custom property
+      const info = await StatusBar.getInfo().catch(() => null);
+      if (info && typeof info.height === 'number' && info.height > 0) {
+        document.documentElement.style.setProperty('--status-bar-height', `${info.height}px`);
+      }
     }
   } catch (e) {
     // Non-native / Web environment - silently ignore
