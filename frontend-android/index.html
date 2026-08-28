@@ -46,7 +46,7 @@
       margin: 0;
       padding: 0;
       background-color: var(--preloader-bg);
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     .app-preloader {
       position: fixed;
@@ -80,13 +80,24 @@
       text-align: center;
       max-width: 320px;
       width: 100%;
+      animation: simpleZoomIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes simpleZoomIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.75);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
     .preloader-logo-wrap {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
     .preloader-logo-card {
       position: relative;
@@ -97,18 +108,24 @@
       background: var(--preloader-card-bg);
       border: 1px solid var(--preloader-logo-border);
       box-shadow: var(--preloader-logo-shadow);
-      animation: logoPulse 2.8s ease-in-out infinite alternate;
+      animation: logoPulse 5s ease-in-out infinite alternate;
       z-index: 3;
+    }
+    @keyframes logoPulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+      }
+      100% {
+        transform: scale(1.08);
+        box-shadow: 0 0 30px rgba(37, 99, 235, 0.9), 0 0 15px rgba(56, 189, 248, 0.8);
+      }
     }
     .preloader-logo {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
-    }
-    @keyframes logoPulse {
-      0% { transform: translateY(0) scale(1); }
-      100% { transform: translateY(-4px) scale(1.02); }
     }
     .preloader-brand {
       color: var(--preloader-text);
@@ -127,30 +144,7 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      margin-bottom: 28px;
-    }
-    .preloader-spinner-bar {
-      width: 140px;
-      height: 4px;
-      background: var(--preloader-bar-bg);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .preloader-progress {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 40%;
-      background: #2563eb;
-      border-radius: 999px;
-      animation: modernProgress 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    }
-    @keyframes modernProgress {
-      0% { left: -40%; width: 40%; }
-      50% { left: 20%; width: 60%; }
-      100% { left: 100%; width: 40%; }
+      margin-bottom: 0;
     }
   </style>
 </head>
@@ -167,9 +161,6 @@
         </div>
         <h1 class="preloader-brand">Smart <span>Sight</span></h1>
         <div class="preloader-tagline">AI Vision & Surveillance</div>
-        <div class="preloader-spinner-bar">
-          <div class="preloader-progress"></div>
-        </div>
       </div>
     </div>
   </div>

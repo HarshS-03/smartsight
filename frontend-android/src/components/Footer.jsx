@@ -22,7 +22,7 @@ export default function Footer({ setActivePage }) {
           >
             Smart <span style={{ color: 'var(--color-primary, #2563eb)' }}>Sight</span>
           </a>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>&copy; 2026 Smart Sight. All rights reserved.</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>&copy; <a href="https://github.com/HarshS-03" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={(e) => e.target.style.color = 'var(--color-primary, #2563eb)'} onMouseOut={(e) => e.target.style.color = 'inherit'}>Harsh_03</a>. All rights reserved.</span>
         </div>
       </div>
     </footer>

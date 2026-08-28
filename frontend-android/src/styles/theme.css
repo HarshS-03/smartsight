@@ -2,23 +2,6 @@
    SMART SIGHT — Modern Solid-Surface Design System
    ══════════════════════════════════════════════════════ */
 
-/* ── Inter Downloaded Google Fonts (Offline Local) ── */
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('../assets/fonts/Inter-VariableFont.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('../assets/fonts/Inter-Italic-VariableFont.ttf') format('truetype');
-}
-
 /* ── Hide all scrollbars (Android apps don't show them) ── */
 *,
 *::before,
@@ -48,6 +31,7 @@ body {
   overscroll-behavior-y: none;
   /* Prevent pull-to-refresh / overscroll bounce */
   background: var(--bg-body, #0b0f19) !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
 [data-bs-theme="light"] html,
@@ -61,11 +45,11 @@ html[data-bs-theme="light"] {
 
 :root,
 [data-bs-theme="dark"] {
-  --bs-body-font-family: 'Inter', sans-serif !important;
-  --font-brand: 'Inter', sans-serif;
-  --font-heading: 'Inter', sans-serif;
-  --font-interface: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --bs-body-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  --font-brand: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-telemetry: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -1248,6 +1232,48 @@ p,
   letter-spacing: .1em;
   color: var(--text-secondary);
   margin-bottom: 4px;
+}
+
+/* ── Dedicated Auth Action Buttons (Sleek Proportioned Centered Pill Shape) ── */
+.btn-auth-primary {
+  background: #2563eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  width: 100% !important;
+  max-width: 220px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  padding: 0 24px !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  letter-spacing: 0.02em !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.btn-auth-primary:hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+  transform: translateY(-1px);
+  color: #ffffff !important;
+}
+
+.btn-auth-primary:active {
+  transform: scale(0.98) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+.btn-auth-primary:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35) !important;
 }
 
 .btn-detect-start {
@@ -6150,6 +6176,18 @@ td {
   text-align: center;
   max-width: 320px;
   width: 100%;
+  animation: simpleZoomIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes simpleZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* 3D Camera Logo Card */
@@ -6158,7 +6196,7 @@ td {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .preloader-logo-card {
@@ -6170,7 +6208,7 @@ td {
   background: var(--preloader-card-bg);
   border: 1px solid var(--preloader-logo-border);
   box-shadow: var(--preloader-logo-shadow);
-  animation: logoPulse 2.8s ease-in-out infinite alternate;
+  animation: logoPulse 5s ease-in-out infinite alternate;
   z-index: 3;
 }
 
@@ -6183,11 +6221,12 @@ td {
 
 @keyframes logoPulse {
   0% {
-    transform: translateY(0) scale(1);
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
   }
-
   100% {
-    transform: translateY(-4px) scale(1.02);
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.9), 0 0 15px rgba(56, 189, 248, 0.8);
   }
 }
 
@@ -6212,43 +6251,5 @@ td {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-bottom: 28px;
-}
-
-/* Loading Progress Bar */
-.preloader-spinner-bar {
-  width: 140px;
-  height: 4px;
-  background: var(--preloader-bar-bg);
-  border-radius: 999px;
-  overflow: hidden;
-  position: relative;
-}
-
-.preloader-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 40%;
-  background: #2563eb;
-  border-radius: 999px;
-  animation: modernProgress 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes modernProgress {
-  0% {
-    left: -40%;
-    width: 40%;
-  }
-
-  50% {
-    left: 20%;
-    width: 60%;
-  }
-
-  100% {
-    left: 100%;
-    width: 40%;
-  }
+  margin-bottom: 0;
 }

@@ -105,20 +105,27 @@ export default function ServerConfigModal({ show, onClose }) {
         tabIndex="-1" 
         role="dialog"
         aria-modal="true"
-        style={{ zIndex: 10550 }} 
+        style={{ 
+          zIndex: 10550,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          padding: '12px 0'
+        }} 
         onClick={onClose}
       >
         <div 
-          className="modal-dialog modal-dialog-centered px-3" 
+          className="modal-dialog modal-dialog-centered px-3 my-auto" 
           onClick={e => e.stopPropagation()} 
-          style={{ maxWidth: '440px', margin: 'auto' }}
+          style={{ maxWidth: '440px', width: '100%', margin: 'auto' }}
         >
           <div 
-            className="modal-content overflow-hidden" 
+            className="modal-content overflow-auto" 
             style={{
+              maxHeight: 'calc(100dvh - 32px)',
               borderRadius: '24px',
               border: '1px solid var(--border-color)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              background: 'var(--modal-bg, var(--bg-surface-solid, #ffffff))'
             }}
           >
             {/* Modal Header */}
@@ -170,13 +177,18 @@ export default function ServerConfigModal({ show, onClose }) {
                     <i className="bi bi-globe2"></i>
                   </span>
                   <input
-                    type="text"
+                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     className="form-control font-monospace border-start-0"
                     placeholder="http://192.168.1.10:8000"
                     value={serverIp}
                     onChange={e => setServerIp(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
                     style={{ 
-                      fontSize: '0.9rem', 
+                      fontSize: '0.92rem', 
                       padding: '12px',
                       backgroundColor: 'var(--bg-input, #f8fafc)',
                       borderColor: 'var(--border-color, #cbd5e1)',
@@ -211,10 +223,10 @@ export default function ServerConfigModal({ show, onClose }) {
                   type="button"
                   className="btn flex-grow-1 d-flex align-items-center justify-content-center gap-2"
                   style={{ 
-                    height: '46px', 
-                    borderRadius: '12px', 
+                    height: '48px', 
+                    borderRadius: '14px', 
                     fontWeight: '600', 
-                    fontSize: '0.85rem',
+                    fontSize: '0.88rem',
                     backgroundColor: 'var(--bg-input, #f1f5f9)',
                     border: '1px solid var(--border-color, #cbd5e1)',
                     color: 'var(--text-heading)'
@@ -230,10 +242,11 @@ export default function ServerConfigModal({ show, onClose }) {
                   type="button"
                   className="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-sm"
                   style={{ 
-                    height: '46px', 
-                    borderRadius: '12px', 
+                    height: '48px', 
+                    borderRadius: '14px', 
                     fontWeight: '600', 
-                    fontSize: '0.85rem' 
+                    fontSize: '0.88rem',
+                    boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
                   }}
                   onClick={handleSave}
                 >

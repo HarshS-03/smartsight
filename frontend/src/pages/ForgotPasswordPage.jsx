@@ -91,17 +91,18 @@ export default function ForgotPasswordPage({ setActivePage }) {
                   </div>
                 )}
 
-                <button type="submit"
-                  className="btn-detect-start w-100 py-3 d-flex align-items-center justify-content-center gap-2 mb-4"
-                  style={{ height: '58px', letterSpacing: '0.1em' }}>
-                  {verified ? 'Complete Reset' : 'Verify Identity'}
-                </button>
+                <div className="d-flex flex-column align-items-center mt-4" style={{ gap: '16px' }}>
+                  <button type="submit"
+                    className="btn-auth-primary m-0"
+                  >
+                    <i className={`bi ${verified ? 'bi-shield-check' : 'bi-shield-lock'}`} style={{ fontSize: '1.05rem' }}></i>
+                    <span>{verified ? 'Complete Reset' : 'Verify Identity'}</span>
+                  </button>
 
-                <div className="text-center">
                   <a href="#"
                     onClick={(e) => { e.preventDefault(); setActivePage('login'); }}
-                    className="text-decoration-none small hover-white transition-all d-flex align-items-center justify-content-center gap-2"
-                    style={{ color: 'var(--text-secondary)' }}>
+                    className="text-decoration-none small hover-white transition-all d-inline-flex align-items-center justify-content-center gap-2 py-2 px-3 rounded-pill"
+                    style={{ color: 'var(--text-secondary)', background: 'var(--bg-surface-hover)', fontSize: '0.85rem' }}>
                     <i className="bi bi-arrow-left"></i>
                     <span>Return to Login</span>
                   </a>

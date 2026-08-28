@@ -1239,6 +1239,48 @@ p,
   font-weight: 700;
 }
 
+/* ── Dedicated Auth Action Buttons (Sleek Proportioned Centered Pill Shape) ── */
+.btn-auth-primary {
+  background: #2563eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  width: 100% !important;
+  max-width: 220px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  padding: 0 24px !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  letter-spacing: 0.02em !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.btn-auth-primary:hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+  transform: translateY(-1px);
+  color: #ffffff !important;
+}
+
+.btn-auth-primary:active {
+  transform: scale(0.98) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+.btn-auth-primary:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35) !important;
+}
+
 .view-toggle-btn {
   border: 1px solid var(--border-color);
   background: var(--bg-input);

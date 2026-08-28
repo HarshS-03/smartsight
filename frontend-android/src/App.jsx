@@ -27,8 +27,8 @@ export default function App() {
   const [showCapturesModal, setShowCapturesModal] = useState(false);
 
   React.useEffect(() => {
-    const fadeTimer = setTimeout(() => setBootFadeOut(true), 1100);
-    const removeTimer = setTimeout(() => setAppBooting(false), 1500);
+    const fadeTimer = setTimeout(() => setBootFadeOut(true), 700);
+    const removeTimer = setTimeout(() => setAppBooting(false), 1000);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);
@@ -162,18 +162,13 @@ export default function App() {
               </div>
             </div>
 
-            {/* Brand Title (Solid color, no gradient) */}
+            {/* Brand Title */}
             <h1 className="preloader-brand">
               Smart <span>Sight</span>
             </h1>
 
             {/* Subtitle */}
-            <div className="preloader-tagline">AI Vision & Surveillance</div>
-
-            {/* Stylish Animated Loading Progress Track */}
-            <div className="preloader-spinner-bar">
-              <div className="preloader-progress"></div>
-            </div>
+            <div className="preloader-tagline" style={{ marginBottom: 0 }}>AI Vision & Surveillance</div>
           </div>
         </div>
       )}

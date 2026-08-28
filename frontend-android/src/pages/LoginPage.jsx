@@ -267,7 +267,7 @@ export default function LoginPage({ setActivePage, setUser }) {
                   </div>
 
                   <div className="d-flex justify-content-end mb-4">
-                    <a href="#" className="small text-primary text-decoration-none hover-glow" onClick={(e) => { e.preventDefault(); setActivePage('forgot_password'); }}>Forgot Password?</a>
+                    <a href="#" className="small text-primary text-decoration-none fw-semibold py-1" onClick={(e) => { e.preventDefault(); setActivePage('forgot_password'); }}>Forgot Password?</a>
                   </div>
 
                   {error && (
@@ -276,7 +276,8 @@ export default function LoginPage({ setActivePage, setUser }) {
                     </div>
                   )}
 
-                  <button type="submit" className="btn-detect-start w-100 d-flex align-items-center justify-content-center gap-2" style={{ height: '58px', letterSpacing: '0.1em' }}>
+                  <button type="submit" className="btn-auth-primary">
+                    <i className="bi bi-box-arrow-in-right" style={{ fontSize: '1.05rem' }}></i>
                     <span>Login</span>
                   </button>
                 </form>
@@ -287,9 +288,28 @@ export default function LoginPage({ setActivePage, setUser }) {
                   <hr className="flex-grow-1" style={{ borderColor: 'var(--border-color)', opacity: 0.5 }} />
                 </div>
 
-                <button type="button" className="view-toggle-btn w-100 d-flex align-items-center justify-content-center gap-2 hover-glow" onClick={startFaceLogin} style={{ height: '58px', width: '100%' }}>
-                  <i className="bi bi-person-bounding-box text-primary fs-5"></i>
-                  <span style={{ color: 'var(--text-heading)' }}>Login with Face</span>
+                <button 
+                  type="button" 
+                  className="btn w-100 d-flex align-items-center justify-content-center gap-2 hover-glow" 
+                  onClick={startFaceLogin} 
+                  style={{ 
+                    height: '46px', 
+                    minHeight: '46px',
+                    width: '100%',
+                    maxWidth: '220px',
+                    margin: '0 auto',
+                    boxSizing: 'border-box',
+                    borderRadius: '999px', 
+                    border: '1.5px solid var(--border-color)', 
+                    background: 'var(--bg-surface-solid)', 
+                    color: 'var(--text-heading)',
+                    fontWeight: 600,
+                    fontSize: '0.92rem',
+                    boxShadow: 'var(--shadow-xs)'
+                  }}
+                >
+                  <i className="bi bi-person-bounding-box text-primary" style={{ fontSize: '1.05rem' }}></i>
+                  <span>Login with Face</span>
                 </button>
 
                 <div className="text-center mt-4">

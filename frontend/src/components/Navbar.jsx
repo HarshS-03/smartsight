@@ -191,41 +191,72 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
-        /* ── Mobile Header Icon Buttons (Matching Size, Border & Alignment) ── */
+        /* ── Frameless Big Bell Button for Mobile ── */
+        .mobile-bell-btn {
+          width: 44px !important;
+          height: 44px !important;
+          min-width: 44px !important;
+          max-width: 44px !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          outline: none !important;
+          position: relative;
+          color: #2563eb !important;
+          transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        .mobile-bell-btn:active {
+          transform: scale(0.88) !important;
+        }
+
+        /* ── Mobile Header Menu Button (44px Squircle) ── */
         .mobile-nav-btn,
         .navbar-toggler.mobile-nav-btn {
-          width: 38px !important;
-          height: 38px !important;
-          min-width: 38px !important;
-          max-width: 38px !important;
-          border-radius: 12px !important;
-          border: 1px solid var(--border-color, #e2e8f0) !important;
+          width: 44px !important;
+          height: 44px !important;
+          min-width: 44px !important;
+          max-width: 44px !important;
+          border-radius: 13px !important;
+          border: 1.5px solid var(--border-color, #e2e8f0) !important;
           background: var(--bg-surface-solid, #ffffff) !important;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
           padding: 0 !important;
           display: inline-flex !important;
           align-items: center !important;
           justify-content: center !important;
           color: var(--text-heading) !important;
-          transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
+          transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease !important;
           outline: none !important;
+          position: relative;
+        }
+
+        .mobile-nav-btn:hover,
+        .navbar-toggler.mobile-nav-btn:hover {
+          border-color: #2563eb !important;
+          color: #2563eb !important;
         }
 
         .mobile-nav-btn:active,
         .navbar-toggler.mobile-nav-btn:active {
-          transform: scale(0.94) !important;
+          transform: scale(0.92) !important;
           background: var(--bg-surface-hover, #f1f5f9) !important;
         }
 
         .mobile-nav-btn:focus,
         .navbar-toggler.mobile-nav-btn:focus {
-          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
         }
 
         [data-bs-theme="dark"] .mobile-nav-btn,
         [data-bs-theme="dark"] .navbar-toggler.mobile-nav-btn {
           background: #111827 !important;
           border-color: rgba(255, 255, 255, 0.12) !important;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
         }
 
         .navbar-brand {
@@ -528,30 +559,22 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
 
-          <div className="d-flex align-items-center ms-auto d-lg-none" style={{ gap: '4px' }}>
-            {/* Notification Bell Icon for Mobile Header */}
+          <div className="d-flex align-items-center ms-auto d-lg-none" style={{ gap: '8px' }}>
+            {/* Notification Bell Icon for Mobile Header (Frameless & Big) */}
             <button
               type="button"
-              className="btn p-0 border-0 position-relative d-inline-flex align-items-center justify-content-center"
+              className="mobile-bell-btn"
               onClick={(e) => { e.preventDefault(); setActivePage('notifications'); closeMobileNav(); }}
               title="Notifications"
-              style={{
-                background: 'transparent',
-                width: '34px',
-                height: '38px',
-                minWidth: '34px',
-                boxShadow: 'none',
-                color: '#2563eb',
-                padding: 0
-              }}
+              aria-label="View notifications"
             >
-              <i className="bi bi-bell-fill" style={{ fontSize: '1.55rem', color: '#2563eb', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
+              <i className="bi bi-bell-fill" style={{ fontSize: '1.85rem', color: '#2563eb', lineHeight: 1 }}></i>
               {unreadCount > 0 && (
                 <span
                   className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
                   style={{
                     top: '0px',
-                    right: '-3px',
+                    right: '0px',
                     width: '18px',
                     height: '18px',
                     minWidth: '18px',
@@ -559,10 +582,10 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.6rem',
+                    fontSize: '0.62rem',
                     fontWeight: '800',
                     lineHeight: '1',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                    boxShadow: '0 2px 6px rgba(220, 53, 69, 0.4)',
                     zIndex: 10
                   }}
                 >
@@ -571,6 +594,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               )}
             </button>
 
+            {/* Mobile Hamburger Menu Toggle Button */}
             <button
               className="navbar-toggler mobile-nav-btn"
               type="button"
@@ -580,7 +604,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               aria-expanded="false"
               aria-label="Toggle navigation"
             >
-              <span className="navbar-toggler-icon" style={{ width: '20px', height: '20px' }}></span>
+              <i className="bi bi-list" style={{ fontSize: '1.65rem', color: 'var(--text-heading)', lineHeight: 1 }}></i>
             </button>
           </div>
 
