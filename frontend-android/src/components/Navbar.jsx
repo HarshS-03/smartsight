@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../api/axios';
 import { syncThemeAndStatusBar } from '../utils/themeStatusBar';
+import { updateAppBadge } from '../utils/badgeHelper';
 
 export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const hasToken = !!localStorage.getItem('access_token');
@@ -81,6 +82,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const lastNotifiedIdRef = useRef(null);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
+
     const fetchUnread = async () => {
       if (document.hidden) return;
       try {
@@ -90,6 +96,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           ? res.data.unread_count
           : notifs.filter(n => n.status === 'PENDING' && !n.is_read).length;
         setUnreadCount(count);
+        updateAppBadge(count);
       } catch (err) {
         // Silent catch
       }
@@ -101,7 +108,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
       window.removeEventListener('refresh-notifications', fetchUnread);
       clearInterval(interval);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Sliding Liquid Pill Logic
   const [hoveredPage, setHoveredPage] = useState(null);
@@ -576,39 +583,41 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           </a>
 
           <div className="d-flex align-items-center ms-auto d-lg-none" style={{ gap: '8px' }}>
-            {/* Notification Bell Icon for Mobile Header (Frameless & Big) */}
-            <button
-              type="button"
-              className="mobile-bell-btn"
-              onClick={(e) => { e.preventDefault(); setActivePage('notifications'); closeMobileNav(); }}
-              title="Notifications"
-              aria-label="View notifications"
-            >
-              <i className="bi bi-bell-fill" style={{ fontSize: '1.85rem', color: '#2563eb', lineHeight: 1 }}></i>
-              {unreadCount > 0 && (
-                <span
-                  className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
-                  style={{
-                    top: '0px',
-                    right: '0px',
-                    width: '18px',
-                    height: '18px',
-                    minWidth: '18px',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.62rem',
-                    fontWeight: '800',
-                    lineHeight: '1',
-                    boxShadow: '0 2px 6px rgba(220, 53, 69, 0.4)',
-                    zIndex: 10
-                  }}
-                >
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </button>
+            {/* Notification Bell Icon for Mobile Header (Frameless & Big - Only when logged in) */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                className="mobile-bell-btn"
+                onClick={(e) => { e.preventDefault(); setActivePage('notifications'); closeMobileNav(); }}
+                title="Notifications"
+                aria-label="View notifications"
+              >
+                <i className="bi bi-bell-fill" style={{ fontSize: '1.85rem', color: '#2563eb', lineHeight: 1 }}></i>
+                {unreadCount > 0 && (
+                  <span
+                    className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
+                    style={{
+                      top: '0px',
+                      right: '0px',
+                      width: '18px',
+                      height: '18px',
+                      minWidth: '18px',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.62rem',
+                      fontWeight: '800',
+                      lineHeight: '1',
+                      boxShadow: '0 2px 6px rgba(220, 53, 69, 0.4)',
+                      zIndex: 10
+                    }}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Mobile Hamburger Menu Toggle Button */}
             <button

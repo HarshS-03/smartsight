@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import API from '../api/axios';
 import ServerConfigModal from '../components/ServerConfigModal';
 
@@ -324,7 +325,7 @@ export default function LoginPage({ setActivePage, setUser }) {
       </div>
 
       {/* Biometric Face Scanner Modal */}
-      {showFaceModal && (
+      {showFaceModal && createPortal(
         <>
           <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
@@ -425,7 +426,8 @@ export default function LoginPage({ setActivePage, setUser }) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* IP Config Modal */}

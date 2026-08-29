@@ -106,6 +106,7 @@ export default function NotificationsPage({ setActivePage, user }) {
       setShowDeleteModal(false);
       setDeleteNotif(null);
       showToast('Alert deleted from audit log.', 'info');
+      window.dispatchEvent(new Event('refresh-notifications'));
     } catch (err) {
       console.error('Error deleting notification:', err);
       showToast('Error deleting notification alert.', 'danger');
@@ -119,6 +120,7 @@ export default function NotificationsPage({ setActivePage, user }) {
         const newStatus = res.data.notification_status || (action === 'approve' ? 'APPROVED' : 'CANCELLED');
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: newStatus, action_source: 'APP' } : n));
         showToast(action === 'approve' ? 'Intruder alert approved from App!' : 'Intruder alert cancelled.', action === 'approve' ? 'success' : 'info');
+        window.dispatchEvent(new Event('refresh-notifications'));
       } else if (res.data && res.data.status === 'already_processed') {
         showToast(res.data.message || 'Alert was already processed.', 'info');
         fetchNotifications();
@@ -135,6 +137,7 @@ export default function NotificationsPage({ setActivePage, user }) {
       setNotifications([]);
       setShowClearAllModal(false);
       showToast('All notification alerts cleared successfully!', 'success');
+      window.dispatchEvent(new Event('refresh-notifications'));
     } catch (err) {
       console.error('Error clearing all notifications:', err);
       showToast('Failed to clear notifications.', 'danger');

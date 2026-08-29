@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API from './api/axios';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import UnknownCapturesModal from './components/UnknownCapturesModal';
@@ -11,6 +12,7 @@ import CamerasPage from './pages/CamerasPage';
 import DatasetPage from './pages/DatasetPage';
 import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import { initFirebasePush } from './utils/firebasePush';
 
 const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'cameras', 'dataset', 'reports', 'notifications'];
 
@@ -33,6 +35,10 @@ export default function App() {
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);
     };
+  }, []);
+
+  React.useEffect(() => {
+    initFirebasePush();
   }, []);
 
   const setActivePage = (newPage) => {
@@ -76,7 +82,6 @@ export default function App() {
       const token = localStorage.getItem('access_token');
       if (token) {
         try {
-          const API = (await import('./api/axios')).default;
           const res = await API.get('/auth/me/');
           setUser(res.data);
           localStorage.setItem('user', JSON.stringify(res.data));

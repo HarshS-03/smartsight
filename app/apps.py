@@ -15,10 +15,10 @@ class AppConfig(AppConfig):
             if cmd in ['makemigrations', 'migrate', 'collectstatic', 'createsuperuser', 'shell', 'test', 'check']:
                 return
 
-        # In Django runserver with reloader, only execute in the worker child process
+        # Only run AI pre-warm when explicitly running the development/production server
         is_runserver = any('runserver' in arg for arg in sys.argv)
         is_reloader_child = os.environ.get('RUN_MAIN') == 'true'
-        if is_runserver and not is_reloader_child:
+        if not is_runserver or not is_reloader_child:
             return
 
         # Pre-warm AI Models and Gallery SYNCHRONOUSLY at server boot

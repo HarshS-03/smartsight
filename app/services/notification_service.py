@@ -83,6 +83,7 @@ def send_fcm_push(notification, image_url=None):
             )
             fcm_data = {
                 "notification_id": str(notification.id),
+                "notification_count": str(unread_count),
                 "status": str(notification.status),
                 "image_url": str(full_image_url) if full_image_url else "",
                 "actions": "approve,cancel"

@@ -50,6 +50,15 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="smart_sight_alerts" />
 
+        <!-- Custom FCM Service for Badge Updates (intercepts all push notifications) -->
+        <service
+            android:name=".SmartSightFirebaseService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
     </application>
 
     <!-- Permissions -->
@@ -62,17 +71,32 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
-    <!-- Launcher Home Screen Badge Permissions -->
+    <!-- Standard OEM Launcher Badge Permissions (ShortcutBadger verified) -->
+    <!-- Samsung -->
     <uses-permission android:name="com.sec.android.provider.badge.permission.READ" />
     <uses-permission android:name="com.sec.android.provider.badge.permission.WRITE" />
+    <!-- HTC -->
     <uses-permission android:name="com.htc.launcher.permission.READ_SETTINGS" />
     <uses-permission android:name="com.htc.launcher.permission.UPDATE_SHORTCUT" />
+    <!-- Sony -->
     <uses-permission android:name="com.sonyericsson.home.permission.BROADCAST_BADGE" />
-    <uses-permission android:name="com.sonysamba.home.permission.BROADCAST_BADGE" />
+    <uses-permission android:name="com.sonymobile.home.permission.PROVIDER_INSERT_BADGE" />
+    <!-- Huawei / Honor -->
+    <uses-permission android:name="com.huawei.android.launcher.permission.CHANGE_BADGE" />
+    <uses-permission android:name="com.huawei.android.launcher.permission.READ_SETTINGS" />
+    <uses-permission android:name="com.huawei.android.launcher.permission.WRITE_SETTINGS" />
+    <!-- Oppo / Realme / OnePlus (ColorOS / RealmeUI / OxygenOS) -->
+    <uses-permission android:name="com.oppo.launcher.permission.READ_SETTINGS" />
+    <uses-permission android:name="com.oppo.launcher.permission.WRITE_SETTINGS" />
+    <!-- Vivo (FuntouchOS / OriginOS) -->
+    <uses-permission android:name="com.vivo.notification.permission.BADGE_ICON" />
+    <!-- Apex / Solid / EverythingMe / ZUK -->
     <uses-permission android:name="com.anddoes.launcher.permission.UPDATE_COUNT" />
-    <uses-permission android:name="com.majeur.launcher.permission.UPDATE_BADGE" />
+    <uses-permission android:name="co.mewx.project.badge.permission.READ" />
+    <uses-permission android:name="co.mewx.project.badge.permission.WRITE" />
     <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_READ" />
     <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_WRITE" />
+    <uses-permission android:name="android.permission.READ_APP_BADGE" />
 
     <!-- Camera hardware features (optional so app works on devices without camera too) -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />

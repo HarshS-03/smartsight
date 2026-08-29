@@ -10,5 +10,8 @@ export default defineConfig({
     watch: {
       ignored: ['**/android/**']
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1200
   }
 });

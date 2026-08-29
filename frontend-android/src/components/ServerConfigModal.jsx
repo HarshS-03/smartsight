@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import API from '../api/axios';
 
 export default function ServerConfigModal({ show, onClose }) {
@@ -89,7 +90,7 @@ export default function ServerConfigModal({ show, onClose }) {
     onClose();
   };
 
-  return (
+  return createPortal(
     <>
       <div 
         className="modal-backdrop fade show" 
@@ -259,6 +260,7 @@ export default function ServerConfigModal({ show, onClose }) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

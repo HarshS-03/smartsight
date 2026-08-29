@@ -1,5 +1,7 @@
 import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Badge } from '@capawesome/capacitor-badge';
+import { updateAppBadge } from './badgeHelper';
 import API from '../api/axios';
 
 export const initFirebasePush = async () => {
@@ -58,9 +60,8 @@ export const initFirebasePush = async () => {
 
       // Update Home Screen App Badge (like Instagram)
       try {
-        const { Badge } = await import('@capawesome/capacitor-badge');
         const current = await Badge.get();
-        await Badge.set({ count: (current.count || 0) + 1 });
+        await updateAppBadge((current.count || 0) + 1);
       } catch (badgeErr) {
         console.warn('[FCM Push] Badge update error:', badgeErr);
       }
