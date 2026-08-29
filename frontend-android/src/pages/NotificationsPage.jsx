@@ -212,11 +212,20 @@ export default function NotificationsPage({ setActivePage, user }) {
             <div className="col-md-4 text-center text-md-end mt-3 mt-md-0">
               <button
                 type="button"
-                className="btn btn-glass-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm transition-all hover-scale"
+                className="btn btn-glass-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2"
                 onClick={fetchNotifications}
+                style={{
+                  background: '#2563eb',
+                  backgroundColor: '#2563eb',
+                  backgroundImage: 'none',
+                  color: '#ffffff',
+                  border: 'none',
+                  boxShadow: 'none',
+                  opacity: 1
+                }}
               >
-                <i className="bi bi-arrow-clockwise fs-6"></i>
-                <span>Refresh Feed</span>
+                <i className="bi bi-arrow-clockwise fs-6" style={{ color: '#ffffff' }}></i>
+                <span style={{ color: '#ffffff' }}>Refresh Feed</span>
               </button>
             </div>
           </div>

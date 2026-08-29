@@ -2,8 +2,14 @@
    SMART SIGHT — Modern Solid-Surface Design System
    ══════════════════════════════════════════════════════ */
 
-/* ── Google Fonts Inter Import (Online Only) ── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+/* ── Google Fonts: Inter (Locally Hosted) ── */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Inter-VariableFont.ttf') format('truetype');
+}
 
 :root,
 [data-bs-theme="dark"] {
@@ -1956,7 +1962,7 @@ p,
   -webkit-background-clip: unset !important;
   -webkit-text-fill-color: initial !important;
   background-clip: unset !important;
-  color: #2563eb !important;
+  color: #00ba7c !important;
 }
 
 @keyframes gradientShift {
@@ -2206,23 +2212,104 @@ p,
 }
 
 .btn-excel {
-  background: linear-gradient(135deg, #107c41 0%, #1f9a55 100%) !important;
+  background: #059669 !important;
+  background-color: #059669 !important;
+  background-image: none !important;
   border: none !important;
-  color: white !important;
+  color: #ffffff !important;
   font-weight: 700;
   letter-spacing: .5px;
-  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.2) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
   cursor: pointer;
 }
 
+.btn-excel i,
+.btn-excel span {
+  color: #ffffff !important;
+}
+
 .btn-excel:hover {
-  background: linear-gradient(135deg, #0e6c38 0%, #1b854a 100%) !important;
-  transform: translateY(-2px) scale(1);
-  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.4) !important;
+  background: #047857 !important;
+  background-color: #047857 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .btn-excel {
+  background: #059669 !important;
+  background-color: #059669 !important;
+  background-image: none !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+[data-bs-theme="dark"] .btn-excel i,
+[data-bs-theme="dark"] .btn-excel span {
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .btn-excel:hover {
+  background: #047857 !important;
+  background-color: #047857 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
 }
 
 .btn-excel:active {
+  background: #065f46 !important;
+  background-color: #065f46 !important;
+  opacity: 1 !important;
+  transform: translateY(1px);
+}
+
+.btn-modal-download {
+  background: #059669 !important;
+  background-color: #059669 !important;
+  background-image: none !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease !important;
+}
+
+.btn-modal-download:hover {
+  background: #047857 !important;
+  background-color: #047857 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.btn-modal-download:active {
+  background: #065f46 !important;
+  background-color: #065f46 !important;
+  opacity: 1 !important;
   transform: translateY(1px);
 }
 
@@ -3719,12 +3806,12 @@ td {
   color: var(--text-secondary);
   line-height: 1.7;
   margin-bottom: 0;
-  text-align: justify;
-  text-align-last: left;
-  text-justify: inter-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  word-spacing: -0.5px;
+  text-align: left !important;
+  text-align-last: left !important;
+  text-justify: auto !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  word-spacing: normal !important;
   word-break: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
@@ -3875,8 +3962,7 @@ td {
   background: var(--bg-surface-solid) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 16px;
-  padding: 36px 30px;
-  text-align: center;
+  padding: 36px 28px;
   position: relative;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -3887,7 +3973,7 @@ td {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 30%, rgba(13, 110, 253, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 30%, rgba(13, 110, 253, 0.08) 0%, transparent 70%);
   opacity: 0;
   transition: opacity 0.4s ease;
   pointer-events: none;
@@ -3914,7 +4000,7 @@ td {
   justify-content: center;
   font-size: 1.35rem;
   color: #2563eb !important;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1.25rem !important;
   transition: all 0.35s ease;
 }
 
@@ -3923,7 +4009,7 @@ td {
   border-color: #2563eb !important;
   box-shadow: 0 0 20px rgba(13, 110, 253, 0.5) !important;
   color: #ffffff !important;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .pillar-title {
@@ -3931,6 +4017,7 @@ td {
   font-weight: 700;
   color: var(--text-heading);
   margin-bottom: 0.75rem;
+  text-align: center !important;
   transition: color 0.3s ease;
   text-wrap: balance;
 }
@@ -3945,12 +4032,12 @@ td {
   line-height: 1.7;
   margin: 0;
   transition: color 0.3s ease;
-  text-align: justify;
-  text-align-last: left;
-  text-justify: inter-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  word-spacing: -0.5px;
+  text-align: left !important;
+  text-align-last: left !important;
+  text-justify: auto !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  word-spacing: normal !important;
   text-wrap: pretty;
 }
 
@@ -4698,7 +4785,7 @@ td {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin: 0 auto 1.5rem;
   transition: all 0.4s ease;
 }
 
@@ -4718,6 +4805,7 @@ td {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-heading);
+  text-align: center;
   margin-bottom: 0.75rem;
   transition: color 0.3s ease;
 }
@@ -4730,6 +4818,7 @@ td {
   color: var(--text-secondary);
   font-size: 0.92rem;
   line-height: 1.7;
+  text-align: left;
   margin: 0;
   transition: color 0.3s ease;
 }
@@ -4888,7 +4977,7 @@ td {
     width: 48px !important;
     height: 48px !important;
     font-size: 1.25rem !important;
-    margin-bottom: 1rem !important;
+    margin: 0 auto 1rem !important;
   }
 
   .cta-strip {
@@ -5427,7 +5516,7 @@ td {
 }
 
 .reports-title .accent {
-  color: #10b981 !important;
+  color: #00ba7c !important;
   background: none !important;
   -webkit-background-clip: unset !important;
   -webkit-text-fill-color: initial !important;
@@ -5609,38 +5698,97 @@ td {
 }
 
 .btn-excel {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
+  border: none !important;
   color: #ffffff !important;
   font-weight: 700;
   letter-spacing: .5px;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+  transition: opacity 0.2s ease !important;
   cursor: pointer;
 }
 
+.btn-excel i,
+.btn-excel span {
+  color: #ffffff !important;
+}
+
 .btn-excel:hover {
-  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
-  transform: translateY(-2px) scale(1);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
+  opacity: 0.92 !important;
+  box-shadow: none !important;
   color: #ffffff !important;
 }
 
 [data-bs-theme="dark"] .btn-excel {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
+  border: none !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+[data-bs-theme="dark"] .btn-excel i,
+[data-bs-theme="dark"] .btn-excel span {
+  color: #ffffff !important;
 }
 
 [data-bs-theme="dark"] .btn-excel:hover {
-  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5) !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
+  opacity: 0.92 !important;
+  box-shadow: none !important;
   color: #ffffff !important;
 }
 
 .btn-excel:active {
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
+  opacity: 0.85 !important;
   transform: translateY(1px);
+}
+
+/* ── Export Modal Card ── */
+.export-modal-card {
+  background: var(--bg-surface-solid, #ffffff) !important;
+  color: var(--text-heading, #0f172a) !important;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12)) !important;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35) !important;
+  border-radius: 24px !important;
+  opacity: 1 !important;
+}
+
+[data-bs-theme="dark"] input[type="date"] {
+  color-scheme: dark;
+}
+
+[data-bs-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+[data-bs-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+[data-bs-theme="dark"] .export-modal-card {
+  background: var(--bg-surface-solid, #0f172a) !important;
+  color: var(--text-heading, #f8fafc) !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: 0 30px 80px -10px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 24px !important;
+  opacity: 1 !important;
 }
 
 /* ── Glassmorphic Export Dropdown Menu ── */
@@ -5669,15 +5817,52 @@ td {
   background: transparent !important;
 }
 
-.glass-dropdown-menu .dropdown-item:hover {
-  background: rgba(25, 135, 84, 0.15) !important;
-  color: #198754 !important;
+.glass-dropdown-menu .dropdown-item:hover,
+.glass-dropdown-menu .dropdown-item:focus {
   transform: translateX(4px);
 }
 
-[data-bs-theme="dark"] .glass-dropdown-menu .dropdown-item:hover {
-  background: rgba(25, 135, 84, 0.3) !important;
-  color: #20c997 !important;
+/* Individual export dropdown item hover colors */
+.export-dropdown-menu .export-item-daily:hover,
+.export-dropdown-menu .export-item-daily:focus {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.3) !important;
+}
+
+.export-dropdown-menu .export-item-weekly:hover,
+.export-dropdown-menu .export-item-weekly:focus {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #3b82f6 !important;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3) !important;
+}
+
+.export-dropdown-menu .export-item-monthly:hover,
+.export-dropdown-menu .export-item-monthly:focus {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3) !important;
+}
+
+.export-dropdown-menu .export-item-yearly:hover,
+.export-dropdown-menu .export-item-yearly:focus {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3) !important;
+}
+
+.export-dropdown-menu .export-item-all:hover,
+.export-dropdown-menu .export-item-all:focus {
+  background: rgba(6, 182, 212, 0.15) !important;
+  color: #06b6d4 !important;
+  box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.3) !important;
+}
+
+.export-dropdown-menu .export-item-custom:hover,
+.export-dropdown-menu .export-item-custom:focus {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3) !important;
 }
 
 .form-control:focus,
@@ -6207,6 +6392,17 @@ td {
   color: var(--text-secondary);
   line-height: 1.6;
   max-width: 680px;
+  text-align: left;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+@media (max-width: 768px) {
+  .page-hero-sub {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
 }
 
 /* Hero Stats (Horizontal 3-column) */
@@ -6324,4 +6520,75 @@ td {
   .stat-item .label {
     font-size: 0.58rem !important;
   }
+}
+
+/* ── Premium Glass Primary Button (For Notifications) ── */
+.btn-glass-primary {
+  background: #2563eb !important;
+  background-color: #2563eb !important;
+  background-image: none !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  letter-spacing: .5px;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease !important;
+}
+
+.btn-glass-primary i,
+.btn-glass-primary span {
+  color: #ffffff !important;
+}
+
+.btn-glass-primary:hover {
+  background: #1d4ed8 !important;
+  background-color: #1d4ed8 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .btn-glass-primary {
+  background: #2563eb !important;
+  background-color: #2563eb !important;
+  background-image: none !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+[data-bs-theme="dark"] .btn-glass-primary i,
+[data-bs-theme="dark"] .btn-glass-primary span {
+  color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .btn-glass-primary:hover {
+  background: #1d4ed8 !important;
+  background-color: #1d4ed8 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.btn-glass-primary:active,
+[data-bs-theme="dark"] .btn-glass-primary:active {
+  background: #1e40af !important;
+  background-color: #1e40af !important;
+  opacity: 1 !important;
+  transform: translateY(1px);
 }

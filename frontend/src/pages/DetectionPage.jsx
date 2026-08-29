@@ -76,26 +76,27 @@ export default function DetectionPage() {
   useEffect(() => {
     let intervalId = setInterval(async () => {
       if (document.hidden) return;
+      // Don't poll if user explicitly stopped and feed is not running
+      if (userStoppedRef.current && !isFeedRunning) return;
+
       try {
         const baseUrl = getBackendBaseUrl();
         const res = await fetch(`${baseUrl}/video_stats/?src=${cameraType}`);
         if (res.ok) {
           const data = await res.json();
-          const active = Boolean(data.is_active || (data.fps && data.fps > 0));
-
-          setStats({
-            fps: data.fps || 0,
-            faces: data.faces || data.persons || 0,
-            names: data.names || [],
-            resolution: data.resolution || '640x480',
-          });
-
+          const active = Boolean(data.is_active && (data.fps && data.fps > 0) && data.desired_state !== 'STOP');
 
           // Allow 10 seconds grace period for camera & model initialization
           const isWarmingUp = (Date.now() - lastStartClickRef.current) < 10000;
           const currentAttr = liveFeedRef.current ? liveFeedRef.current.getAttribute('src') : null;
 
           if (active && !userStoppedRef.current) {
+            setStats({
+              fps: data.fps || 0,
+              faces: data.faces || data.persons || 0,
+              names: data.names || [],
+              resolution: data.resolution || '640x480',
+            });
             setIsFeedRunning(true);
             const src = `${baseUrl}/video_feed/?src=${cameraType === 'url' ? encodeURIComponent(cameraUrl) : cameraType}&model=${modelType}&stats_key=${cameraType}`;
             if (liveFeedRef.current && (!currentAttr || liveFeedRef.current.style.display === 'none')) {
@@ -107,6 +108,7 @@ export default function DetectionPage() {
             userStoppedRef.current = false;
             setIsFeedRunning(false);
             setFeedUrl('');
+            setStats({ fps: 0.0, faces: 0, names: [], resolution: '0x0' });
             if (liveFeedRef.current && currentAttr) {
               liveFeedRef.current.style.display = 'none';
               liveFeedRef.current.removeAttribute('src');
@@ -120,7 +122,7 @@ export default function DetectionPage() {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [cameraType, modelType, cameraUrl]);
+  }, [cameraType, modelType, cameraUrl, isFeedRunning]);
 
   const handleStartFeed = async () => {
     lastStartClickRef.current = Date.now();
@@ -147,7 +149,7 @@ export default function DetectionPage() {
     setIsFeedRunning(false);
     setFeedError(false);
     setFeedUrl('');
-    setStats({ fps: 0.0, faces: 0, names: [] });
+    setStats({ fps: 0.0, faces: 0, names: [], resolution: '0x0' });
     if (liveFeedRef.current) {
       liveFeedRef.current.style.display = 'none';
       liveFeedRef.current.removeAttribute('src');

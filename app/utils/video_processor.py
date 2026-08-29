@@ -476,6 +476,10 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
     
     def _inference_worker():
         while inference_running[0]:
+            current_stats = _feed_stats.get(stats_key, {})
+            if current_stats.get('desired_state') == 'STOP' or current_stats.get('is_active') is False:
+                break
+
             with inference_lock:
                 frame_to_process = latest_frame[0]
                 latest_frame[0] = None
@@ -605,6 +609,10 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
     try:
         last_frame_id = -1
         while True:
+            current_stats = _feed_stats.get(stats_key, {})
+            if current_stats.get('desired_state') == 'STOP' or current_stats.get('is_active') is False:
+                break
+
             loop_start = time.time()
             success, frame, last_frame_id = cap.read_new(last_frame_id)
             if not success:
@@ -754,9 +762,19 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
             time.sleep(0.001)
     finally:
         inference_running[0] = False
-        inference_thread.join(timeout=2)
-        if stats_key in _feed_stats:
-            _feed_stats[stats_key] = {"fps": 0, "persons": 0, "faces": 0}
+        try:
+            inference_thread.join(timeout=1.5)
+        except Exception:
+            pass
+        _feed_stats[stats_key] = {
+            "fps": 0.0,
+            "persons": 0,
+            "faces": 0,
+            "names": [],
+            "resolution": "0x0",
+            "is_active": False,
+            "desired_state": "STOP"
+        }
         try:
             cap.remove_client()
         except Exception:

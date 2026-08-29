@@ -27,7 +27,7 @@ export default function ReportsPage() {
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
 
-  const [exportRange, setExportRange] = useState('today');
+  const [exportRange, setExportRange] = useState('daily');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -365,19 +365,19 @@ export default function ReportsPage() {
     <>
 
       {/* Reports Hero */}
-      <section className="page-hero text-center text-md-start" style={{ position: 'relative', zIndex: 1050, overflow: 'visible' }}>
+      <section className="page-hero" style={{ position: 'relative', zIndex: 1050, overflow: 'visible' }}>
         <div className="page-hero-bg-wrapper">
           <div className="page-hero-bg"></div>
           <div className="page-hero-orb reports-orb"></div>
         </div>
 
         <div className="container page-hero-content" style={{ position: 'relative', zIndex: 1050 }}>
-          <div className="row align-items-center text-center text-md-start">
-            <div className="col-md-8 mb-3 mb-md-0">
+          <div className="row align-items-center">
+            <div className="col-md-8 mb-3 mb-md-0 text-center text-md-start">
               <h1 className="reports-title mb-2">
-                Recognition <span className="accent">Reports</span>
+                Recognition <span className="accent" style={{ color: '#00ba7c' }}>Reports</span>
               </h1>
-              <p className="page-hero-sub mx-auto ms-md-0">
+              <p className="page-hero-sub text-center text-md-start mb-0">
                 Dynamic frequent persons dashboard &amp; attendance analytics.
               </p>
             </div>
@@ -389,10 +389,18 @@ export default function ReportsPage() {
                   type="button"
                   id="exportDropdown"
                   onClick={openExportDropdown}
-                  aria-expanded={showExportDropdown}>
-                  <i className="bi bi-file-earmark-excel-fill fs-5"></i>
-                  <span>Export Reports</span>
-                  <i className={`bi bi-chevron-down ms-1 ${showExportDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.8rem', transition: 'transform 0.25s ease' }}></i>
+                  aria-expanded={showExportDropdown}
+                  style={{
+                    background: '#059669',
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    boxShadow: 'none',
+                    opacity: 1
+                  }}>
+                  <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#ffffff' }}></i>
+                  <span style={{ color: '#ffffff' }}>Export Reports</span>
+                  <i className={`bi bi-chevron-down ms-1 ${showExportDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.8rem', transition: 'transform 0.25s ease', color: '#ffffff' }}></i>
                 </button>
 
                 {showExportDropdown && (
@@ -400,33 +408,33 @@ export default function ReportsPage() {
                     className="glass-dropdown-menu export-dropdown-menu shadow-lg text-start"
                     aria-labelledby="exportDropdown">
                     <li>
-                      <a className="dropdown-item py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('daily'); }}>
+                      <a className="dropdown-item export-item-daily py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('daily'); }}>
                         <i className="bi bi-calendar-day me-2 text-success"></i> Daily Report
                       </a>
                     </li>
                     <li>
-                      <a className="dropdown-item py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('weekly'); }}>
+                      <a className="dropdown-item export-item-weekly py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('weekly'); }}>
                         <i className="bi bi-calendar-week me-2 text-primary"></i> Weekly Report
                       </a>
                     </li>
                     <li>
-                      <a className="dropdown-item py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('monthly'); }}>
+                      <a className="dropdown-item export-item-monthly py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('monthly'); }}>
                         <i className="bi bi-calendar-month me-2 text-warning"></i> Monthly Report
                       </a>
                     </li>
                     <li>
-                      <a className="dropdown-item py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('yearly'); }}>
+                      <a className="dropdown-item export-item-yearly py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('yearly'); }}>
                         <i className="bi bi-calendar-event me-2 text-danger"></i> Yearly Report
                       </a>
                     </li>
                     <li>
-                      <a className="dropdown-item py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('all'); }}>
+                      <a className="dropdown-item export-item-all py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('all'); }}>
                         <i className="bi bi-archive me-2 text-info"></i> All Records
                       </a>
                     </li>
                     <li><hr className="dropdown-divider opacity-25 my-1" style={{ borderColor: 'var(--border-color)' }} /></li>
                     <li>
-                      <a className="dropdown-item py-2 px-3 rounded-3 fw-bold" href="#" onClick={(e) => { e.preventDefault(); setShowExportDropdown(false); setShowExportModal(true); }}>
+                      <a className="dropdown-item export-item-custom py-2 px-3 rounded-3 fw-bold" href="#" onClick={(e) => { e.preventDefault(); setShowExportDropdown(false); setShowExportModal(true); }}>
                         <i className="bi bi-sliders me-2 text-warning"></i> Custom
                       </a>
                     </li>
@@ -1589,304 +1597,247 @@ export default function ReportsPage() {
           >
             <div
               className="w-100 my-auto"
-              style={{
-                maxWidth: '520px',
-                pointerEvents: 'auto'
-              }}
+              style={{ maxWidth: '480px', pointerEvents: 'auto' }}
             >
               <div
-                className="export-modal-card overflow-hidden shadow-2xl"
+                className="export-modal-card overflow-hidden"
                 style={{
-                  maxHeight: '90vh',
-                  background: 'var(--bg-surface-solid, #ffffff)',
-                  color: 'var(--text-heading, #0f172a)',
-                  borderRadius: '24px',
-                  border: '1px solid var(--border-color, rgba(13, 110, 253, 0.15))',
-                  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)'
+                  maxHeight: '95vh',
+                  background: 'var(--bg-surface-solid, #0d1117)',
+                  color: 'var(--text-heading, #f0f6fc)',
+                  borderRadius: '20px',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+                  boxShadow: '0 32px 80px -10px rgba(0,0,0,0.8)',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}
               >
-                {/* Header Bar */}
-                <div
-                  className="modal-header border-bottom border-secondary border-opacity-10 pb-3.5 pt-4 px-4 d-flex justify-content-between align-items-center"
-                >
-                  <div className="d-flex align-items-center gap-3">
-                    <span
-                      className="d-inline-flex align-items-center justify-content-center rounded-4 flex-shrink-0 shadow-sm"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 202, 240, 0.15) 100%)',
-                        color: '#2563eb',
-                        width: '44px',
-                        height: '44px',
-                        border: '1px solid rgba(13, 110, 253, 0.2)'
-                      }}
-                    >
-                      <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#2563eb' }}></i>
-                    </span>
+                {/* ── Header ── */}
+                <div style={{
+                  padding: '20px 24px 16px',
+                  borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.07))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  flexShrink: 0
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px',
+                      background: 'rgba(0,186,124,0.12)', border: '1px solid rgba(0,186,124,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#00ba7c', fontSize: '1.1rem', flexShrink: 0
+                    }}>
+                      <i className="bi bi-file-earmark-spreadsheet-fill"></i>
+                    </div>
                     <div>
-                      <h5 className="fw-bold text-dynamic mb-0" style={{ fontSize: '1.1rem', letterSpacing: '-0.3px' }}>
-                        Export Configuration
-                      </h5>
-                      <p className="text-secondary small mb-0 mt-0.5" style={{ fontSize: '0.8rem' }}>
-                        Select timeframe &amp; event scope criteria
-                      </p>
+                      <div style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.2, color: 'var(--text-heading, #f0f6fc)' }}>
+                        Export Report
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #8b949e)', marginTop: '2px' }}>
+                        Choose filters and download attendance data
+                      </div>
                     </div>
                   </div>
-
-                  {/* Close Button */}
                   <button
                     type="button"
-                    className="btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0 transition-all text-dynamic shadow-sm"
                     onClick={() => setShowExportModal(false)}
-                    aria-label="Close"
                     style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: 'var(--bg-input, rgba(0, 0, 0, 0.04))',
-                      border: '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
-                      padding: 0
+                      width: '30px', height: '30px', borderRadius: '8px',
+                      border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                      background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary, #8b949e)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', fontSize: '0.8rem', flexShrink: 0
                     }}
                   >
-                    <i className="bi bi-x-lg" style={{ fontSize: '0.9rem' }}></i>
+                    <i className="bi bi-x-lg"></i>
                   </button>
                 </div>
 
-                {/* Body Form */}
-                <form onSubmit={handleExportDownload} className="d-flex flex-column" style={{ overflowY: 'auto' }}>
-                  <div className="p-4 pb-4">
+                {/* ── Body ── */}
+                <form onSubmit={handleExportDownload} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto' }}>
+                  <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-                    {/* Time Horizon Selection (5-Column Clean Equal Grid) */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label
-                        className="form-label text-secondary small fw-bold mb-3 d-flex align-items-center gap-2"
-                        style={{ fontSize: '0.82rem' }}
-                      >
-                        <i className="bi bi-clock-history text-primary fs-6"></i> Report Time Horizon
-                      </label>
-
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(5, 1fr)',
-                          gap: '6px'
-                        }}
-                      >
+                    {/* Time Range */}
+                    <div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary, #8b949e)', marginBottom: '10px' }}>
+                        Time Range
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         {[
-                          {
-                            id: 'daily',
-                            label: 'Daily',
-                            icon: 'bi-lightning-charge-fill',
-                            color: '#f59e0b',
-                            gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                            shadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
-                            softBg: 'rgba(245, 158, 11, 0.12)'
-                          },
-                          {
-                            id: 'weekly',
-                            label: 'Weekly',
-                            icon: 'bi-calendar-week-fill',
-                            color: '#3b82f6',
-                            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                            shadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
-                            softBg: 'rgba(59, 130, 246, 0.12)'
-                          },
-                          {
-                            id: 'monthly',
-                            label: 'Monthly',
-                            icon: 'bi-calendar-month-fill',
-                            color: '#a855f7',
-                            gradient: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
-                            shadow: '0 4px 14px rgba(168, 85, 247, 0.35)',
-                            softBg: 'rgba(168, 85, 247, 0.12)'
-                          },
-                          {
-                            id: 'yearly',
-                            label: 'Yearly',
-                            icon: 'bi-calendar2-event-fill',
-                            color: '#10b981',
-                            gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
-                            shadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
-                            softBg: 'rgba(16, 185, 129, 0.12)'
-                          },
-                          {
-                            id: 'all',
-                            label: 'All Time',
-                            icon: 'bi-archive-fill',
-                            color: '#06b6d4',
-                            gradient: 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)',
-                            shadow: '0 4px 14px rgba(6, 182, 212, 0.35)',
-                            softBg: 'rgba(6, 182, 212, 0.12)'
-                          }
-                        ].map((rangeOpt) => {
-                          const isSelected = exportRange === rangeOpt.id;
+                          { id: 'daily',   label: 'Daily',    icon: 'bi-lightning-charge-fill', color: '#10b981' },
+                          { id: 'weekly',  label: 'Weekly',   icon: 'bi-calendar-week',          color: '#3b82f6' },
+                          { id: 'monthly', label: 'Monthly',  icon: 'bi-calendar3',              color: '#f59e0b' },
+                          { id: 'yearly',  label: 'Yearly',   icon: 'bi-calendar2-check',        color: '#ef4444' },
+                          { id: 'all',     label: 'All Time', icon: 'bi-infinity',               color: '#8b5cf6' },
+                          { id: 'custom',  label: 'Custom',   icon: 'bi-sliders',                color: '#06b6d4' },
+                        ].map(opt => {
+                          const sel = exportRange === opt.id;
                           return (
                             <button
-                              key={rangeOpt.id}
+                              key={opt.id}
                               type="button"
-                              onClick={() => setExportRange(rangeOpt.id)}
-                              className="btn p-1.5 rounded-4 d-flex flex-column align-items-center justify-content-center transition-all text-center"
+                              onClick={() => setExportRange(opt.id)}
                               style={{
-                                minHeight: '66px',
-                                background: isSelected
-                                  ? rangeOpt.gradient
-                                  : 'var(--bg-input, rgba(0, 0, 0, 0.03))',
-                                border: isSelected
-                                  ? '1px solid rgba(255, 255, 255, 0.3)'
-                                  : `1px solid ${rangeOpt.color}25`,
-                                color: isSelected ? '#ffffff' : 'var(--text-heading, #0f172a)',
-                                boxShadow: isSelected ? rangeOpt.shadow : 'none',
-                                transform: isSelected ? 'translateY(-2px)' : 'none'
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                padding: '8px 6px',
+                                borderRadius: '999px',
+                                border: sel ? `1.5px solid ${opt.color}` : '1.5px solid var(--border-color, rgba(255,255,255,0.1))',
+                                background: sel ? `${opt.color}22` : 'rgba(255,255,255,0.02)',
+                                color: sel ? opt.color : 'var(--text-secondary, #8b949e)',
+                                fontSize: '0.78rem',
+                                fontWeight: sel ? 700 : 500,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                width: '100%',
+                                transition: 'all 0.15s ease'
                               }}
                             >
-                              <span
-                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0 mb-1.5"
-                                style={{
-                                  width: '26px',
-                                  height: '26px',
-                                  background: isSelected ? 'rgba(255, 255, 255, 0.25)' : rangeOpt.softBg,
-                                  color: isSelected ? '#ffffff' : rangeOpt.color
-                                }}
-                              >
-                                <i className={`bi ${rangeOpt.icon}`} style={{ fontSize: '0.8rem' }}></i>
-                              </span>
-                              <span style={{ fontSize: '0.68rem', fontWeight: isSelected ? 800 : 600, lineHeight: 1.1, whiteSpace: 'nowrap' }}>
-                                {rangeOpt.label}
-                              </span>
+                              <i className={`bi ${opt.icon}`} style={{ fontSize: '0.78rem' }}></i>
+                              <span>{opt.label}</span>
                             </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Custom Date Range Selection (Clean 2-Column Side-by-Side) */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label
-                        className="form-label text-secondary small fw-bold mb-3 d-flex align-items-center gap-2"
-                        style={{ fontSize: '0.82rem' }}
-                      >
-                        <i className="bi bi-calendar-range text-primary fs-6"></i> Custom Date Filter <span className="fw-normal text-muted opacity-75">(Optional)</span>
-                      </label>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                          <label className="small text-secondary fw-semibold d-block mb-1.5" style={{ fontSize: '0.78rem' }}>Start Date</label>
-                          <input
-                            type="date"
-                            lang="en-GB"
-                            className="form-control text-dynamic py-2 px-3 rounded-4 font-mono w-100 shadow-sm"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            style={{
-                              background: 'var(--bg-input, rgba(0,0,0,0.03))',
-                              border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
-                              color: 'var(--text-heading, #0f172a)',
-                              fontSize: '0.85rem',
-                              height: '46px'
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="small text-secondary fw-semibold d-block mb-1.5" style={{ fontSize: '0.78rem' }}>End Date</label>
-                          <input
-                            type="date"
-                            lang="en-GB"
-                            className="form-control text-dynamic py-2 px-3 rounded-4 font-mono w-100 shadow-sm"
-                            value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            style={{
-                              background: 'var(--bg-input, rgba(0,0,0,0.03))',
-                              border: '1px solid var(--border-color, rgba(0,0,0,0.12))',
-                              color: 'var(--text-heading, #0f172a)',
-                              fontSize: '0.85rem',
-                              height: '46px'
-                            }}
-                          />
-                        </div>
+                    {/* Scope */}
+                    <div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary, #8b949e)', marginBottom: '10px' }}>
+                        Detection Scope
                       </div>
-                    </div>
-
-                    {/* Detection Type Filter */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label
-                        className="form-label text-secondary small fw-bold mb-3 d-flex align-items-center gap-2"
-                        style={{ fontSize: '0.82rem' }}
-                      >
-                        <i className="bi bi-funnel text-primary fs-6"></i> Detection Event Scope
-                      </label>
-
-                      <div className="d-flex flex-column gap-2.5">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         {[
-                          { id: 'all', label: 'All Detections (Known + Unknown)', icon: 'bi-people-fill', color: '#2563eb', activeBg: 'rgba(13, 110, 253, 0.08)' },
-                          { id: 'known', label: 'Known Personnel Only', icon: 'bi-person-check-fill', color: '#10b981', activeBg: 'rgba(16, 185, 129, 0.08)' },
-                          { id: 'unknown', label: 'Unknown Intrusions Only', icon: 'bi-person-exclamation', color: '#ef4444', activeBg: 'rgba(239, 68, 68, 0.08)' }
-                        ].map((filterOpt) => {
-                          const isSelected = exportScope === filterOpt.id;
+                          { id: 'all',     label: 'All',     icon: 'bi-people-fill',       color: '#00ba7c' },
+                          { id: 'known',   label: 'Known',   icon: 'bi-person-check-fill', color: '#3b82f6' },
+                          { id: 'unknown', label: 'Unknown', icon: 'bi-person-slash',      color: '#f59e0b' },
+                        ].map(opt => {
+                          const sel = exportScope === opt.id;
                           return (
-                            <div
-                              key={filterOpt.id}
-                              onClick={() => setExportScope(filterOpt.id)}
-                              className="p-3 px-3.5 rounded-4 d-flex align-items-center justify-content-between transition-all"
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => setExportScope(opt.id)}
                               style={{
-                                background: isSelected ? filterOpt.activeBg : 'var(--bg-input, rgba(0, 0, 0, 0.02))',
-                                border: isSelected ? `1.5px solid ${filterOpt.color}` : '1px solid var(--border-color, rgba(0, 0, 0, 0.08))',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                padding: '8px 6px',
+                                borderRadius: '999px',
+                                border: sel ? `1.5px solid ${opt.color}` : '1.5px solid var(--border-color, rgba(255,255,255,0.1))',
+                                background: sel ? `${opt.color}22` : 'rgba(255,255,255,0.02)',
+                                color: sel ? opt.color : 'var(--text-secondary, #8b949e)',
+                                fontSize: '0.78rem',
+                                fontWeight: sel ? 700 : 500,
                                 cursor: 'pointer',
-                                boxShadow: isSelected ? `0 6px 20px ${filterOpt.color}15` : '0 2px 5px rgba(0,0,0,0.02)'
+                                whiteSpace: 'nowrap',
+                                width: '100%',
+                                transition: 'all 0.15s ease'
                               }}
                             >
-                              <div className="d-flex align-items-center gap-3">
-                                <span
-                                  className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                                  style={{
-                                    width: '34px',
-                                    height: '34px',
-                                    background: `${filterOpt.color}15`,
-                                    color: filterOpt.color
-                                  }}
-                                >
-                                  <i className={`bi ${filterOpt.icon} fs-6`}></i>
-                                </span>
-                                <span className="fw-bold text-dynamic" style={{ fontSize: '0.86rem' }}>{filterOpt.label}</span>
-                              </div>
-                              {isSelected ? (
-                                <span
-                                  className="badge rounded-circle p-1 d-flex align-items-center justify-content-center text-white shadow-sm"
-                                  style={{ width: '22px', height: '22px', background: filterOpt.color }}
-                                >
-                                  <i className="bi bi-check-lg" style={{ fontSize: '0.8rem' }}></i>
-                                </span>
-                              ) : (
-                                <span
-                                  className="rounded-circle"
-                                  style={{
-                                    width: '22px',
-                                    height: '22px',
-                                    border: '2px solid var(--border-color, rgba(0, 0, 0, 0.15))'
-                                  }}
-                                ></span>
-                              )}
-                            </div>
+                              <i className={`bi ${opt.icon}`} style={{ fontSize: '0.78rem' }}></i>
+                              <span>{opt.label}</span>
+                            </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Master Green Download CTA Button */}
-                    <div style={{ marginTop: '2rem', marginBottom: '0' }}>
-                      <button
-                        type="submit"
-                        className="btn w-100 rounded-pill fw-bold py-3 px-3 text-white d-flex align-items-center justify-content-center gap-2 transition-all shadow-lg hover-glow"
-                        style={{
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
-                          fontSize: '0.92rem',
-                          height: '52px'
-                        }}
-                      >
-                        <i className="bi bi-file-earmark-arrow-down-fill fs-5 flex-shrink-0"></i>
-                        <span className="fw-bold text-nowrap">Generate &amp; Download Excel Report</span>
-                      </button>
-                    </div>
+                    {/* Custom Date Range — only show when "custom" is selected */}
+                    {exportRange === 'custom' && (
+                      <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary, #8b949e)', marginBottom: '10px' }}>
+                          Date Range
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          {[
+                            { label: 'From', value: startDate, onChange: e => setStartDate(e.target.value) },
+                            { label: 'To',   value: endDate,   onChange: e => setEndDate(e.target.value)   },
+                          ].map(f => (
+                            <div key={f.label}>
+                              <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #8b949e)', display: 'block', marginBottom: '6px', fontWeight: 500 }}>
+                                {f.label}
+                              </label>
+                              <input
+                                type="date"
+                                lang="en-GB"
+                                value={f.value}
+                                onChange={f.onChange}
+                                style={{
+                                  width: '100%',
+                                  height: '38px',
+                                  borderRadius: '999px',
+                                  border: '1.5px solid var(--border-color, rgba(255,255,255,0.12))',
+                                  background: 'rgba(255,255,255,0.04)',
+                                  color: 'var(--text-heading, #f0f6fc)',
+                                  fontSize: '0.8rem',
+                                  padding: '0 16px',
+                                  colorScheme: 'dark',
+                                  outline: 'none'
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* ── Footer ── */}
+                  <div style={{
+                    padding: '14px 24px 20px',
+                    borderTop: '1px solid var(--border-color, rgba(255,255,255,0.07))',
+                    display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowExportModal(false)}
+                      style={{
+                        flex: '0 0 auto',
+                        padding: '0 20px',
+                        height: '40px',
+                        borderRadius: '999px',
+                        border: '1.5px solid var(--border-color, rgba(255,255,255,0.12))',
+                        background: 'transparent',
+                        color: 'var(--text-secondary, #8b949e)',
+                        fontSize: '0.83rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-modal-download"
+                      style={{
+                        flex: 1,
+                        height: '42px',
+                        borderRadius: '999px',
+                        border: 'none',
+                        outline: 'none',
+                        background: '#059669',
+                        backgroundColor: '#059669',
+                        backgroundImage: 'none',
+                        boxShadow: 'none',
+                        filter: 'none',
+                        color: '#ffffff',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        opacity: 1
+                      }}
+                    >
+                      <i className="bi bi-download" style={{ color: '#ffffff', fontSize: '0.9rem' }}></i>
+                      <span style={{ color: '#ffffff' }}>Generate & Download</span>
+                    </button>
                   </div>
                 </form>
               </div>

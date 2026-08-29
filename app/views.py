@@ -260,8 +260,18 @@ def video_feed(request):
 def video_stats(request):
     src = request.GET.get('src', '0')
     stats = _feed_stats.get(src, {"fps": 0, "persons": 0, "faces": 0, "names": []})
-    fps_val = stats.get('fps', 0)
     desired = stats.get('desired_state', '')
+    if desired == 'STOP' or not stats.get('is_active', True):
+        return Response({
+            "fps": 0.0,
+            "persons": 0,
+            "faces": 0,
+            "names": [],
+            "resolution": "0x0",
+            "is_active": False,
+            "desired_state": "STOP"
+        })
+    fps_val = stats.get('fps', 0)
     is_active = (fps_val > 0 or desired == 'START') and desired != 'STOP'
     res_data = dict(stats)
     res_data['is_active'] = is_active
@@ -271,7 +281,7 @@ def video_stats(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def start_video_feed(request):
-    src = request.data.get('src', '0')
+    src = str(request.data.get('src', '0'))
     model = request.data.get('model', 'yolov8n_onnx')
     if src not in _feed_stats:
         _feed_stats[src] = {"fps": 0, "persons": 0, "faces": 0, "names": []}
@@ -283,14 +293,35 @@ def start_video_feed(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def stop_video_feed(request):
-    src = request.data.get('src', '0')
-    _feed_stats[src] = {"fps": 0, "persons": 0, "faces": 0, "names": [], "is_active": False, "desired_state": "STOP"}
+    src = str(request.data.get('src', '0'))
+    _feed_stats[src] = {
+        "fps": 0.0,
+        "persons": 0,
+        "faces": 0,
+        "names": [],
+        "resolution": "0x0",
+        "is_active": False,
+        "desired_state": "STOP"
+    }
+    if src != '0':
+        _feed_stats['0'] = {
+            "fps": 0.0,
+            "persons": 0,
+            "faces": 0,
+            "names": [],
+            "resolution": "0x0",
+            "is_active": False,
+            "desired_state": "STOP"
+        }
     try:
         from app.utils.video_processor import _CAMERA_POOL
-        if src in _CAMERA_POOL:
-            cam = _CAMERA_POOL.pop(src, None)
+        for key in list(_CAMERA_POOL.keys()):
+            cam = _CAMERA_POOL.pop(key, None)
             if cam:
-                cam.release()
+                try:
+                    cam.release()
+                except Exception:
+                    pass
     except Exception:
         pass
     return Response({'status': 'stopped', 'src': src})

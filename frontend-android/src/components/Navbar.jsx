@@ -244,7 +244,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           display: inline-flex !important;
           align-items: center !important;
           justify-content: center !important;
-          color: var(--text-heading) !important;
+          color: #2563eb !important;
           transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease !important;
           outline: none !important;
           position: relative;
@@ -620,7 +620,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               aria-expanded="false"
               aria-label="Toggle navigation"
             >
-              <i className="bi bi-list" style={{ fontSize: '1.65rem', color: 'var(--text-heading)', lineHeight: 1 }}></i>
+              <i className="bi bi-list" style={{ fontSize: '1.65rem', color: '#2563eb', lineHeight: 1 }}></i>
             </button>
           </div>
 
