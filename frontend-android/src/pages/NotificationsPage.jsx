@@ -106,7 +106,6 @@ export default function NotificationsPage({ setActivePage, user }) {
       setShowDeleteModal(false);
       setDeleteNotif(null);
       showToast('Alert deleted from audit log.', 'info');
-      window.dispatchEvent(new Event('refresh-notifications'));
     } catch (err) {
       console.error('Error deleting notification:', err);
       showToast('Error deleting notification alert.', 'danger');
@@ -120,7 +119,6 @@ export default function NotificationsPage({ setActivePage, user }) {
         const newStatus = res.data.notification_status || (action === 'approve' ? 'APPROVED' : 'CANCELLED');
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: newStatus, action_source: 'APP' } : n));
         showToast(action === 'approve' ? 'Intruder alert approved from App!' : 'Intruder alert cancelled.', action === 'approve' ? 'success' : 'info');
-        window.dispatchEvent(new Event('refresh-notifications'));
       } else if (res.data && res.data.status === 'already_processed') {
         showToast(res.data.message || 'Alert was already processed.', 'info');
         fetchNotifications();
@@ -137,7 +135,6 @@ export default function NotificationsPage({ setActivePage, user }) {
       setNotifications([]);
       setShowClearAllModal(false);
       showToast('All notification alerts cleared successfully!', 'success');
-      window.dispatchEvent(new Event('refresh-notifications'));
     } catch (err) {
       console.error('Error clearing all notifications:', err);
       showToast('Failed to clear notifications.', 'danger');
@@ -510,17 +507,17 @@ export default function NotificationsPage({ setActivePage, user }) {
 
                   {/* Notification Info */}
                   <div className="flex-grow-1 min-w-0">
-                    <div className="d-flex align-items-start justify-content-between gap-2 mb-1 w-100">
-                      <div className="d-flex align-items-start gap-2 min-w-0">
-                        <div className="notif-bell-icon-badge flex-shrink-0">
+                    <div className="d-flex align-items-center justify-content-between gap-2 mb-1.5 w-100">
+                      <div className="d-flex align-items-center gap-2 min-w-0">
+                        <div className="notif-bell-icon-badge">
                           <i className="bi bi-bell-fill"></i>
                         </div>
-                        <span className="fw-bold text-dynamic pe-1" style={{ fontSize: '0.92rem', lineHeight: '1.4' }}>
+                        <span className="fw-bold text-dynamic" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>
                           {notif.title}
                         </span>
                       </div>
 
-                      <span className={`notif-status-badge flex-shrink-0 status-${(notif.status || '').toLowerCase()}`}>
+                      <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
                         {notif.status}
                       </span>
                     </div>
@@ -530,25 +527,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                     </p>
 
                     {/* Quick Approval / Dismiss for PENDING Alerts */}
-                    {notif.status === 'PENDING' && (
-                      <div className="d-flex align-items-center gap-2 mb-2 p-2 rounded-3" style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
-                        <span className="small fw-semibold text-warning d-none d-sm-inline" style={{ fontSize: '0.74rem' }}>
-                          <i className="bi bi-shield-exclamation me-1"></i>Action:
-                        </span>
-                        <button
-                          onClick={() => handleNotificationAction(notif.id, 'approve')}
-                          className="btn btn-sm btn-success notif-action-btn-quick d-inline-flex align-items-center gap-1 shadow-sm"
-                        >
-                          <i className="bi bi-check-circle-fill"></i> Approve
-                        </button>
-                        <button
-                          onClick={() => handleNotificationAction(notif.id, 'cancel')}
-                          className="btn btn-sm btn-outline-danger notif-action-btn-quick d-inline-flex align-items-center gap-1"
-                        >
-                          <i className="bi bi-x-circle-fill"></i> Dismiss
-                        </button>
-                      </div>
-                    )}
+
 
                     <div className="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-white border-opacity-10 w-100">
                       <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">
@@ -644,7 +623,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                           <div className="notif-bell-icon-badge" style={{ width: '26px', height: '26px', fontSize: '0.85rem' }}>
                             <i className="bi bi-bell-fill"></i>
                           </div>
-                          <span className="fw-bold text-dynamic" style={{ fontSize: '0.9rem' }}>
+                          <span className="fw-bold text-dynamic" style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>
                             {notif.title}
                           </span>
                         </div>
@@ -686,26 +665,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       {/* Action Controls */}
                       <td className="text-center">
                         <div className="d-flex align-items-center justify-content-center gap-1.5">
-                          {notif.status === 'PENDING' && (
-                            <>
-                              <button
-                                onClick={() => handleNotificationAction(notif.id, 'approve')}
-                                className="btn btn-sm btn-success p-1 rounded-circle hover-scale"
-                                style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                title="Approve Alert"
-                              >
-                                <i className="bi bi-check-lg"></i>
-                              </button>
-                              <button
-                                onClick={() => handleNotificationAction(notif.id, 'cancel')}
-                                className="btn btn-sm btn-outline-danger p-1 rounded-circle hover-scale"
-                                style={{ width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                title="Dismiss Alert"
-                              >
-                                <i className="bi bi-x-lg"></i>
-                              </button>
-                            </>
-                          )}
+
                           <button
                             onClick={() => promptDeleteNotif(notif)}
                             className="btn btn-sm text-danger border-0 p-1.5 rounded-circle hover-scale"

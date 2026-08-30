@@ -15,12 +15,12 @@
         var isDark = saved === 'dark' || ((!saved || saved === 'system') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         var active = isDark ? 'dark' : 'light';
         document.documentElement.setAttribute('data-bs-theme', active);
+        document.documentElement.style.colorScheme = active;
         var meta = document.getElementById('theme-color-meta');
         if (meta) meta.setAttribute('content', isDark ? '#080c16' : '#ffffff');
       } catch(e) {}
     })();
   </script>
-  <link rel="preload" href="/fonts/Inter-latin-normal.woff2" as="font" type="font/woff2" crossorigin />
   <title>Smart Sight</title>
   <style>
     :root, [data-bs-theme="dark"] {

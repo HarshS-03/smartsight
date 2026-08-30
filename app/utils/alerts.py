@@ -460,7 +460,10 @@ def send_alerts(*args, **kwargs):
                     title="Intruder Alert (Unknown)",
                     message=f"Unrecognized person detected{bystanders_msg} on {camera_name} (Confidence: {confidence_pct}%).",
                     image_url=f"/media/{relative_image_path}" if relative_image_path else None,
-                    status='PENDING'
+                    status='PENDING',
+                    alert_person_name=person_name,
+                    alert_camera_name=camera_name,
+                    alert_confidence=confidence
                 )
                 _pending_alerts[alert_id]["db_notification_id"] = notif.id
                 

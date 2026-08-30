@@ -8,6 +8,7 @@ import cv2 as cv
 from datetime import timedelta, datetime
 from django.utils import timezone
 from django.conf import settings
+from django.core.cache import cache
 from django.http import StreamingHttpResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models.functions import TruncDate
@@ -43,12 +44,26 @@ from app.utils.reports import _fill_excel_worksheet, _fill_summary_sheet, _fill_
 # REST FRAMEWORK USER & AUTH API VIEWS
 # ==============================================================================
 
+class UserViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        return User.objects.all().order_by('id')
+
 class UserMeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+
+_password_reset_token_generator = PasswordResetTokenGenerator()
 
 
 class ForgotPasswordAPIView(APIView):
@@ -58,9 +73,28 @@ class ForgotPasswordAPIView(APIView):
         username = request.data.get('username')
         code = request.data.get('code')
         new_password = request.data.get('new_password')
+        token = request.data.get('token')
+        uid = request.data.get('uid')
 
-        if not username or not code or not new_password:
-            return Response({'error': 'Username, recovery code, and new password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not new_password:
+            return Response({'error': 'New password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Django Secure Token-based reset (Fix 9)
+        if token and uid:
+            try:
+                user_id = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=user_id)
+                if _password_reset_token_generator.check_token(user, token):
+                    user.set_password(new_password)
+                    user.save()
+                    return Response({'message': 'Password reset successfully. You can now login.'}, status=status.HTTP_200_OK)
+                return Response({'error': 'Invalid or expired password reset token.'}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception:
+                return Response({'error': 'Invalid reset link or parameters.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. 2-Step system recovery code
+        if not username or not code:
+            return Response({'error': 'Username and recovery code (or reset token) are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(username=username, code=code)
@@ -78,7 +112,7 @@ class ForgotPasswordAPIView(APIView):
 class CameraViewSet(viewsets.ModelViewSet):
     queryset = Camera.objects.all().order_by('-created_at')
     serializer_class = CameraSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 # ==============================================================================
@@ -88,7 +122,7 @@ class CameraViewSet(viewsets.ModelViewSet):
 class PersonViewSet(viewsets.ModelViewSet):
     queryset = Person.objects.all().order_by('name')
     serializer_class = PersonSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -97,7 +131,7 @@ class PersonViewSet(viewsets.ModelViewSet):
 
 
 class PersonImageDeleteView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, image_id):
         img = get_object_or_404(PersonImage, id=image_id)
@@ -111,7 +145,7 @@ class PersonImageDeleteView(APIView):
 
 
 class DatasetUploadView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         person_name = request.data.get('name')
@@ -155,7 +189,7 @@ class DatasetUploadView(APIView):
 
 
 class ClassifyUnknownsAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         try:
@@ -167,7 +201,7 @@ class ClassifyUnknownsAPIView(APIView):
 
 
 class AssignClassifiedGroupAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         try:
@@ -193,7 +227,7 @@ class AssignClassifiedGroupAPIView(APIView):
 
 class RecognitionLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = RecognitionLogSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = RecognitionLog.objects.all().order_by('-timestamp')
@@ -207,7 +241,7 @@ class RecognitionLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DismissUnknownLogView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, log_id):
         log = get_object_or_404(RecognitionLog, id=log_id)
@@ -249,6 +283,8 @@ def video_feed(request):
         except Camera.DoesNotExist:
             pass
 
+    print(f"\n[AI Stream Engine] >>> Starting Video Feed with Model: '{model}' (Camera: '{camera_name}', Src: '{src}') <<<")
+
     return StreamingHttpResponse(
         gen_frames(src, model, orient, stats_key, camera_name),
         content_type='multipart/x-mixed-replace; boundary=frame'
@@ -287,7 +323,18 @@ def start_video_feed(request):
         _feed_stats[src] = {"fps": 0, "persons": 0, "faces": 0, "names": []}
     _feed_stats[src]['desired_state'] = 'START'
     _feed_stats[src]['is_active'] = True
+    _feed_stats[src]['current_model'] = model
+    print(f"\n[AI Stream Engine] >>> Model Selection Switched To: '{model}' for Source: '{src}' <<<")
     return Response({'status': 'started', 'src': src, 'model': model})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def set_model(request):
+    src = str(request.data.get('src', '0'))
+    model = request.data.get('model', 'yolov8n_onnx')
+    print(f"\n[AI Stream Engine] >>> Preferred Model Switched To: '{model}' (Stream Stopped) <<<")
+    return Response({'status': 'model_updated', 'model': model})
 
 
 @api_view(['POST'])
@@ -542,8 +589,14 @@ def face_login_feed(request):
 @permission_classes([permissions.AllowAny])
 def face_login_check(request):
     token = request.GET.get('token')
-    username = _face_login_verified.get(token)
+    if not token:
+        return Response({'status': 'pending'})
+
+    # Check Django Cache first (Fix 7), fallback to in-memory dict
+    cache_key = f'face_login_{token}'
+    username = cache.get(cache_key) or _face_login_verified.get(token)
     if username:
+        cache.delete(cache_key)
         _face_login_verified.pop(token, None)
         try:
             user = User.objects.get(username=username)
@@ -566,7 +619,7 @@ def face_login_check(request):
 # ==============================================================================
 
 class ReportsExportView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         search_query = request.GET.get('search', '').strip()
@@ -694,7 +747,7 @@ class ReportsExportView(APIView):
 
 
 class ReportsStatsAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         logs = RecognitionLog.objects.all()
@@ -711,7 +764,7 @@ class ReportsStatsAPIView(APIView):
 
 # Notification API Endpoints
 class NotificationListAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         now = timezone.now()
@@ -739,7 +792,7 @@ class NotificationListAPIView(APIView):
 
 
 class NotificationActionAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, pk):
         try:
@@ -783,27 +836,28 @@ class NotificationActionAPIView(APIView):
         new_status = 'APPROVED' if action == 'approve' else ('CANCELLED' if action == 'cancel' else None)
         if new_status:
             if action == 'approve':
-                import re
-                person_name = "Unknown"
-                camera_name = "Default Camera"
-                confidence = 0.0
-                
-                pm = re.search(r"\((.*?)\)", notification.title)
-                if pm: 
-                    person_name = pm.group(1).strip()
-                    if 'unknown' in person_name.lower():
-                        person_name = 'Unknown'
-                
-                cm = re.search(r"on (.*?) \(Confidence: (.*?)%\)", notification.message)
-                if cm:
-                    camera_name = cm.group(1)
-                    try:
-                        confidence = float(cm.group(2)) / 100.0
-                    except:
-                        pass
-                        
+                # Use structured fields directly (Fix 8), with regex fallback for legacy records
+                person_name = notification.alert_person_name or "Unknown"
+                camera_name = notification.alert_camera_name or "Default Camera"
+                confidence = notification.alert_confidence if notification.alert_confidence is not None else 0.0
+
+                if not notification.alert_person_name and not notification.alert_camera_name:
+                    import re
+                    pm = re.search(r"\((.*?)\)", notification.title)
+                    if pm:
+                        person_name = pm.group(1).strip()
+                        if 'unknown' in person_name.lower():
+                            person_name = 'Unknown'
+                    cm = re.search(r"on (.*?) \(Confidence: (.*?)%\)", notification.message)
+                    if cm:
+                        camera_name = cm.group(1)
+                        try:
+                            confidence = float(cm.group(2)) / 100.0
+                        except Exception:
+                            pass
+
                 relative_img = notification.image_url.replace('/media/', '') if notification.image_url else None
-                
+
                 try:
                     RecognitionLog.objects.create(
                         person_name=person_name,
@@ -831,7 +885,7 @@ class NotificationActionAPIView(APIView):
 
 
 class RegisterPushTokenAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         token = request.data.get('device_token')
@@ -879,7 +933,7 @@ def webrtc_offer(request):
 
 class GalleryStatusAPIView(APIView):
     """Returns the current state of the ArcFace embedding gallery."""
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
@@ -905,7 +959,7 @@ class GalleryStatusAPIView(APIView):
 
 class GalleryRebuildAPIView(APIView):
     """Force-reload the in-memory embedding gallery from the database."""
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
@@ -925,7 +979,7 @@ class GalleryRebuildAPIView(APIView):
 
 class ComputePersonEmbeddingsAPIView(APIView):
     """Compute (or recompute) ArcFace embeddings for all images of a person."""
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, person_id):
         engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')

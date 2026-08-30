@@ -42,7 +42,21 @@ export default function LoginPage({ setActivePage, setUser }) {
       }
       setActivePage('home');
     } catch (err) {
-      setError('Invalid username or password.');
+      if (err.response && err.response.status === 429) {
+        const detail = err.response.data && err.response.data.detail;
+        if (detail) {
+          const match = detail.match(/available in (.*)\./);
+          if (match) {
+            setError(`Too many attempts. Please try again in ${match[1]}.`);
+          } else {
+            setError(detail);
+          }
+        } else {
+          setError('Too many attempts. Please try again later.');
+        }
+      } else {
+        setError('Invalid username or password.');
+      }
     }
   };
 
@@ -245,12 +259,12 @@ export default function LoginPage({ setActivePage, setUser }) {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-end mb-4">
+                  <div className={`d-flex justify-content-end ${error ? 'mb-2' : 'mb-4'}`}>
                     <a href="#" className="small text-primary text-decoration-none fw-semibold py-1" onClick={(e) => { e.preventDefault(); setActivePage('forgot_password'); }}>Forgot Password?</a>
                   </div>
 
                   {error && (
-                    <div className="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-3 rounded-3 d-flex align-items-center" role="alert">
+                    <div className="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-4 rounded-3 d-flex align-items-center" role="alert">
                       <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
                     </div>
                   )}

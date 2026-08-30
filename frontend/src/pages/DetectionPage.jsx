@@ -1,6 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import API from '../api/axios';
 
+const MODEL_LABELS = {
+  'yolo26n_face_onnx': 'YOLOv26 Face (ONNX)',
+  'yolo26n_face_pt': 'YOLOv26 Face (PyTorch)',
+  'yolov8n_face_onnx': 'YOLOv8 Face (ONNX)',
+  'yolov8n_face_pt': 'YOLOv8 Face (PyTorch)',
+  'yolov8n_onnx': 'YOLOv8 Nano (ONNX)',
+  'yolov8n_pt': 'YOLOv8 Nano (PyTorch)',
+  'yolov8s_onnx': 'YOLOv8 Small (ONNX)',
+  'yolov8s': 'YOLOv8 Small (PyTorch)',
+};
+
 export default function DetectionPage() {
   const [cameras, setCameras] = useState([]); // Loaded from API
   const [viewMode, setViewMode] = useState('single');
@@ -19,6 +30,41 @@ export default function DetectionPage() {
   const [toastMessage, setToastMessage] = useState(null);
 
   const liveFeedRef = useRef(null);
+
+  const handleModelChange = async (newModel) => {
+    if (newModel === modelType) {
+      setModelDropdownOpen(false);
+      return;
+    }
+    setModelType(newModel);
+    setModelDropdownOpen(false);
+
+    const label = MODEL_LABELS[newModel] || newModel;
+    if (window.showToast) {
+      window.showToast(`Detection Model switched to ${label}`, 'success', 'MODEL SWITCHED');
+    }
+
+    if (isFeedRunning) {
+      const baseUrl = getBackendBaseUrl();
+      const newSrc = `${baseUrl}/video_feed/?src=${cameraType === 'url' ? encodeURIComponent(cameraUrl) : cameraType}&model=${newModel}&stats_key=${cameraType}&t=${Date.now()}`;
+      setFeedUrl(newSrc);
+      if (liveFeedRef.current) {
+        liveFeedRef.current.src = newSrc;
+      }
+      try {
+        await API.post('/start_video_feed/', { src: cameraType, model: newModel });
+      } catch (e) {
+        console.warn('Error updating live feed model:', e);
+      }
+    } else {
+      // Just log it in backend so user can see it in terminal even when stopped
+      try {
+        await API.post('/set_model/', { src: cameraType, model: newModel });
+      } catch (e) {
+        console.warn('Error syncing model choice:', e);
+      }
+    }
+  };
 
   const getBackendBaseUrl = () => {
     // 1. Check if user configured a custom IP in the mobile app settings (e.g. 192.168.1.10:8000)
@@ -73,11 +119,46 @@ export default function DetectionPage() {
   const lastStartClickRef = useRef(0);
   const userStoppedRef = useRef(false);
 
+  // 1. Check initial stream state once on mount / camera change
   useEffect(() => {
-    let intervalId = setInterval(async () => {
+    let isMounted = true;
+    const checkInitialState = async () => {
+      try {
+        const baseUrl = getBackendBaseUrl();
+        const res = await fetch(`${baseUrl}/video_stats/?src=${cameraType}`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.is_active && data.fps > 0 && data.desired_state !== 'STOP') {
+            setStats({
+              fps: data.fps || 0,
+              faces: data.faces || data.persons || 0,
+              names: data.names || [],
+              resolution: data.resolution || '640x480',
+            });
+            setIsFeedRunning(true);
+            const activeModel = data.current_model || modelType;
+            const src = `${baseUrl}/video_feed/?src=${cameraType === 'url' ? encodeURIComponent(cameraUrl) : cameraType}&model=${activeModel}&stats_key=${cameraType}`;
+            setFeedUrl(src);
+            if (liveFeedRef.current) {
+              liveFeedRef.current.src = src;
+              liveFeedRef.current.style.display = 'block';
+            }
+          }
+        }
+      } catch (e) {
+        // silent
+      }
+    };
+    checkInitialState();
+    return () => { isMounted = false; };
+  }, [cameraType]);
+
+  // 2. Poll telemetry only while feed is actively running
+  useEffect(() => {
+    if (!isFeedRunning) return;
+
+    const intervalId = setInterval(async () => {
       if (document.hidden) return;
-      // Don't poll if user explicitly stopped and feed is not running
-      if (userStoppedRef.current && !isFeedRunning) return;
 
       try {
         const baseUrl = getBackendBaseUrl();
@@ -85,10 +166,7 @@ export default function DetectionPage() {
         if (res.ok) {
           const data = await res.json();
           const active = Boolean(data.is_active && (data.fps && data.fps > 0) && data.desired_state !== 'STOP');
-
-          // Allow 10 seconds grace period for camera & model initialization
           const isWarmingUp = (Date.now() - lastStartClickRef.current) < 10000;
-          const currentAttr = liveFeedRef.current ? liveFeedRef.current.getAttribute('src') : null;
 
           if (active && !userStoppedRef.current) {
             setStats({
@@ -97,19 +175,12 @@ export default function DetectionPage() {
               names: data.names || [],
               resolution: data.resolution || '640x480',
             });
-            setIsFeedRunning(true);
-            const src = `${baseUrl}/video_feed/?src=${cameraType === 'url' ? encodeURIComponent(cameraUrl) : cameraType}&model=${modelType}&stats_key=${cameraType}`;
-            if (liveFeedRef.current && (!currentAttr || liveFeedRef.current.style.display === 'none')) {
-              setFeedUrl(src);
-              liveFeedRef.current.src = src;
-              liveFeedRef.current.style.display = 'block';
-            }
           } else if (!active && !isWarmingUp) {
             userStoppedRef.current = false;
             setIsFeedRunning(false);
             setFeedUrl('');
             setStats({ fps: 0.0, faces: 0, names: [], resolution: '0x0' });
-            if (liveFeedRef.current && currentAttr) {
+            if (liveFeedRef.current) {
               liveFeedRef.current.style.display = 'none';
               liveFeedRef.current.removeAttribute('src');
               liveFeedRef.current.src = '';
@@ -122,7 +193,7 @@ export default function DetectionPage() {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [cameraType, modelType, cameraUrl, isFeedRunning]);
+  }, [isFeedRunning, cameraType]);
 
   const handleStartFeed = async () => {
     lastStartClickRef.current = Date.now();
@@ -192,9 +263,9 @@ export default function DetectionPage() {
             <div className="video-panel">
 
               {/* Controls View Mode and Model selectors */}
-              <div className="row mb-4 g-3">
+              <div className="row mb-4 g-3 align-items-stretch">
                 {/* Left: Camera View Card */}
-                <div className="col-md-5 col-lg-4">
+                <div className="col-12 col-md-5 col-lg-4">
                   <div className="detection-control-card h-100 d-flex flex-column justify-content-between">
                     <div className="d-flex align-items-center gap-2 mb-2">
                       <i className="bi bi-camera-video text-primary"></i>
@@ -213,20 +284,18 @@ export default function DetectionPage() {
                   </div>
                 </div>
 
-                {/* Right: Model Selection & Info */}
-                <div className="col-md-7 col-lg-8 d-flex flex-column gap-3">
+                {/* Right: Model Selection */}
+                <div className="col-12 col-md-7 col-lg-8">
                   {/* Model Selector Card */}
-                  <div className="detection-control-card py-2 px-3 d-flex align-items-center gap-2"
+                  <div className="detection-control-card h-100 d-flex flex-column justify-content-between py-2 px-3"
                     style={{ position: 'relative', zIndex: modelDropdownOpen ? 100 : 2 }}>
-                    <span className="control-pill-badge-rect d-none d-sm-inline-flex align-items-center px-3 fw-bold">
-                      <span className="control-pill-icon d-inline-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px' }}>
-                        <i className="bi bi-cpu" style={{ fontSize: '0.9rem' }}></i>
-                      </span>
-                      MODEL
-                    </span>
-                    <div className="custom-dropdown flex-grow-1" onClick={() => { setModelDropdownOpen(!modelDropdownOpen); setCameraDropdownOpen(false); }}>
-                      <div className="dropdown-selected-rect">
-                        <span className="text-truncate me-2">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <i className="bi bi-cpu text-primary"></i>
+                      <span className="fw-semibold text-heading" style={{ fontSize: '0.92rem' }}>AI Model Engine</span>
+                    </div>
+                    <div className="custom-dropdown w-100" onClick={() => { setModelDropdownOpen(!modelDropdownOpen); setCameraDropdownOpen(false); }}>
+                      <div className="dropdown-selected-rect w-100">
+                        <span className="text-truncate me-2 fw-semibold">
                           {modelType === 'yolo26n_face_onnx' && 'YOLOv26 Face (ONNX)'}
                           {modelType === 'yolo26n_face_pt' && 'YOLOv26 Face (PyTorch)'}
                           {modelType === 'yolov8n_face_onnx' && 'YOLOv8 Face (ONNX)'}
@@ -236,60 +305,42 @@ export default function DetectionPage() {
                           {modelType === 'yolov8s_onnx' && 'YOLOv8 Small (ONNX)'}
                           {modelType === 'yolov8s' && 'YOLOv8 Small (PyTorch)'}
                         </span>
-                        <i className="bi bi-chevron-down small opacity-50 flex-shrink-0"></i>
+                        <i className="bi bi-chevron-down small opacity-50 flex-shrink-0 ms-auto"></i>
                       </div>
                       <div className={`dropdown-options ${modelDropdownOpen ? 'open' : ''}`}>
-                        <div className={`dropdown-option ${modelType === 'yolo26n_face_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolo26n_face_onnx')}>
+                        <div className={`dropdown-option ${modelType === 'yolo26n_face_onnx' ? 'active' : ''}`} onClick={() => handleModelChange('yolo26n_face_onnx')}>
                           <div className="fw-semibold">YOLOv26 Face (ONNX)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Next-Gen Precision Engine • 30+ FPS (Recommended)</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolo26n_face_pt' ? 'active' : ''}`} onClick={() => setModelType('yolo26n_face_pt')}>
+                        <div className={`dropdown-option ${modelType === 'yolo26n_face_pt' ? 'active' : ''}`} onClick={() => handleModelChange('yolo26n_face_pt')}>
                           <div className="fw-semibold">YOLOv26 Face (PyTorch)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Next-Gen Max Accuracy • PyTorch</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolov8n_face_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_face_onnx')}>
+                        <div className={`dropdown-option ${modelType === 'yolov8n_face_onnx' ? 'active' : ''}`} onClick={() => handleModelChange('yolov8n_face_onnx')}>
                           <div className="fw-semibold">YOLOv8 Face (ONNX)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Legacy Precision Engine • High FPS</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolov8n_face_pt' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_face_pt')}>
+                        <div className={`dropdown-option ${modelType === 'yolov8n_face_pt' ? 'active' : ''}`} onClick={() => handleModelChange('yolov8n_face_pt')}>
                           <div className="fw-semibold">YOLOv8 Face (PyTorch)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Legacy Max Accuracy • PyTorch</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolov8n_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_onnx')}>
+                        <div className={`dropdown-option ${modelType === 'yolov8n_onnx' ? 'active' : ''}`} onClick={() => handleModelChange('yolov8n_onnx')}>
                           <div className="fw-semibold">YOLOv8 Nano (ONNX)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Ultra Fast • High FPS</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolov8n_pt' ? 'active' : ''}`} onClick={() => setModelType('yolov8n_pt')}>
+                        <div className={`dropdown-option ${modelType === 'yolov8n_pt' ? 'active' : ''}`} onClick={() => handleModelChange('yolov8n_pt')}>
                           <div className="fw-semibold">YOLOv8 Nano (PyTorch)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Fast • Standard PyTorch Format</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolov8s_onnx' ? 'active' : ''}`} onClick={() => setModelType('yolov8s_onnx')}>
+                        <div className={`dropdown-option ${modelType === 'yolov8s_onnx' ? 'active' : ''}`} onClick={() => handleModelChange('yolov8s_onnx')}>
                           <div className="fw-semibold">YOLOv8 Small (ONNX)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Higher Accuracy • ONNX Engine</div>
                         </div>
-                        <div className={`dropdown-option ${modelType === 'yolov8s' ? 'active' : ''}`} onClick={() => setModelType('yolov8s')}>
+                        <div className={`dropdown-option ${modelType === 'yolov8s' ? 'active' : ''}`} onClick={() => handleModelChange('yolov8s')}>
                           <div className="fw-semibold">YOLOv8 Small (PyTorch)</div>
                           <div className="small text-muted" style={{ fontSize: '0.72rem', marginTop: '2px' }}>Max Accuracy • PyTorch Format</div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Info Bar Card */}
-                  <div className="detection-control-card py-2 px-3 d-flex align-items-center gap-3"
-                    style={{ position: 'relative', zIndex: 1 }}>
-                    <span className="model-info-icon-wrapper flex-shrink-0" style={{ width: '28px', height: '28px', borderRadius: '8px' }}>
-                      <i className="bi bi-info-circle-fill"></i>
-                    </span>
-                    <div className="flex-grow-1 min-w-0" style={{ color: 'var(--text-heading)', fontSize: '0.8rem' }}>
-                      {modelType === 'yolo26n_face_onnx' && <span><strong className="text-primary">v26 Face ONNX:</strong> Direct facial detection & state-of-the-art recognition</span>}
-                      {modelType === 'yolo26n_face_pt' && <span><strong className="text-primary">v26 Face PyTorch:</strong> Maximum precision native detection</span>}
-                      {modelType === 'yolov8n_face_onnx' && <span><strong className="text-primary">v8 Face ONNX:</strong> Direct facial detection & high-accuracy ArcFace recognition</span>}
-                      {modelType === 'yolov8n_face_pt' && <span><strong className="text-primary">v8 Face PyTorch:</strong> Direct facial detection native</span>}
-                      {modelType === 'yolov8n_onnx' && <span><strong className="text-primary">Nano ONNX:</strong> Ultra-fast & high FPS</span>}
-                      {modelType === 'yolov8n_pt' && <span><strong className="text-primary">Nano PyTorch:</strong> Lightweight native model</span>}
-                      {modelType === 'yolov8s_onnx' && <span><strong className="text-primary">Small ONNX:</strong> Higher precision engine</span>}
-                      {modelType === 'yolov8s' && <span><strong className="text-primary">Small PyTorch:</strong> Maximum precision</span>}
                     </div>
                   </div>
                 </div>
@@ -471,33 +522,48 @@ export default function DetectionPage() {
                     </div>
                   )}
 
-                  {/* HUD stats (Single View Only) */}
-                  <div className="row g-3 mb-4 align-items-stretch">
-                    <div className="col-md-4">
-                      <div className={`hud-card h-100 ${isFeedRunning ? 'hud-card-green' : 'hud-card-red'}`}>
-                        <div className="hud-label">Status</div>
-                        <div className="fw-bold text-dynamic d-flex align-items-center gap-2" style={{ minHeight: '36px', fontSize: '1.25rem' }}>
+                  {/* Unified Telemetry HUD Bar (Matching user screenshot) */}
+                  {/* Unified Telemetry HUD Bar */}
+                  <div className="mb-4 py-3 px-2 rounded-4 shadow-sm"
+                    style={{ background: 'var(--bg-surface-solid)', border: '1px solid var(--border-color)' }}>
+                    <div className="row text-center align-items-center g-0">
+                      {/* Status Column */}
+                      <div className="col-4" style={{ borderRight: '1px solid var(--border-subtle)' }}>
+                        <div className="d-flex align-items-center justify-content-center mb-1" style={{ gap: '8px' }}>
                           <div id="status-dot" className={`rounded-circle flex-shrink-0 ${isFeedRunning ? 'dot-active' : ''}`}
-                            style={{ width: '10px', height: '10px', background: isFeedRunning ? '#22c55e' : '#dc3545', boxShadow: isFeedRunning ? '0 0 8px rgba(34,197,94,.8)' : '0 0 8px rgba(220,53,69,.6)' }}></div>
-                          <span>{isFeedRunning ? 'Online' : 'Offline'}</span>
+                            style={{ width: '8px', height: '8px', background: isFeedRunning ? '#22c55e' : '#ef4444', boxShadow: isFeedRunning ? '0 0 10px rgba(34,197,94,.8)' : '0 0 10px rgba(239,68,68,.7)' }}></div>
+                          <span className="fw-bold" style={{ fontSize: 'clamp(0.95rem, 3.2vw, 1.2rem)', color: isFeedRunning ? '#22c55e' : '#ef4444' }}>
+                            {isFeedRunning ? 'Online' : 'Offline'}
+                          </span>
+                        </div>
+                        <div className="text-secondary text-uppercase fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.8px' }}>
+                          STATUS
                         </div>
                       </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="hud-card h-100 hud-card-blue">
-                        <div className="hud-label">Framerate</div>
-                        <div className="fw-bold text-dynamic d-flex align-items-center gap-1" style={{ minHeight: '36px', fontSize: '1.25rem' }}>
-                          <span>{stats.fps}</span>
-                          <span className="text-secondary font-mono"
-                            style={{ fontSize: '.75rem', fontWeight: 600 }}>FPS</span>
+
+                      {/* Framerate Column */}
+                      <div className="col-4" style={{ borderRight: '1px solid var(--border-subtle)' }}>
+                        <div className="d-flex align-items-baseline justify-content-center gap-1 mb-1">
+                          <span className="fw-bold font-mono" style={{ fontSize: 'clamp(1.05rem, 3.5vw, 1.3rem)', color: 'var(--text-heading)' }}>
+                            {isFeedRunning ? (stats.fps || '0.0') : '0.0'}
+                          </span>
+                          <span className="text-secondary font-mono fw-bold" style={{ fontSize: '0.68rem' }}>FPS</span>
+                        </div>
+                        <div className="text-secondary text-uppercase fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.8px' }}>
+                          FRAMERATE
                         </div>
                       </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="hud-card h-100 hud-card-blue">
-                        <div className="hud-label">Detected Faces</div>
-                        <div className="fw-bold text-dynamic d-flex align-items-center" style={{ minHeight: '36px', fontSize: '1.25rem' }}>
-                          <span>{stats.faces}</span>
+
+                      {/* Detections Column */}
+                      <div className="col-4">
+                        <div className="d-flex align-items-baseline justify-content-center gap-1 mb-1">
+                          <span className="fw-bold font-mono" style={{ fontSize: 'clamp(1.05rem, 3.5vw, 1.3rem)', color: 'var(--text-heading)' }}>
+                            {isFeedRunning ? (stats.faces || 0) : 0}
+                          </span>
+                          <span className="text-secondary font-mono fw-semibold" style={{ fontSize: '0.68rem' }}>Active</span>
+                        </div>
+                        <div className="text-secondary text-uppercase fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.8px' }}>
+                          DETECTIONS
                         </div>
                       </div>
                     </div>

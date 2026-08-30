@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import API from '../api/axios';
-import ServerConfigModal from '../components/ServerConfigModal';
 
 export default function LoginPage({ setActivePage, setUser }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
-  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const [showFaceModal, setShowFaceModal] = useState(false);
   const [scanStatus, setScanStatus] = useState('Initializing Biometric HUD...');
@@ -45,7 +42,21 @@ export default function LoginPage({ setActivePage, setUser }) {
       }
       setActivePage('home');
     } catch (err) {
-      setError('Invalid username or password.');
+      if (err.response && err.response.status === 429) {
+        const detail = err.response.data && err.response.data.detail;
+        if (detail) {
+          const match = detail.match(/available in (.*)\./);
+          if (match) {
+            setError(`Too many attempts. Please try again in ${match[1]}.`);
+          } else {
+            setError(detail);
+          }
+        } else {
+          setError('Too many attempts. Please try again later.');
+        }
+      } else {
+        setError('Invalid username or password.');
+      }
     }
   };
 
@@ -218,25 +229,6 @@ export default function LoginPage({ setActivePage, setUser }) {
                 boxShadow: 'var(--shadow-lg)',
               }}>
 
-                {/* Server IP Config Gear Button */}
-                <button
-                  type="button"
-                  className="btn position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center hover-glow"
-                  onClick={() => setShowConfigModal(true)}
-                  style={{
-                    zIndex: 5,
-                    background: 'var(--bg-input, rgba(128,128,128,0.1))',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    padding: 0
-                  }}
-                  title="Server IP Configuration"
-                >
-                  <i className="bi bi-gear-fill" style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}></i>
-                </button>
-
                 <div className="position-absolute top-0 start-50 translate-middle"
                   style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)', zIndex: -1 }}>
                 </div>
@@ -267,12 +259,12 @@ export default function LoginPage({ setActivePage, setUser }) {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-end mb-4">
+                  <div className={`d-flex justify-content-end ${error ? 'mb-2' : 'mb-4'}`}>
                     <a href="#" className="small text-primary text-decoration-none fw-semibold py-1" onClick={(e) => { e.preventDefault(); setActivePage('forgot_password'); }}>Forgot Password?</a>
                   </div>
 
                   {error && (
-                    <div className="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-3 rounded-3 d-flex align-items-center" role="alert">
+                    <div className="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-4 rounded-3 d-flex align-items-center" role="alert">
                       <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
                     </div>
                   )}
@@ -325,7 +317,7 @@ export default function LoginPage({ setActivePage, setUser }) {
       </div>
 
       {/* Biometric Face Scanner Modal */}
-      {showFaceModal && createPortal(
+      {showFaceModal && (
         <>
           <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
           <div className="modal fade show d-block" tabIndex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
@@ -426,12 +418,8 @@ export default function LoginPage({ setActivePage, setUser }) {
               </div>
             </div>
           </div>
-        </>,
-        document.body
+        </>
       )}
-
-      {/* IP Config Modal */}
-      <ServerConfigModal show={showConfigModal} onClose={() => setShowConfigModal(false)} />
     </>
   );
 }

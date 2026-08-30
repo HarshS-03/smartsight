@@ -10,23 +10,31 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from root .env file (with override=True for hot reloading)
+load_dotenv(BASE_DIR / '.env', override=True)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+# SECURITY: Secret key loaded from environment
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-%ew_oi5e)8chmf1#*trotrqn26g+puu-t6a(1+j%$p2agxff5i'
+)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%ew_oi5e)8chmf1#*trotrqn26g+puu-t6a(1+j%$p2agxff5i'
+# SECURITY: Debug toggle from environment
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']  # Development only — phone se access ke liye zaroori hai
-
+# Network host access
+_raw_hosts = os.environ.get('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = ['*']
+if 'testserver' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('testserver')
 
 # Application definition
 
@@ -56,7 +64,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# CORS configuration (Allow ALL origins with Wildcard *)
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 # Allow mobile app (Capacitor) and local network origins for CSRF
@@ -68,6 +78,14 @@ CSRF_TRUSTED_ORIGINS = [
     'capacitor://localhost',
     'http://localhost',
 ]
+
+# In-Memory Cache configuration (Fix 7)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'smartsight-cache',
+    }
+}
 
 ROOT_URLCONF = 'smartsight.urls'
 
@@ -142,10 +160,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '20/min',
+    }
 }
 
 # JWT Settings
-from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),

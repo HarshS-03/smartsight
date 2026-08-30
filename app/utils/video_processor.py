@@ -4,6 +4,7 @@ import threading
 import numpy as np
 import cv2 as cv
 from django.conf import settings
+from django.core.cache import cache
 from ultralytics import YOLO
 from app.models import User
 
@@ -312,6 +313,7 @@ def gen_face_login_frames(token=None):
 
         user = User.objects.filter(username__iexact='Harsh').first()
         if user and token:
+            cache.set(f'face_login_{token}', user.username, timeout=120)
             _face_login_verified[token] = user.username
         return
         
@@ -415,6 +417,7 @@ def gen_face_login_frames(token=None):
                            cv.FONT_HERSHEY_SIMPLEX, 0.75, (84, 185, 25), 2, cv.LINE_AA)
                 
                 if token:
+                    cache.set(f'face_login_{token}', verified_user.username, timeout=120)
                     _face_login_verified[token] = verified_user.username
                 
                 ret, buffer = cv.imencode('.jpg', frame, [int(cv.IMWRITE_JPEG_QUALITY), 85])
@@ -451,6 +454,7 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
     cap.start()
 
     model = get_yolo_model(model_name)
+    print(f"[SmartSight Engine] >>> Inference Worker active with Model: '{model_name}' on source: '{camera_src}' <<<")
     is_custom = (model_name in ['yolov8n_onnx', 'yolov8n_pt', 'yolov8n', 'yolov8s_onnx', 'yolov8s_pt', 'yolov8s'])
 
     # Determine recognition engine

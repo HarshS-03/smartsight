@@ -15,6 +15,7 @@
         var isDark = saved === 'dark' || ((!saved || saved === 'system') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         var active = isDark ? 'dark' : 'light';
         document.documentElement.setAttribute('data-bs-theme', active);
+        document.documentElement.style.colorScheme = active;
         var meta = document.getElementById('theme-color-meta');
         if (meta) meta.setAttribute('content', isDark ? '#0b0f19' : '#ffffff');
       } catch(e) {}

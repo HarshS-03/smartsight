@@ -28,6 +28,15 @@ public class MainActivity extends BridgeActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         window.setStatusBarColor(Color.TRANSPARENT);
 
+        // Disable native Android scrollbars on the WebView
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            android.webkit.WebView webView = getBridge().getWebView();
+            webView.setVerticalScrollBarEnabled(false);
+            webView.setHorizontalScrollBarEnabled(false);
+            webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+            webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        }
+
         // Create FCM Notification Channel with custom sound
         createNotificationChannel();
     }

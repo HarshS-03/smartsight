@@ -299,7 +299,7 @@ export default function DatasetPage() {
           ...group,
           images: (group.images || []).map(img => ({
             ...img,
-            url: img.url ? (img.url.startsWith('http') ? img.url : `http://localhost:8000${img.url.startsWith('/') ? '' : '/'}${img.url}`) : ''
+            url: img.url ? getImageUrl(img.url) : ''
           }))
         }));
         setClassifiedGroups(formattedGroups);

@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../api/axios';
-import { syncThemeAndStatusBar } from '../utils/themeStatusBar';
-import { updateAppBadge } from '../utils/badgeHelper';
 
 export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const hasToken = !!localStorage.getItem('access_token');
@@ -45,7 +43,10 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         active = mediaQuery && mediaQuery.matches ? 'dark' : 'light';
       }
       setResolvedTheme(active);
-      syncThemeAndStatusBar(active);
+      document.documentElement.setAttribute('data-bs-theme', active);
+      document.documentElement.style.colorScheme = active;
+      const meta = document.getElementById('theme-color-meta');
+      if (meta) meta.setAttribute('content', active === 'dark' ? '#0b0f19' : '#ffffff');
       localStorage.setItem('theme_mode', themeMode);
       localStorage.setItem('theme', active);
     };
@@ -82,13 +83,9 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const lastNotifiedIdRef = useRef(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setUnreadCount(0);
-      return;
-    }
-
     const fetchUnread = async () => {
       if (document.hidden) return;
+      if (!localStorage.getItem('access_token')) return; // Do not poll if not logged in
       try {
         const res = await API.get('/notifications/');
         const notifs = res.data.notifications || [];
@@ -96,7 +93,6 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           ? res.data.unread_count
           : notifs.filter(n => n.status === 'PENDING' && !n.is_read).length;
         setUnreadCount(count);
-        updateAppBadge(count);
       } catch (err) {
         // Silent catch
       }
@@ -108,7 +104,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
       window.removeEventListener('refresh-notifications', fetchUnread);
       clearInterval(interval);
     };
-  }, [isAuthenticated]);
+  }, []);
 
   // Sliding Liquid Pill Logic
   const [hoveredPage, setHoveredPage] = useState(null);
@@ -169,29 +165,21 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
     }
   };
 
+  const openDjangoAdmin = (e) => {
+    if (e) e.preventDefault();
+    const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const adminUrl = rawBase.replace(/\/api\/?$/, '/admin/');
+    window.open(adminUrl, '_blank');
+    closeMobileNav();
+  };
+
   return (
     <>
       <style>{`
-        /* ── Solid Status Bar Scrim (100% Opaque Native Status Bar Background) ── */
-        .status-bar-solid-scrim {
-          position: sticky;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: var(--status-bar-height, env(safe-area-inset-top, 0px));
-          background: #ffffff !important;
-          z-index: 1060;
-          transition: background 0.2s ease;
-        }
-
-        [data-bs-theme="dark"] .status-bar-solid-scrim {
-          background: #0b0f19 !important;
-        }
-
-        /* ── 100% Solid Opaque Navbar (No Transparency / No Blur) ── */
+        /* ── 100% Solid Opaque Navbar (Locked Sticky Top / Safe Area Aware) ── */
         .navbar {
           position: sticky;
-          top: var(--status-bar-height, env(safe-area-inset-top, 0px)) !important;
+          top: 0;
           width: 100%;
           margin: 0;
           border-radius: 0 !important;
@@ -200,11 +188,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
           z-index: 1050;
           transition: background 0.2s ease, border-color 0.2s ease;
-          padding-top: 0.5rem !important;
-          padding-bottom: 0.5rem !important;
+          padding-top: max(0.35rem, env(safe-area-inset-top, 0px)) !important;
+          padding-bottom: 0.35rem !important;
           padding-left: 0 !important;
           padding-right: 0 !important;
-          min-height: 52px;
+          min-height: 48px;
         }
 
         [data-bs-theme="dark"] .navbar {
@@ -213,28 +201,6 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
-        /* ── Frameless Big Bell Button for Mobile ── */
-        .mobile-bell-btn {
-          width: 44px !important;
-          height: 44px !important;
-          min-width: 44px !important;
-          max-width: 44px !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          padding: 0 !important;
-          display: inline-flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          outline: none !important;
-          position: relative;
-          color: #2563eb !important;
-          transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        }
-
-        .mobile-bell-btn:active {
-          transform: scale(0.88) !important;
-        }
 
         /* ── Mobile Header Menu Button (44px Squircle) ── */
         .mobile-nav-btn,
@@ -484,7 +450,8 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           z-index: 1;
           position: relative;
           background: transparent !important;
-          border: none !important;
+          border: 1px solid transparent !important;
+          border-radius: 12px !important;
           display: block;
         }
 
@@ -570,8 +537,6 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           line-height: 1;
         }
       `}</style>
-      {/* 100% Solid Opaque Status Bar Scrim */}
-      <div className="status-bar-solid-scrim" />
       <nav className="navbar navbar-expand-lg sticky-top">
         <div className="container">
           <a
@@ -582,35 +547,33 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
 
-          <div className="d-flex align-items-center ms-auto d-lg-none" style={{ gap: '8px' }}>
-            {/* Notification Bell Icon for Mobile Header (Frameless & Big - Only when logged in) */}
+          <div className="d-flex align-items-center gap-1 ms-auto d-lg-none">
+            {/* Mobile Notification Bell Button (Clean / No Box, Bigger Icon) */}
             {isAuthenticated && (
               <button
                 type="button"
-                className="mobile-bell-btn"
-                onClick={(e) => { e.preventDefault(); setActivePage('notifications'); closeMobileNav(); }}
+                className="btn btn-link position-relative p-0 text-decoration-none border-0 shadow-none d-flex align-items-center justify-content-center"
+                onClick={() => { setActivePage('notifications'); closeMobileNav(); }}
+                aria-label="Notifications"
                 title="Notifications"
-                aria-label="View notifications"
+                style={{ color: '#2563eb', background: 'transparent', width: '44px', height: '44px' }}
               >
-                <i className="bi bi-bell-fill" style={{ fontSize: '1.85rem', color: '#2563eb', lineHeight: 1 }}></i>
+                <i className="bi bi-bell-fill" style={{ fontSize: '1.55rem', color: '#2563eb', lineHeight: 1 }}></i>
                 {unreadCount > 0 && (
                   <span
-                    className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
+                    className="position-absolute badge rounded-pill bg-danger"
                     style={{
-                      top: '0px',
-                      right: '0px',
-                      width: '18px',
-                      height: '18px',
-                      minWidth: '18px',
-                      padding: 0,
-                      display: 'flex',
+                      top: '4px',
+                      right: '4px',
+                      fontSize: '0.62rem',
+                      fontWeight: '700',
+                      padding: '2px 5px',
+                      minWidth: '17px',
+                      height: '17px',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.62rem',
-                      fontWeight: '800',
-                      lineHeight: '1',
-                      boxShadow: '0 2px 6px rgba(220, 53, 69, 0.4)',
-                      zIndex: 10
+                      border: '2px solid var(--bg-surface-solid)'
                     }}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
@@ -658,7 +621,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
 
               {[
                 { id: 'home', label: 'Home' },
-                { id: 'detection', label: 'Detection' },
+                ...(isAuthenticated ? [{ id: 'detection', label: 'Detection' }] : []),
                 ...(isStaff ? [
                   { id: 'cameras', label: 'Cameras' },
                   { id: 'dataset', label: 'Dataset' },
@@ -715,12 +678,13 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             <ul className="navbar-nav d-lg-none mt-1 mb-1 p-0">
               {[
                 { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
-                { id: 'detection', label: 'Detection', icon: 'bi-eye-fill' },
+                ...(isAuthenticated ? [{ id: 'detection', label: 'Detection', icon: 'bi-eye-fill' }] : []),
                 ...(isStaff ? [
                   { id: 'cameras', label: 'Cameras', icon: 'bi-camera-video-fill' },
                   { id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' },
                   { id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' },
-                  { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }
+                  { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' },
+                  { id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }
                 ] : []),
                 { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
               ].map(item => (
@@ -888,7 +852,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                     </li>
                     {isStaff && (
                       <li>
-                        <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={() => closeMobileNav()}>
+                        <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setActivePage('admin'); closeMobileNav(); }}>
                           <i className="bi bi-speedometer2 text-primary"></i>
                           <span>Admin Panel</span>
                         </a>
@@ -922,3 +886,4 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
     </>
   );
 }
+

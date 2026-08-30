@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Badge } from '@capawesome/capacitor-badge';
@@ -5,6 +6,11 @@ import { updateAppBadge } from './badgeHelper';
 import API from '../api/axios';
 
 export const initFirebasePush = async () => {
+  if (Capacitor.getPlatform() === 'web') {
+    console.log('[FCM Push] Push notifications not supported on web platform.');
+    return;
+  }
+
   try {
     const permStatus = await PushNotifications.checkPermissions();
     let status = permStatus.receive;

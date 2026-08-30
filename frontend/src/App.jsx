@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import UnknownCapturesModal from './components/UnknownCapturesModal';
@@ -11,36 +12,24 @@ import CamerasPage from './pages/CamerasPage';
 import DatasetPage from './pages/DatasetPage';
 import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import AdminPanelPage from './pages/AdminPanelPage';
 
-const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'cameras', 'dataset', 'reports', 'notifications'];
-
-const getPageFromPath = () => {
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
-  if (!path) return 'home';
-  return VALID_PAGES.includes(path) ? path : 'home';
-};
+const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'cameras', 'dataset', 'reports', 'notifications', 'admin'];
 
 export default function App() {
-  const [activePage, setActivePageState] = useState(getPageFromPath);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [showCapturesModal, setShowCapturesModal] = useState(false);
 
-  const setActivePage = (newPage) => {
-    setActivePageState(newPage);
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    const newPath = newPage === 'home' ? '/' : `/${newPage}`;
-    if (window.location.pathname !== newPath) {
-      window.history.pushState({ page: newPage }, '', newPath);
-    }
-  };
+  // Derive active page from react-router location
+  const currentPath = location.pathname.replace(/^\/+|\/+$/g, '');
+  const activePage = currentPath ? (VALID_PAGES.includes(currentPath) ? currentPath : 'home') : 'home';
 
-  React.useEffect(() => {
-    const handlePopState = () => {
-      setActivePageState(getPageFromPath());
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  const setActivePage = (newPage) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const targetPath = newPage === 'home' ? '/' : `/${newPage}`;
+    navigate(targetPath);
+  };
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('user');
@@ -292,15 +281,44 @@ export default function App() {
 
       <main className="flex-grow-1 overflow-x-hidden">
         <div key={activePage} className="page-transition-container">
-          {activePage === 'home' && <HomePage setActivePage={setActivePage} />}
-          {activePage === 'about' && <AboutPage />}
-          {activePage === 'login' && <LoginPage setActivePage={setActivePage} setUser={setUser} />}
-          {activePage === 'forgot_password' && <ForgotPasswordPage setActivePage={setActivePage} />}
-          {activePage === 'detection' && <DetectionPage onOpenCapturesModal={() => setShowCapturesModal(true)} />}
-          {activePage === 'cameras' && <CamerasPage />}
-          {activePage === 'dataset' && <DatasetPage />}
-          {activePage === 'reports' && <ReportsPage />}
-          {activePage === 'notifications' && <NotificationsPage setActivePage={setActivePage} user={user} />}
+          <Routes>
+            <Route path="/" element={<HomePage setActivePage={setActivePage} />} />
+            <Route path="/home" element={<HomePage setActivePage={setActivePage} />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route
+              path="/login"
+              element={user ? <Navigate to="/" replace /> : <LoginPage setActivePage={setActivePage} setUser={setUser} />}
+            />
+            <Route
+              path="/forgot_password"
+              element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage setActivePage={setActivePage} />}
+            />
+            <Route
+              path="/detection"
+              element={user ? <DetectionPage onOpenCapturesModal={() => setShowCapturesModal(true)} /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/cameras"
+              element={user ? <CamerasPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/dataset"
+              element={user ? <DatasetPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/reports"
+              element={user ? <ReportsPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/notifications"
+              element={user ? <NotificationsPage setActivePage={setActivePage} user={user} /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/admin"
+              element={user ? <AdminPanelPage /> : <Navigate to="/login" replace />}
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
       </main>
 

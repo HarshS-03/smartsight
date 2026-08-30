@@ -9,9 +9,10 @@ export async function syncThemeAndStatusBar(theme) {
   const isDark = theme === 'dark';
   const bgColor = isDark ? '#0b0f19' : '#ffffff';
 
-  // 1. Set HTML attribute
+  // 1. Set HTML attribute & color-scheme
   if (typeof document !== 'undefined' && document.documentElement) {
     document.documentElement.setAttribute('data-bs-theme', theme);
+    document.documentElement.style.colorScheme = theme;
   }
 
   // 2. Update Web / Mobile Browser <meta name="theme-color">

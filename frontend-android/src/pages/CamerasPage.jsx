@@ -118,7 +118,7 @@ export default function CamerasPage() {
           <div className="page-hero-orb"></div>
         </div>
 
-        <div className="container position-relative" style={{ zIndex: 2 }}>
+        <div className="container page-hero-content" style={{ zIndex: 2 }}>
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="cameras-title mb-2">

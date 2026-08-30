@@ -98,6 +98,11 @@ class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     telegram_message_id = models.CharField(max_length=100, null=True, blank=True)
 
+    # Structured alert fields (Fix 8)
+    alert_person_name = models.CharField(max_length=100, null=True, blank=True)
+    alert_camera_name = models.CharField(max_length=100, null=True, blank=True)
+    alert_confidence = models.FloatField(null=True, blank=True)
+
     class Meta:
         ordering = ['-created_at']
 

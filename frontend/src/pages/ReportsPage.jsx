@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 
 export default function ReportsPage() {
   const [showExportModal, setShowExportModal] = useState(false);
@@ -1170,16 +1169,19 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Filter Bar Controls (Camera, Person, Timeframe Dropdowns) */}
-              <div className="row g-3 align-items-end mb-3">
+              {/* Filter Bar Controls (Camera, Person, Timeframe Dropdowns & Actions) */}
+              <div className="row g-3 align-items-end mb-4">
                 {/* Camera Dropdown */}
-                <div className="col-lg-3 col-md-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2">Camera</label>
+                <div className="col-12 col-sm-6 col-lg-3">
+                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1.5">
+                    <i className="bi bi-camera-video text-primary"></i>
+                    <span>Camera</span>
+                  </label>
                   <div className="dropdown position-relative">
                     <button
                       type="button"
-                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic py-2 px-3.5 rounded-pill"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem' }}
+                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
+                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowCameraDropdown(!showCameraDropdown); setShowPersonDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate">
@@ -1224,13 +1226,16 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Person Dropdown */}
-                <div className="col-lg-3 col-md-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2">Person</label>
+                <div className="col-12 col-sm-6 col-lg-3">
+                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1.5">
+                    <i className="bi bi-person text-primary"></i>
+                    <span>Person</span>
+                  </label>
                   <div className="dropdown position-relative">
                     <button
                       type="button"
-                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic py-2 px-3.5 rounded-pill"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem' }}
+                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
+                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowPersonDropdown(!showPersonDropdown); setShowCameraDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate">
@@ -1278,14 +1283,17 @@ export default function ReportsPage() {
                   </div>
                 </div>
 
-                {/* Timeframe Dropdown (Default Weekly & Dynamic Years) */}
-                <div className="col-lg-4 col-md-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2">Timeframe</label>
+                {/* Timeframe Dropdown */}
+                <div className="col-12 col-sm-6 col-lg-3">
+                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1.5">
+                    <i className="bi bi-clock-history text-primary"></i>
+                    <span>Timeframe</span>
+                  </label>
                   <div className="dropdown position-relative">
                     <button
                       type="button"
-                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic py-2 px-3.5 rounded-pill"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem' }}
+                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
+                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowTimeframeDropdown(!showTimeframeDropdown); setShowCameraDropdown(false); setShowPersonDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate">
@@ -1337,37 +1345,42 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Apply & Reset Filter Actions */}
-                <div className="col-lg-2 col-md-3 d-flex align-items-center gap-2 pt-md-4 mt-md-1 mt-2">
-                  <button
-                    type="button"
-                    className="btn btn-primary rounded-pill fw-bold text-nowrap d-inline-flex align-items-center justify-content-center gap-2 shadow-primary"
-                    style={{ fontSize: '0.85rem', height: '40px', padding: '0 22px', width: 'auto' }}
-                    onClick={() => setCurrentPage(1)}
-                  >
-                    <i className="bi bi-funnel-fill"></i>
-                    <span>Apply</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-glow"
-                    style={{ width: '40px', height: '40px', border: '1px solid var(--border-input)', background: 'var(--bg-input)' }}
-                    title="Reset All Filters"
-                    onClick={() => { setSearchQuery(''); setCameraQuery('all'); setStatusQuery('all'); setTimeframeQuery('all'); setCurrentPage(1); }}
-                  >
-                    <i className="bi bi-arrow-counterclockwise text-secondary fs-6"></i>
-                  </button>
+                <div className="col-12 col-sm-6 col-lg-3">
+                  <label className="form-label d-none d-lg-block text-secondary small fw-bold text-uppercase mb-2" style={{ visibility: 'hidden' }}>Actions</label>
+                  <div className="d-flex align-items-center gap-2 w-100">
+                    <button
+                      type="button"
+                      className="btn btn-primary rounded-pill fw-bold text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-primary flex-grow-1"
+                      style={{ fontSize: '0.85rem', height: '42px', padding: '0 20px' }}
+                      onClick={() => setCurrentPage(1)}
+                    >
+                      <i className="bi bi-funnel-fill"></i>
+                      <span>Apply</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-glow"
+                      style={{ width: '42px', height: '42px', border: '1px solid var(--border-input)', background: 'var(--bg-input)' }}
+                      title="Reset All Filters"
+                      onClick={() => { setSearchQuery(''); setCameraQuery('all'); setStatusQuery('all'); setTimeframeQuery('all'); setCurrentPage(1); }}
+                    >
+                      <i className="bi bi-arrow-counterclockwise text-secondary fs-6"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="table-responsive">
-                <table className="table custom-table table-hover align-middle mb-0" style={{ width: '100%' }}>
+
+              {/* Responsive Table Container */}
+              <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+                <table className="table custom-table table-hover align-middle mb-0" style={{ minWidth: '860px', width: '100%' }}>
                   <thead>
                     <tr>
-                      <th scope="col" style={{ width: '12%' }}>Date</th>
+                      <th scope="col" style={{ width: '13%' }}>Date</th>
                       <th scope="col" style={{ width: '16%' }}>Camera</th>
                       <th scope="col" style={{ width: '18%' }}>Person Name</th>
-                      <th scope="col" style={{ width: '12%' }} className="text-center">Classification</th>
-                      <th scope="col" style={{ width: '15%' }} className="text-center">Entry Time (First Seen)</th>
-                      <th scope="col" style={{ width: '15%' }} className="text-center">Exit Time (Last Seen)</th>
+                      <th scope="col" style={{ width: '13%' }} className="text-center">Classification</th>
+                      <th scope="col" style={{ width: '14%' }} className="text-center">Entry Time (First Seen)</th>
+                      <th scope="col" style={{ width: '14%' }} className="text-center">Exit Time (Last Seen)</th>
                       <th scope="col" style={{ width: '12%' }} className="text-center">Detections (Freq)</th>
                     </tr>
                   </thead>
@@ -1375,24 +1388,28 @@ export default function ReportsPage() {
                     {currentReports.length > 0 ? currentReports.map((rep, index) => (
                       <tr key={index}>
                         <td className="text-secondary fw-semibold">
-                          <i className="bi bi-calendar3 me-2 text-primary"></i>
-                          {rep.date}
+                          <div className="d-flex align-items-center gap-2">
+                            <i className="bi bi-calendar3 text-primary"></i>
+                            <span>{rep.date}</span>
+                          </div>
                         </td>
                         <td className="text-secondary fw-semibold">
-                          <i className="bi bi-camera-video me-2 text-primary"></i>
-                          <span className="ms-1">{rep.camera_name || "Default Camera"}</span>
+                          <div className="d-flex align-items-center gap-2">
+                            <i className="bi bi-camera-video text-primary"></i>
+                            <span className="text-truncate" style={{ maxWidth: '160px' }}>{rep.camera_name || "Default Camera"}</span>
+                          </div>
                         </td>
                         <td>
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: '36px', height: '36px', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
+                          <div className="d-flex align-items-center gap-2.5">
+                            <div className={`rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${rep.status === 'KNOWN' ? 'bg-primary bg-opacity-10 text-primary' : 'bg-danger bg-opacity-10 text-danger'}`}
+                              style={{ width: '36px', height: '36px', border: rep.status === 'KNOWN' ? '1px solid rgba(13, 110, 253, 0.25)' : '1px solid rgba(220, 53, 69, 0.25)' }}>
                               {rep.status === 'KNOWN' ? (
-                                <i className="bi bi-person-fill text-primary"></i>
+                                <i className="bi bi-person-fill fs-6"></i>
                               ) : (
-                                <i className="bi bi-person-fill-exclamation text-danger"></i>
+                                <i className="bi bi-person-fill-exclamation fs-6"></i>
                               )}
                             </div>
-                            <span className={`fw-bold ${rep.status === 'KNOWN' ? 'text-dynamic' : 'text-danger opacity-75'}`}>
+                            <span className={`fw-bold text-truncate ${rep.status === 'KNOWN' ? 'text-dynamic' : 'text-danger'}`} style={{ maxWidth: '150px' }}>
                               {rep.person_name || "Unknown Person"}
                             </span>
                           </div>
@@ -1405,19 +1422,19 @@ export default function ReportsPage() {
                           )}
                         </td>
                         <td className="text-center">
-                          <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1.5 font-mono d-inline-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
-                            <i className="bi bi-box-arrow-in-right fs-6"></i>
+                          <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 font-mono d-inline-flex align-items-center gap-1.5" style={{ fontSize: '0.825rem' }}>
+                            <i className="bi bi-box-arrow-in-right"></i>
                             <span>{rep.entry_time}</span>
                           </span>
                         </td>
                         <td className="text-center">
-                          <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-1.5 font-mono d-inline-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
-                            <i className="bi bi-box-arrow-left fs-6"></i>
+                          <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1.5 font-mono d-inline-flex align-items-center gap-1.5" style={{ fontSize: '0.825rem' }}>
+                            <i className="bi bi-box-arrow-left"></i>
                             <span>{rep.exit_time}</span>
                           </span>
                         </td>
                         <td className="text-center">
-                          <span className="badge rounded-pill px-3 py-2 fw-bold fs-6" style={{ background: 'rgba(13, 110, 253, 0.15)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
+                          <span className="badge rounded-pill px-3 py-1.5 fw-bold font-mono" style={{ background: 'rgba(13, 110, 253, 0.15)', color: '#3b82f6', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.85rem' }}>
                             {rep.frequency}
                           </span>
                         </td>
@@ -1748,36 +1765,50 @@ export default function ReportsPage() {
                     {/* Custom Date Range — only show when "custom" is selected */}
                     {exportRange === 'custom' && (
                       <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary, #8b949e)', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary, #8b949e)', marginBottom: '10px' }}>
                           Date Range
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                           {[
                             { label: 'From', value: startDate, onChange: e => setStartDate(e.target.value) },
                             { label: 'To',   value: endDate,   onChange: e => setEndDate(e.target.value)   },
                           ].map(f => (
                             <div key={f.label}>
-                              <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #8b949e)', display: 'block', marginBottom: '6px', fontWeight: 500 }}>
+                              <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #8b949e)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
                                 {f.label}
                               </label>
-                              <input
-                                type="date"
-                                lang="en-GB"
-                                value={f.value}
-                                onChange={f.onChange}
-                                style={{
-                                  width: '100%',
-                                  height: '38px',
-                                  borderRadius: '999px',
-                                  border: '1.5px solid var(--border-color, rgba(255,255,255,0.12))',
-                                  background: 'rgba(255,255,255,0.04)',
-                                  color: 'var(--text-heading, #f0f6fc)',
-                                  fontSize: '0.8rem',
-                                  padding: '0 16px',
-                                  colorScheme: 'dark',
-                                  outline: 'none'
-                                }}
-                              />
+                              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <i
+                                  className="bi bi-calendar3 position-absolute"
+                                  style={{
+                                    left: '14px',
+                                    color: 'var(--color-primary, #3b82f6)',
+                                    fontSize: '0.85rem',
+                                    pointerEvents: 'none',
+                                    zIndex: 2
+                                  }}
+                                ></i>
+                                <input
+                                  type="date"
+                                  lang="en-GB"
+                                  value={f.value}
+                                  onChange={f.onChange}
+                                  style={{
+                                    width: '100%',
+                                    height: '42px',
+                                    borderRadius: '999px',
+                                    border: '1.5px solid var(--border-color, rgba(255,255,255,0.12))',
+                                    background: 'var(--bg-input, rgba(255,255,255,0.04))',
+                                    color: 'var(--text-heading, #f0f6fc)',
+                                    fontSize: '0.85rem',
+                                    paddingLeft: '38px',
+                                    paddingRight: '14px',
+                                    colorScheme: 'dark',
+                                    outline: 'none',
+                                    cursor: 'pointer'
+                                  }}
+                                />
+                              </div>
                             </div>
                           ))}
                         </div>

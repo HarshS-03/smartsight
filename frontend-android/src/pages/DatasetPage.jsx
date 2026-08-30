@@ -299,7 +299,7 @@ export default function DatasetPage() {
           ...group,
           images: (group.images || []).map(img => ({
             ...img,
-            url: img.url ? (img.url.startsWith('http') ? img.url : `http://localhost:8000${img.url.startsWith('/') ? '' : '/'}${img.url}`) : ''
+            url: img.url ? getImageUrl(img.url) : ''
           }))
         }));
         setClassifiedGroups(formattedGroups);
@@ -379,7 +379,7 @@ export default function DatasetPage() {
           <div className="page-hero-orb"></div>
         </div>
 
-        <div className="container page-hero-content">
+        <div className="container page-hero-content" style={{ zIndex: 2 }}>
           <div className="row align-items-center text-center text-md-start">
             <div className="col-md-8 mb-3 mb-md-0">
               <h1 className="dataset-title mb-2">

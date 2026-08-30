@@ -1,21 +1,45 @@
 import React, { useState } from 'react';
+import API from '../api/axios';
 
 export default function ForgotPasswordPage({ setActivePage }) {
   const [username, setUsername] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [verified, setVerified] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
     if (!verified) {
-      // Mock verification
+      if (!username.trim() || !code.trim()) {
+        setError('Please enter both your username and recovery code.');
+        return;
+      }
       setVerified(true);
     } else {
-      // Mock completion
-      setSuccess("Password reset successfully!");
-      setTimeout(() => setActivePage('login'), 2000);
+      if (!newPassword || newPassword.length < 4) {
+        setError('Password must be at least 4 characters long.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const response = await API.post('/auth/forgot_password/', {
+          username: username.trim(),
+          code: code.trim(),
+          new_password: newPassword
+        });
+        setSuccess(response.data?.message || 'Password reset successfully!');
+        setTimeout(() => setActivePage('login'), 2000);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Password reset failed. Please check your credentials.');
+        setVerified(false);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -85,6 +109,12 @@ export default function ForgotPasswordPage({ setActivePage }) {
                   </div>
                 )}
 
+                {error && (
+                  <div className="alert alert-danger border-0 small mb-4 rounded-3 d-flex align-items-center py-2" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
+                  </div>
+                )}
+
                 {success && (
                   <div className="alert border-0 glass-alert small mb-4 rounded-3 d-flex align-items-center" role="alert">
                     <i className="bi bi-check-circle-fill me-2"></i> {success}
@@ -94,9 +124,14 @@ export default function ForgotPasswordPage({ setActivePage }) {
                 <div className="d-flex flex-column align-items-center mt-4" style={{ gap: '16px' }}>
                   <button type="submit"
                     className="btn-auth-primary m-0"
+                    disabled={loading}
                   >
-                    <i className={`bi ${verified ? 'bi-shield-check' : 'bi-shield-lock'}`} style={{ fontSize: '1.05rem' }}></i>
-                    <span>{verified ? 'Complete Reset' : 'Verify Identity'}</span>
+                    {loading ? (
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    ) : (
+                      <i className={`bi ${verified ? 'bi-shield-check' : 'bi-shield-lock'}`} style={{ fontSize: '1.05rem' }}></i>
+                    )}
+                    <span>{loading ? 'Processing...' : (verified ? 'Complete Reset' : 'Verify Identity')}</span>
                   </button>
 
                   <a href="#"

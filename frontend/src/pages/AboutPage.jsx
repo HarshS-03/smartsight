@@ -40,7 +40,7 @@ export default function AboutPage() {
       <div className="about-container">
 
         {/* ═══ HERO ═══ */}
-        <section className="page-hero">
+        <section className="page-hero text-center">
           <div className="page-hero-bg-wrapper">
             <div className="page-hero-bg"></div>
             <div className="page-hero-orb"></div>
@@ -73,7 +73,7 @@ export default function AboutPage() {
                 <div className="hero-stats justify-content-center" data-reveal="true" data-reveal-delay="300">
                   <div className="stat-item">
                     <div className="num" data-count-to="99" data-suffix="%">0%</div>
-                    <div className="label">Up to Detection Accuracy</div>
+                    <div className="label">Detection Accuracy</div>
                   </div>
                   <div className="stat-divider"></div>
                   <div className="stat-item">

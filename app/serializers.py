@@ -2,9 +2,34 @@ from rest_framework import serializers
 from app.models import User, Camera, Person, PersonImage, RecognitionLog, Notification
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'code', 'first_name', 'last_name']
+        fields = ['id', 'username', 'email', 'code', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'password']
+
+    def validate_password(self, value):
+        if self.instance and value:
+            from django.contrib.auth.hashers import check_password
+            if check_password(value, self.instance.password):
+                raise serializers.ValidationError("New password cannot be the same as the old password.")
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().create(validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
 
 class CameraSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,5 +72,9 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ['id', 'title', 'message', 'image_url', 'status', 'action_source', 'processed_at', 'is_read', 'created_at', 'telegram_message_id']
+        fields = [
+            'id', 'title', 'message', 'image_url', 'status', 'action_source',
+            'processed_at', 'is_read', 'created_at', 'telegram_message_id',
+            'alert_person_name', 'alert_camera_name', 'alert_confidence'
+        ]
 
