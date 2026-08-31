@@ -115,7 +115,7 @@ body::-webkit-scrollbar {
   --border-hover: rgba(59, 130, 246, 0.5);
 
   /* Navbar */
-  --navbar-bg: #0b0f19;
+  --navbar-bg: #0f172a;
   --navbar-border: rgba(255, 255, 255, 0.08);
   --nav-link-color: rgba(255, 255, 255, 0.65);
   --nav-link-hover: #ffffff;

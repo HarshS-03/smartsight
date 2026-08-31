@@ -25,12 +25,18 @@ local.properties
 app/models/**/*.onnx
 app/models/**/*.pt
 
-# Build Outputs & Android
+# Build Outputs, Android & Desktop Electron
 dist/
 build/
 frontend/dist/
 frontend-android/dist/
+frontend-desktop/dist/
+frontend-desktop/electron/app/
+frontend-desktop/electron/dist/
+frontend-desktop/electron/make/
 *.apk
+*.exe
+*.blockmap
 .gradle/
 .jdk17/
 .vscode/

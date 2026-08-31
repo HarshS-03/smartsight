@@ -83,7 +83,7 @@ export default function ReportsPage() {
         if (match && match[1]) filename = match[1];
       }
 
-      // Standard Web Browser Download
+      // Desktop Browser / Electron Download
       const url = window.URL.createObjectURL(response.data);
       const link = document.createElement('a');
       link.href = url;

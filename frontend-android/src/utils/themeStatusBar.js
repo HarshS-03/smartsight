@@ -38,7 +38,6 @@ export async function syncThemeAndStatusBar(theme) {
   // 3. Update Capacitor Native Android Status Bar (if running in Capacitor native app)
   try {
     if (Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
-      await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
       // Style.Dark: Light text for dark backgrounds
       // Style.Light: Dark text for light backgrounds
       await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});

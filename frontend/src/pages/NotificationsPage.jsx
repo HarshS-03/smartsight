@@ -497,7 +497,12 @@ export default function NotificationsPage({ setActivePage, user }) {
                       <img
                         src={getImageUrl(notif.image_url)}
                         alt="Intruder"
+                        className="w-100 h-100 object-fit-cover"
                       />
+                    ) : (notif.title || '').toLowerCase().includes('brute') || (notif.title || '').toLowerCase().includes('security') ? (
+                      <div className="w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(239, 68, 68, 0.12)' }}>
+                        <i className="bi bi-shield-slash-fill text-danger fs-5"></i>
+                      </div>
                     ) : (
                       <div className="w-100 h-100 d-flex align-items-center justify-content-center">
                         <i className="bi bi-person-bounding-box text-secondary opacity-50 fs-5"></i>
@@ -508,14 +513,9 @@ export default function NotificationsPage({ setActivePage, user }) {
                   {/* Notification Info */}
                   <div className="flex-grow-1 min-w-0">
                     <div className="d-flex align-items-center justify-content-between gap-2 mb-1.5 w-100">
-                      <div className="d-flex align-items-center gap-2 min-w-0">
-                        <div className="notif-bell-icon-badge">
-                          <i className="bi bi-bell-fill"></i>
-                        </div>
-                        <span className="fw-bold text-dynamic" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>
-                          {notif.title}
-                        </span>
-                      </div>
+                      <span className="fw-bold text-dynamic" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>
+                        {notif.title}
+                      </span>
 
                       <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
                         {notif.status}
@@ -610,6 +610,10 @@ export default function NotificationsPage({ setActivePage, user }) {
                               src={getImageUrl(notif.image_url)}
                               alt="Intruder"
                             />
+                          ) : (notif.title || '').toLowerCase().includes('brute') || (notif.title || '').toLowerCase().includes('security') ? (
+                            <div className="w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(239, 68, 68, 0.12)' }}>
+                              <i className="bi bi-shield-slash-fill text-danger fs-6"></i>
+                            </div>
                           ) : (
                             <div className="w-100 h-100 d-flex align-items-center justify-content-center">
                               <i className="bi bi-person-bounding-box text-secondary opacity-50 fs-6"></i>
@@ -619,14 +623,9 @@ export default function NotificationsPage({ setActivePage, user }) {
                       </td>
 
                       <td>
-                        <div className="d-flex align-items-center gap-2">
-                          <div className="notif-bell-icon-badge" style={{ width: '26px', height: '26px', fontSize: '0.85rem' }}>
-                            <i className="bi bi-bell-fill"></i>
-                          </div>
-                          <span className="fw-bold text-dynamic" style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>
-                            {notif.title}
-                          </span>
-                        </div>
+                        <span className="fw-bold text-dynamic" style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>
+                          {notif.title}
+                        </span>
                       </td>
 
                       <td className="text-secondary small" style={{ whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '0.82rem', lineHeight: '1.4' }}>

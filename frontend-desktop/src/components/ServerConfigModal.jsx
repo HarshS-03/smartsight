@@ -61,8 +61,8 @@ export default function ServerConfigModal({ show, onClose }) {
       setTestStatus({
         type: 'error',
         message: err.name === 'AbortError'
-          ? 'Connection timed out (4s). Ensure computer & mobile are on same Wi-Fi.'
-          : 'Could not connect to server. Check IP & port 8000.'
+          ? 'Connection timed out (4s). Ensure server is running and reachable.'
+          : 'Could not connect to server. Check IP & port (default 8000).'
       });
     }
   };
@@ -109,7 +109,6 @@ export default function ServerConfigModal({ show, onClose }) {
         style={{ 
           zIndex: 10550,
           overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
           padding: '12px 0'
         }} 
         onClick={onClose}
@@ -122,7 +121,7 @@ export default function ServerConfigModal({ show, onClose }) {
           <div 
             className="modal-content overflow-auto" 
             style={{
-              maxHeight: 'calc(100dvh - 32px)',
+              maxHeight: 'calc(100vh - 32px)',
               borderRadius: '24px',
               border: '1px solid var(--border-color)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
@@ -164,12 +163,12 @@ export default function ServerConfigModal({ show, onClose }) {
             {/* Modal Body */}
             <div className="modal-body p-4 pt-3">
               <p className="small mb-3" style={{ lineHeight: '1.45', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Enter backend server IP or URL (e.g. <code>http://192.168.1.10:8000</code> or <code>http://localhost:8000</code>) to connect this app with SmartSight server.
+                Configure the target Smart Sight API host IP and port to establish a local network or remote connection.
               </p>
 
               <div className="mb-3">
                 <label className="form-label small fw-semibold mb-1.5" style={{ color: 'var(--text-heading)' }}>
-                  Server URL / IP Address
+                  Server Host / IP Address
                 </label>
                 <div 
                   className="d-flex align-items-center w-100 position-relative rounded-3 overflow-hidden"
@@ -195,7 +194,7 @@ export default function ServerConfigModal({ show, onClose }) {
                     autoCorrect="off"
                     spellCheck="false"
                     className="form-control font-monospace border-0 shadow-none bg-transparent ps-1 flex-grow-1"
-                    placeholder="http://192.168.1.5:8000"
+                    placeholder="http://192.168.1.10:8000"
                     value={serverIp}
                     onChange={e => setServerIp(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}

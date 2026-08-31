@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../api/axios';
-import ServerConfigModal from '../components/ServerConfigModal';
 
 export default function LoginPage({ setActivePage, setUser }) {
-  const [showServerModal, setShowServerModal] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -231,39 +229,17 @@ export default function LoginPage({ setActivePage, setUser }) {
                 boxShadow: 'var(--shadow-lg)',
               }}>
 
-              {/* Server IP Config Gear Button (Original) */}
-              <button 
-                type="button" 
-                className="btn position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center hover-glow" 
-                onClick={() => setShowServerModal(true)}
-                style={{ 
-                  zIndex: 10, 
-                  background: 'var(--bg-surface-solid, rgba(255,255,255,0.08))', 
-                  border: '1px solid var(--border-color)', 
-                  borderRadius: '50%', 
-                  width: '42px', 
-                  height: '42px',
-                  padding: 0,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  cursor: 'pointer'
-                }}
-                title="Server IP Configuration"
-                aria-label="Server IP Settings"
-              >
-                <i className="bi bi-gear-fill text-primary" style={{ fontSize: '1.25rem' }}></i>
-              </button>
-
-              <div className="position-absolute top-0 start-50 translate-middle"
-                style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)', zIndex: -1 }}>
-              </div>
-
-              <div className="mb-4 text-center mt-3">
-                <div className="shield-icon-wrap mx-auto mb-3">
-                  <i className="bi bi-shield-lock-fill text-primary" style={{ fontSize: '2rem' }}></i>
+                <div className="position-absolute top-0 start-50 translate-middle"
+                  style={{ width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)', zIndex: -1 }}>
                 </div>
-                <h2 className="fw-bold mb-1" style={{ fontSize: '1.7rem', letterSpacing: '-0.02em', color: 'var(--text-heading)' }}>Welcome Back</h2>
-                <p className="small" style={{ color: 'var(--text-secondary)' }}>Access the Smart Sight dashboard</p>
-              </div>
+
+                <div className="mb-4 text-center mt-3">
+                  <div className="shield-icon-wrap mx-auto mb-3">
+                    <i className="bi bi-shield-lock-fill text-primary" style={{ fontSize: '2rem' }}></i>
+                  </div>
+                  <h2 className="fw-bold mb-1" style={{ fontSize: '1.7rem', letterSpacing: '-0.02em', color: 'var(--text-heading)' }}>Welcome Back</h2>
+                  <p className="small" style={{ color: 'var(--text-secondary)' }}>Access the Smart Sight dashboard</p>
+                </div>
 
                 <form onSubmit={handleLogin} className="needs-validation">
                   <div className="mb-3">
@@ -339,12 +315,6 @@ export default function LoginPage({ setActivePage, setUser }) {
           </div>
         </div>
       </div>
-
-      {/* Server IP Config Modal */}
-      <ServerConfigModal
-        show={showServerModal}
-        onClose={() => setShowServerModal(false)}
-      />
 
       {/* Biometric Face Scanner Modal */}
       {showFaceModal && (

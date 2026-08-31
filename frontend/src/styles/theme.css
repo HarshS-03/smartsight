@@ -2245,8 +2245,8 @@ p,
 }
 
 .btn-excel {
-  background: #059669 !important;
-  background-color: #059669 !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
   background-image: none !important;
   border: none !important;
   color: #ffffff !important;
@@ -2268,12 +2268,21 @@ p,
 }
 
 .btn-excel:hover {
-  background: #047857 !important;
-  background-color: #047857 !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
   background-image: none !important;
-  opacity: 1 !important;
+  opacity: 0.92 !important;
   box-shadow: none !important;
   color: #ffffff !important;
+}
+
+.reports-title .accent {
+  color: #00ba7c !important;
+  transition: color 0.2s ease;
+}
+
+[data-bs-theme="dark"] .reports-title .accent {
+  color: #059669 !important;
 }
 
 [data-bs-theme="dark"] .btn-excel {
@@ -2300,21 +2309,28 @@ p,
   background: #047857 !important;
   background-color: #047857 !important;
   background-image: none !important;
-  opacity: 1 !important;
+  opacity: 0.95 !important;
   box-shadow: none !important;
   color: #ffffff !important;
 }
 
 .btn-excel:active {
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
+  opacity: 0.85 !important;
+  transform: translateY(1px);
+  box-shadow: none !important;
+}
+
+[data-bs-theme="dark"] .btn-excel:active {
   background: #065f46 !important;
   background-color: #065f46 !important;
-  opacity: 1 !important;
-  transform: translateY(1px);
+  box-shadow: none !important;
 }
 
 .btn-modal-download {
-  background: #059669 !important;
-  background-color: #059669 !important;
+  background: #00ba7c !important;
+  background-color: #00ba7c !important;
   background-image: none !important;
   border: none !important;
   color: #ffffff !important;
@@ -2328,6 +2344,18 @@ p,
   opacity: 1 !important;
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.15s ease !important;
+}
+
+[data-bs-theme="dark"] .btn-modal-download {
+  background: #059669 !important;
+  background-color: #059669 !important;
+  box-shadow: none !important;
+}
+
+[data-bs-theme="dark"] .btn-modal-download:hover {
+  background: #047857 !important;
+  background-color: #047857 !important;
+  box-shadow: none !important;
 }
 
 .btn-modal-download:hover {
@@ -5770,8 +5798,8 @@ td {
 }
 
 [data-bs-theme="dark"] .btn-excel {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #059669 !important;
+  background-color: #059669 !important;
   border: none !important;
   color: #ffffff !important;
   box-shadow: none !important;
@@ -5787,9 +5815,9 @@ td {
 }
 
 [data-bs-theme="dark"] .btn-excel:hover {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
-  opacity: 0.92 !important;
+  background: #047857 !important;
+  background-color: #047857 !important;
+  opacity: 0.95 !important;
   box-shadow: none !important;
   color: #ffffff !important;
 }
@@ -5799,6 +5827,13 @@ td {
   background-color: #00ba7c !important;
   opacity: 0.85 !important;
   transform: translateY(1px);
+  box-shadow: none !important;
+}
+
+[data-bs-theme="dark"] .btn-excel:active {
+  background: #065f46 !important;
+  background-color: #065f46 !important;
+  box-shadow: none !important;
 }
 
 /* ── Export Modal Card ── */

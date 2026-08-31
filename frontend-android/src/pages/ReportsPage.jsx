@@ -374,10 +374,10 @@ export default function ReportsPage() {
           <div className="row align-items-center">
             <div className="col-md-8 mb-3 mb-md-0 text-center text-md-start">
               <h1 className="reports-title mb-2">
-                Recognition <span className="accent" style={{ color: '#00ba7c' }}>Reports</span>
+                Recognition <span className="accent">Reports</span>
               </h1>
               <p className="page-hero-sub text-center text-md-start mb-0">
-                Dynamic frequent persons dashboard &amp; attendance analytics.
+                Dynamic frequent persons dashboard &amp; surveillance analytics.
               </p>
             </div>
             <div className="col-md-4 text-center text-md-end">
@@ -389,16 +389,9 @@ export default function ReportsPage() {
                   id="exportDropdown"
                   onClick={openExportDropdown}
                   aria-expanded={showExportDropdown}
-                  style={{
-                    background: '#059669',
-                    backgroundColor: '#059669',
-                    color: '#ffffff',
-                    border: 'none',
-                    boxShadow: 'none',
-                    opacity: 1
-                  }}>
+                >
                   <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#ffffff' }}></i>
-                  <span style={{ color: '#ffffff' }}>Export Reports</span>
+                  <span style={{ color: '#ffffff', fontWeight: 700 }}>Export Reports</span>
                   <i className={`bi bi-chevron-down ms-1 ${showExportDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.8rem', transition: 'transform 0.25s ease', color: '#ffffff' }}></i>
                 </button>
 
@@ -1170,11 +1163,11 @@ export default function ReportsPage() {
               </div>
 
               {/* Filter Bar Controls (Camera, Person, Timeframe Dropdowns & Actions) */}
-              <div className="row g-3 align-items-end mb-4">
+              <div className="row g-3 align-items-end mb-4 px-1">
                 {/* Camera Dropdown */}
                 <div className="col-12 col-sm-6 col-lg-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1.5">
-                    <i className="bi bi-camera-video text-primary"></i>
+                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-inline-flex align-items-center gap-2">
+                    <i className="bi bi-camera-video text-primary fs-6 flex-shrink-0"></i>
                     <span>Camera</span>
                   </label>
                   <div className="dropdown position-relative">
@@ -1184,9 +1177,9 @@ export default function ReportsPage() {
                       style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowCameraDropdown(!showCameraDropdown); setShowPersonDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
-                      <span className="text-truncate">
-                        <i className="bi bi-camera-video me-2 text-primary"></i>
-                        {cameraQuery === 'all' ? 'All Cameras' : cameraQuery}
+                      <span className="text-truncate d-inline-flex align-items-center gap-2">
+                        <i className="bi bi-camera-video text-primary flex-shrink-0"></i>
+                        <span>{cameraQuery === 'all' ? 'All Cameras' : cameraQuery}</span>
                       </span>
                       <i className={`bi bi-chevron-down ms-2 small transition-all ${showCameraDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.7rem' }}></i>
                     </button>
@@ -1227,8 +1220,8 @@ export default function ReportsPage() {
 
                 {/* Person Dropdown */}
                 <div className="col-12 col-sm-6 col-lg-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1.5">
-                    <i className="bi bi-person text-primary"></i>
+                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-inline-flex align-items-center gap-2">
+                    <i className="bi bi-person text-primary fs-6"></i>
                     <span>Person</span>
                   </label>
                   <div className="dropdown position-relative">
@@ -1238,9 +1231,9 @@ export default function ReportsPage() {
                       style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowPersonDropdown(!showPersonDropdown); setShowCameraDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
-                      <span className="text-truncate">
-                        <i className="bi bi-person me-2 text-primary"></i>
-                        {statusQuery === 'KNOWN' ? 'Known Persons' : statusQuery === 'UNKNOWN' ? 'Unknown Persons' : 'All Persons'}
+                      <span className="text-truncate d-inline-flex align-items-center gap-2">
+                        <i className="bi bi-person text-primary"></i>
+                        <span>{statusQuery === 'KNOWN' ? 'Known Persons' : statusQuery === 'UNKNOWN' ? 'Unknown Persons' : 'All Persons'}</span>
                       </span>
                       <i className={`bi bi-chevron-down ms-2 small transition-all ${showPersonDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.7rem' }}></i>
                     </button>
@@ -1285,8 +1278,8 @@ export default function ReportsPage() {
 
                 {/* Timeframe Dropdown */}
                 <div className="col-12 col-sm-6 col-lg-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1.5">
-                    <i className="bi bi-clock-history text-primary"></i>
+                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-inline-flex align-items-center gap-2">
+                    <i className="bi bi-clock-history text-primary fs-6"></i>
                     <span>Timeframe</span>
                   </label>
                   <div className="dropdown position-relative">
@@ -1296,9 +1289,9 @@ export default function ReportsPage() {
                       style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowTimeframeDropdown(!showTimeframeDropdown); setShowCameraDropdown(false); setShowPersonDropdown(false); setShowPerPageDropdown(false); }}
                     >
-                      <span className="text-truncate">
-                        <i className="bi bi-calendar3 me-2 text-primary"></i>
-                        {timeframeQuery === 'week' ? 'Weekly (Last 7 Days)' : timeframeQuery === 'month' ? 'Monthly (This Month)' : timeframeQuery === 'year' ? 'Yearly (This Year)' : timeframeQuery === 'today' ? 'Today' : timeframeQuery.startsWith('year-') ? `Year ${timeframeQuery.split('-')[1]}` : 'All Time'}
+                      <span className="text-truncate d-inline-flex align-items-center gap-2">
+                        <i className="bi bi-calendar3 text-primary"></i>
+                        <span>{timeframeQuery === 'week' ? 'Weekly (Last 7 Days)' : timeframeQuery === 'month' ? 'Monthly (This Month)' : timeframeQuery === 'year' ? 'Yearly (This Year)' : timeframeQuery === 'today' ? 'Today' : timeframeQuery.startsWith('year-') ? `Year ${timeframeQuery.split('-')[1]}` : 'All Time'}</span>
                       </span>
                       <i className={`bi bi-chevron-down ms-2 small transition-all ${showTimeframeDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.7rem' }}></i>
                     </button>
@@ -1850,11 +1843,6 @@ export default function ReportsPage() {
                         borderRadius: '999px',
                         border: 'none',
                         outline: 'none',
-                        background: '#059669',
-                        backgroundColor: '#059669',
-                        backgroundImage: 'none',
-                        boxShadow: 'none',
-                        filter: 'none',
                         color: '#ffffff',
                         fontSize: '0.85rem',
                         fontWeight: 700,
@@ -1862,8 +1850,7 @@ export default function ReportsPage() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
-                        cursor: 'pointer',
-                        opacity: 1
+                        cursor: 'pointer'
                       }}
                     >
                       <i className="bi bi-download" style={{ color: '#ffffff', fontSize: '0.9rem' }}></i>

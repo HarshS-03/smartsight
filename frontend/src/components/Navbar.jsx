@@ -80,7 +80,6 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const lastNotifiedIdRef = useRef(null);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -153,7 +152,10 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  const [isNavOpen, setIsNavOpen] = useState(false);
+
   const closeMobileNav = () => {
+    setIsNavOpen(false);
     const navEl = document.getElementById('navbarNav');
     if (navEl && navEl.classList.contains('show')) {
       navEl.classList.remove('show');
@@ -163,14 +165,6 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         toggler.classList.add('collapsed');
       }
     }
-  };
-
-  const openDjangoAdmin = (e) => {
-    if (e) e.preventDefault();
-    const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-    const adminUrl = rawBase.replace(/\/api\/?$/, '/admin/');
-    window.open(adminUrl, '_blank');
-    closeMobileNav();
   };
 
   return (
@@ -188,11 +182,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
           z-index: 1050;
           transition: background 0.2s ease, border-color 0.2s ease;
-          padding-top: max(0.35rem, env(safe-area-inset-top, 0px)) !important;
-          padding-bottom: 0.35rem !important;
-          padding-left: 0 !important;
-          padding-right: 0 !important;
-          min-height: 48px;
+          padding-top: max(0.4rem, env(safe-area-inset-top, 0px)) !important;
+          padding-bottom: 0.4rem !important;
+          padding-left: env(safe-area-inset-left, 0px) !important;
+          padding-right: env(safe-area-inset-right, 0px) !important;
+          min-height: calc(56px + env(safe-area-inset-top, 0px));
         }
 
         [data-bs-theme="dark"] .navbar {
@@ -202,9 +196,31 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         }
 
 
-        /* ── Mobile Header Menu Button (44px Squircle) ── */
-        .mobile-nav-btn,
-        .navbar-toggler.mobile-nav-btn {
+        /* ── Mobile Header Action Buttons ── */
+        .mobile-bell-btn {
+          width: 48px !important;
+          height: 48px !important;
+          min-width: 48px !important;
+          border-radius: 12px !important;
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          color: #2563eb !important;
+          transition: transform 0.15s ease !important;
+          outline: none !important;
+          position: relative;
+        }
+
+        .mobile-bell-btn:active {
+          transform: scale(0.9) !important;
+        }
+
+        .mobile-menu-btn,
+        .navbar-toggler.mobile-menu-btn {
           width: 44px !important;
           height: 44px !important;
           min-width: 44px !important;
@@ -218,39 +234,47 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           align-items: center !important;
           justify-content: center !important;
           color: #2563eb !important;
-          transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease !important;
+          transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background 0.25s ease,
+                      border-color 0.25s ease,
+                      box-shadow 0.25s ease !important;
           outline: none !important;
           position: relative;
         }
 
-        .mobile-nav-btn:hover,
-        .navbar-toggler.mobile-nav-btn:hover {
+        .mobile-menu-btn:hover {
           border-color: #2563eb !important;
           color: #2563eb !important;
         }
 
-        .mobile-nav-btn:active,
-        .navbar-toggler.mobile-nav-btn:active {
-          transform: scale(0.92) !important;
-          background: var(--bg-surface-hover, #f1f5f9) !important;
+        .mobile-menu-btn:active {
+          transform: scale(0.9) !important;
         }
 
-        .mobile-nav-btn:focus,
-        .navbar-toggler.mobile-nav-btn:focus {
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+        .mobile-menu-btn.is-active {
+          border-color: #2563eb !important;
+          background: rgba(37, 99, 235, 0.08) !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+          transform: scale(1.02);
         }
 
-        [data-bs-theme="dark"] .mobile-nav-btn,
-        [data-bs-theme="dark"] .navbar-toggler.mobile-nav-btn {
+        [data-bs-theme="dark"] .mobile-menu-btn {
           background: #111827 !important;
           border-color: rgba(255, 255, 255, 0.12) !important;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-bs-theme="dark"] .mobile-menu-btn.is-active {
+          background: rgba(37, 99, 235, 0.18) !important;
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.28) !important;
         }
 
         .navbar-brand {
           font-family: var(--font-brand) !important;
           font-weight: var(--fw-bold, 700);
           letter-spacing: var(--ls-heading, -0.03em);
+          font-size: 1.45rem !important;
         }
 
         .nav-link {
@@ -304,10 +328,10 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           .mobile-nav-link {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            padding: 0.65rem 1rem;
-            margin: 0.15rem 0;
-            border-radius: 12px;
+            gap: 0.75rem;
+            padding: 0.45rem 0.85rem;
+            margin: 0.05rem 0;
+            border-radius: 10px;
             font-size: 0.88rem;
             font-weight: 600;
             letter-spacing: -0.01em;
@@ -354,16 +378,30 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           }
 
           .navbar-toggler {
-            border: 1px solid var(--border-color) !important;
-            background-color: var(--bg-surface-solid) !important;
-            border-radius: 12px !important;
-            padding: 0.45rem 0.65rem !important;
-            transition: transform 0.2s ease !important;
+            padding: 0 !important;
           }
+        }
 
-          .navbar-toggler:active {
-            transform: scale(0.94);
-          }
+        /* ── Mobile Login Action Button (Matches LoginPage .btn-auth-primary) ── */
+        .mobile-login-btn {
+          background: #2563eb !important;
+          border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          color: #ffffff !important;
+          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          text-decoration: none !important;
+        }
+
+        .mobile-login-btn:hover {
+          background: #1d4ed8 !important;
+          box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+          transform: translateY(-1px);
+          color: #ffffff !important;
+        }
+
+        .mobile-login-btn:active {
+          transform: scale(0.98) !important;
+          box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
         }
 
         /* ══════════════════════════════════════════════════════
@@ -470,21 +508,50 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(15, 23, 42, 0.6)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
         }
 
-        /* ── Mobile Nav Collapse (Seamless Unified Header Extension) ── */
+        /* ── Mobile Nav Collapse (Only on < 992px) ── */
         @media (max-width: 991.98px) {
-          #navbarNav.collapse.show,
-          #navbarNav.collapsing {
-            background: transparent !important;
-            border: none !important;
-            border-top: 1px solid var(--border-color, #e2e8f0) !important;
-            margin-top: 0.6rem !important;
-            padding: 0.6rem 0 0.5rem 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
+          #navbarNav,
+          .navbar-collapse#navbarNav {
+            display: block !important;
+            max-height: 0 !important;
+            opacity: 0 !important;
+            overflow: hidden !important;
+            transform: translateY(-8px) scale(0.99);
+            transform-origin: top center;
+            transition: max-height 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                        opacity 0.25s ease,
+                        transform 0.32s cubic-bezier(0.25, 1, 0.5, 1),
+                        margin 0.3s ease,
+                        padding 0.3s ease !important;
+            margin-top: 0 !important;
+            padding: 0 !important;
+            border-top: 1px solid transparent !important;
+            will-change: max-height, opacity, transform;
           }
-          [data-bs-theme="dark"] #navbarNav.collapse.show,
-          [data-bs-theme="dark"] #navbarNav.collapsing {
+
+          #navbarNav.show,
+          .navbar-collapse#navbarNav.show {
+            max-height: 85vh !important;
+            opacity: 1 !important;
+            transform: translateY(0) scale(1) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            border-top: 1px solid var(--border-color, #e2e8f0) !important;
+            margin-top: 0.5rem !important;
+            padding-top: 0.4rem !important;
+            padding-bottom: 0.8rem !important;
+          }
+
+          [data-bs-theme="dark"] #navbarNav.show,
+          [data-bs-theme="dark"] .navbar-collapse#navbarNav.show {
             border-top-color: rgba(255, 255, 255, 0.08) !important;
+          }
+        }
+
+        @media (min-width: 992px) {
+          #navbarNav,
+          .navbar-collapse#navbarNav {
+            display: none !important;
           }
         }
 
@@ -538,318 +605,336 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         }
       `}</style>
       <nav className="navbar navbar-expand-lg sticky-top">
-        <div className="container">
+        <div className="container position-relative d-flex align-items-center justify-content-between">
+          {/* 1. Left: Brand Logo */}
           <a
-            className="navbar-brand text-dynamic fw-bold"
+            className="navbar-brand text-dynamic fw-bold m-0"
             href="#"
             onClick={(e) => { e.preventDefault(); setActivePage('home'); closeMobileNav(); }}
           >
             Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
 
-          <div className="d-flex align-items-center ms-auto d-lg-none">
-            {/* Mobile Hamburger Menu Toggle Button */}
-            <button
-              className="navbar-toggler mobile-nav-btn"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarNav"
-              aria-controls="navbarNav"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <i className="bi bi-list" style={{ fontSize: '1.65rem', color: '#2563eb', lineHeight: 1 }}></i>
-            </button>
-          </div>
+          {/* 2. Center: Desktop Liquid Navigation Links (>= 992px) */}
+          <ul
+            ref={navContainerRef}
+            className="navbar-nav position-absolute start-50 translate-middle-x d-none d-lg-flex align-items-center p-0 m-0"
+            onMouseLeave={() => setHoveredPage(null)}
+            style={{ gap: '6px', zIndex: 10 }}
+          >
+            {/* Organic Liquid Blob Pill */}
+            <div
+              className="nav-liquid-pill position-absolute rounded-pill"
+              style={{
+                left: pillStyle.left,
+                width: pillStyle.width,
+                height: pillStyle.height,
+                top: pillStyle.top,
+                opacity: pillStyle.opacity,
+                transition: 'left 0.38s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), transform 0.3s ease, opacity 0.2s ease',
+                transform: isMoving ? 'scaleX(1.15) scaleY(0.88)' : 'scaleX(1) scaleY(1)',
+                pointerEvents: 'none'
+              }}
+            />
 
-          <div className="collapse navbar-collapse" id="navbarNav">
-            {/* Main Links (Centered with Organic Liquid Morphing Indicator) */}
-            <ul
-              ref={navContainerRef}
-              className="navbar-nav position-absolute start-50 translate-middle-x d-none d-lg-flex align-items-center p-0 m-0"
-              onMouseLeave={() => setHoveredPage(null)}
-              style={{ gap: '6px' }}
-            >
-              {/* Organic Liquid Blob Pill */}
-              <div
-                className="nav-liquid-pill position-absolute rounded-pill"
-                style={{
-                  left: pillStyle.left,
-                  width: pillStyle.width,
-                  height: pillStyle.height,
-                  top: pillStyle.top,
-                  opacity: pillStyle.opacity,
-                  transition: 'left 0.38s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), transform 0.3s ease, opacity 0.2s ease',
-                  transform: isMoving ? 'scaleX(1.15) scaleY(0.88)' : 'scaleX(1) scaleY(1)',
-                  pointerEvents: 'none'
-                }}
-              />
-
-              {[
-                { id: 'home', label: 'Home' },
-                ...(isAuthenticated ? [{ id: 'detection', label: 'Detection' }] : []),
-                ...(isStaff ? [
-                  { id: 'cameras', label: 'Cameras' },
-                  { id: 'dataset', label: 'Dataset' },
-                  { id: 'reports', label: 'Reports' },
-                  { id: 'notifications', label: 'Alerts' }
-                ] : []),
-                { id: 'about', label: 'About Us' }
-              ].map((item) => {
-                const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
-                return (
-                  <li
-                    key={item.id}
-                    ref={el => navItemRefs.current[item.id] = el}
-                    className="nav-item m-0"
-                    onMouseEnter={() => setHoveredPage(item.id)}
-                  >
-                    <a
-                      className={`nav-link nav-link-liquid px-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); setActivePage(item.id); closeMobileNav(); }}
-                      style={item.id === 'notifications' && unreadCount > 0 ? { paddingRight: '16px' } : {}}
-                    >
-                      <span>{item.label}</span>
-                      {item.id === 'notifications' && unreadCount > 0 && (
-                        <span
-                          className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
-                          style={{
-                            top: '-3px',
-                            right: '0px',
-                            width: '20px',
-                            height: '20px',
-                            minWidth: '20px',
-                            padding: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.65rem',
-                            fontWeight: '800',
-                            lineHeight: '1',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                            zIndex: 10
-                          }}
-                        >
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {/* Minimal Mobile Navigation Links (< 992px) */}
-            <ul className="navbar-nav d-lg-none mt-1 mb-1 p-0">
-              {[
-                { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
-                ...(isAuthenticated ? [{ id: 'detection', label: 'Detection', icon: 'bi-eye-fill' }] : []),
-                ...(isStaff ? [
-                  { id: 'cameras', label: 'Cameras', icon: 'bi-camera-video-fill' },
-                  { id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' },
-                  { id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' },
-                  { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' },
-                  { id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }
-                ] : []),
-                { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
-              ].map(item => (
-                <li key={item.id} className="nav-item">
+            {[
+              { id: 'home', label: 'Home' },
+              { id: 'detection', label: 'Detection' },
+              ...(isStaff ? [
+                { id: 'cameras', label: 'Cameras' },
+                { id: 'dataset', label: 'Dataset' },
+                { id: 'reports', label: 'Reports' },
+                { id: 'notifications', label: 'Alerts' }
+              ] : []),
+              { id: 'about', label: 'About Us' }
+            ].map((item) => {
+              const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
+              return (
+                <li
+                  key={item.id}
+                  ref={el => navItemRefs.current[item.id] = el}
+                  className="nav-item m-0"
+                  onMouseEnter={() => setHoveredPage(item.id)}
+                >
                   <a
-                    className={`mobile-nav-link ${activePage === item.id ? 'active' : ''}`}
+                    className={`nav-link nav-link-liquid px-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
                     href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActivePage(item.id);
-                      closeMobileNav();
+                    onClick={(e) => { e.preventDefault(); setActivePage(item.id); closeMobileNav(); }}
+                    style={{
+                      whiteSpace: 'nowrap',
+                      ...(item.id === 'notifications' && unreadCount > 0 ? { paddingRight: '16px' } : {})
                     }}
                   >
-                    <i className={`bi ${item.icon} mobile-icon`}></i>
-                    <span className="flex-grow-1">{item.label}</span>
+                    <span>{item.label}</span>
                     {item.id === 'notifications' && unreadCount > 0 && (
-                      <span className="badge rounded-circle bg-danger text-white" style={{
-                        fontSize: '0.65rem',
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        padding: 0,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        lineHeight: '1',
-                        fontWeight: '800',
-                        flexShrink: 0
-                      }}>
+                      <span
+                        className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
+                        style={{
+                          top: '-3px',
+                          right: '0px',
+                          width: '20px',
+                          height: '20px',
+                          minWidth: '20px',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.65rem',
+                          fontWeight: '800',
+                          lineHeight: '1',
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                          zIndex: 10
+                        }}
+                      >
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </a>
                 </li>
-              ))}
-            </ul>
+              );
+            })}
+          </ul>
 
-            {/* Mobile Footer with Theme Toggle (< 992px) */}
-            <div className="d-lg-none pt-2 border-top border-secondary border-opacity-25">
-              <div className="d-flex align-items-center justify-content-between mb-3 px-1">
-                <span className="small text-secondary fw-semibold">Appearance</span>
-                <button
-                  type="button"
-                  className="btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5"
-                  onClick={cycleTheme}
-                  style={{
-                    background: 'var(--bg-surface-solid)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-heading)',
-                    fontSize: '0.8rem',
-                    fontWeight: 600
-                  }}
-                >
-                  {themeMode === 'system' ? (
-                    <>
-                      <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
-                      <span>Auto ({resolvedTheme === 'dark' ? 'Dark' : 'Light'})</span>
-                    </>
-                  ) : themeMode === 'dark' ? (
-                    <>
-                      <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
-                      <span>Dark Mode</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-sun-fill text-warning"></i>
-                      <span>Light Mode</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              {isAuthenticated ? (
-                <div className="p-3 rounded-4 d-flex align-items-center justify-content-between" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
-                  <div className="d-flex align-items-center" style={{ gap: '10px', minWidth: 0 }}>
-                    <div className="user-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '0.85rem', flexShrink: 0 }}>
-                      {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div className="fw-bold text-dynamic text-truncate" style={{ fontSize: '0.85rem', lineHeight: '1.2' }}>{displayName}</div>
-                      <div className="text-secondary text-truncate" style={{ fontSize: '0.7rem' }}>{isStaff ? 'Administrator' : 'User Account'}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center frosted-signout-btn shadow-sm"
-                    onClick={(e) => { handleLogout(e); closeMobileNav(); }}
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      letterSpacing: '0.02em',
-                      flexShrink: 0,
-                      padding: '8px 16px',
-                      gap: '6px',
-                      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                      border: 'none',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                      lineHeight: '1'
-                    }}
-                  >
-                    <i className="bi bi-box-arrow-right" style={{ fontSize: '0.9rem', lineHeight: '1' }}></i>
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+          {/* 3. Right: Desktop Actions (>= 992px) */}
+          <div className="d-none d-lg-flex align-items-center gap-2">
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={cycleTheme}
+              title={themeMode === 'system' ? `Theme: Auto/System (Currently ${resolvedTheme})` : themeMode === 'dark' ? 'Theme: Dark Mode' : 'Theme: Light Mode'}
+              aria-label="Toggle Theme"
+            >
+              {themeMode === 'system' ? (
+                <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
+              ) : themeMode === 'dark' ? (
+                <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
               ) : (
-                <div className="d-flex justify-content-center pt-1 pb-1">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
-                    className="btn btn-primary rounded-pill px-4 py-2 fw-bold text-uppercase d-inline-flex align-items-center justify-content-center shadow-sm hover-scale"
-                    style={{
-                      fontSize: '0.8rem',
-                      letterSpacing: '0.04em',
-                      gap: '6px'
-                    }}
-                  >
-                    <i className="bi bi-box-arrow-in-right" style={{ fontSize: '0.95rem' }}></i>
-                    <span>Login</span>
-                  </button>
-                </div>
+                <i className="bi bi-sun-fill text-warning"></i>
               )}
-            </div>
+            </button>
 
-            {/* Right Side Items for Desktop (>= 992px) */}
-            <ul className="navbar-nav ms-auto d-none d-lg-flex align-items-center gap-2">
-              <li className="nav-item">
-                <button
-                  type="button"
-                  className="theme-toggle-btn"
-                  onClick={cycleTheme}
-                  title={themeMode === 'system' ? `Theme: Auto/System (Currently ${resolvedTheme})` : themeMode === 'dark' ? 'Theme: Dark Mode' : 'Theme: Light Mode'}
-                  aria-label="Toggle Theme"
+            {isAuthenticated ? (
+              <div className="dropdown position-relative">
+                <a
+                  className={`user-profile-pill ${showUserDropdown ? 'show' : ''}`}
+                  href="#"
+                  id="userDropdown"
+                  role="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowUserDropdown(!showUserDropdown); }}
                 >
-                  {themeMode === 'system' ? (
-                    <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
-                  ) : themeMode === 'dark' ? (
-                    <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
-                  ) : (
-                    <i className="bi bi-sun-fill text-warning"></i>
-                  )}
-                </button>
-              </li>
-
-              {isAuthenticated ? (
-                <li className="nav-item dropdown position-relative">
-                  <a
-                    className={`user-profile-pill ${showUserDropdown ? 'show' : ''}`}
-                    href="#"
-                    id="userDropdown"
-                    role="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowUserDropdown(!showUserDropdown); }}
-                  >
-                    <div className="user-avatar-circle">
-                      {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
-                    </div>
-                    <span className="user-name-text">{displayName}</span>
-                  </a>
-                  <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', }}>
+                  <div className="user-avatar-circle">
+                    {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
+                  </div>
+                  <span className="user-name-text">{displayName}</span>
+                </a>
+                <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', }}>
+                  <li>
+                    <h6 className="dropdown-header small text-uppercase fw-bold text-center mb-2" style={{ color: 'var(--text-secondary)' }}>{user?.username ? `Account: ${user.username}` : 'User Account'}</h6>
+                  </li>
+                  <li>
+                    <hr className="dropdown-divider opacity-25 mx-3" style={{ borderColor: 'var(--border-color)' }} />
+                  </li>
+                  {isStaff && (
                     <li>
-                      <h6 className="dropdown-header small text-uppercase fw-bold text-center mb-2" style={{ color: 'var(--text-secondary)' }}>{user?.username ? `Account: ${user.username}` : 'User Account'}</h6>
-                    </li>
-                    <li>
-                      <hr className="dropdown-divider opacity-25 mx-3" style={{ borderColor: 'var(--border-color)' }} />
-                    </li>
-                    {isStaff && (
-                      <li>
-                        <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setActivePage('admin'); closeMobileNav(); }}>
-                          <i className="bi bi-speedometer2 text-primary"></i>
-                          <span>Admin Panel</span>
-                        </a>
-                      </li>
-                    )}
-                    <li>
-                      <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { handleLogout(e); closeMobileNav(); }}>
-                        <i className="bi bi-box-arrow-right text-danger"></i>
-                        <span>Sign Out</span>
+                      <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setActivePage('admin'); closeMobileNav(); }}>
+                        <i className="bi bi-speedometer2 text-primary"></i>
+                        <span>Admin Panel</span>
                       </a>
                     </li>
-                  </ul>
-                </li>
-              ) : (
-                <li className="nav-item ms-lg-2">
+                  )}
+                  <li>
+                    <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { handleLogout(e); closeMobileNav(); }}>
+                      <i className="bi bi-box-arrow-right text-danger"></i>
+                      <span>Sign Out</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
+                className="btn mobile-login-btn rounded-pill px-4 py-2 fw-bold text-uppercase d-flex align-items-center gap-2 text-decoration-none shadow-sm transition-all"
+                style={{ fontSize: '0.8rem', letterSpacing: '0.05em' }}
+              >
+                <i className="bi bi-box-arrow-in-right fs-6"></i>
+                <span>Login</span>
+              </button>
+            )}
+          </div>
+
+          {/* 4. Mobile Header Actions (< 992px) */}
+          <div className="d-flex align-items-center ms-auto d-lg-none">
+            <button
+              className={`navbar-toggler mobile-menu-btn ${isNavOpen ? 'is-active' : ''}`}
+              type="button"
+              onClick={() => setIsNavOpen(prev => !prev)}
+              aria-expanded={isNavOpen}
+              aria-label={isNavOpen ? "Close menu" : "Open menu"}
+            >
+              <i
+                className={`bi ${isNavOpen ? 'bi-x-lg' : 'bi-list'}`}
+                style={{
+                  fontSize: isNavOpen ? '1.35rem' : '1.85rem',
+                  color: '#2563eb',
+                  lineHeight: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease',
+                  transform: isNavOpen ? 'rotate(90deg) scale(1.05)' : 'rotate(0deg) scale(1)'
+                }}
+              ></i>
+            </button>
+          </div>
+
+          {/* 5. Mobile Drawer (< 992px) */}
+          <div className={`collapse navbar-collapse d-lg-none w-100 ${isNavOpen ? 'show' : ''}`} id="navbarNav">
+            <div className="mobile-collapse-inner w-100">
+              {/* Minimal Mobile Navigation Links */}
+              <ul className="navbar-nav my-0.5 p-0">
+                {[
+                  { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
+                  { id: 'detection', label: 'Detection', icon: 'bi-eye-fill' },
+                  ...(isStaff ? [
+                    { id: 'cameras', label: 'Cameras', icon: 'bi-camera-video-fill' },
+                    { id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' },
+                    { id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' },
+                    { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' },
+                    { id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }
+                  ] : []),
+                  { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
+                ].map(item => (
+                  <li key={item.id} className="nav-item">
+                    <a
+                      className={`mobile-nav-link ${activePage === item.id ? 'active' : ''}`}
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActivePage(item.id);
+                        closeMobileNav();
+                      }}
+                    >
+                      <i className={`bi ${item.icon} mobile-icon`}></i>
+                      <span className="flex-grow-1">{item.label}</span>
+                      {item.id === 'notifications' && unreadCount > 0 && (
+                        <span className="badge rounded-circle bg-danger text-white" style={{
+                          fontSize: '0.65rem',
+                          width: '20px',
+                          height: '20px',
+                          minWidth: '20px',
+                          padding: 0,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: '1',
+                          fontWeight: '800',
+                          flexShrink: 0
+                        }}>
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Mobile Footer with Theme Toggle */}
+              <div className="pt-2 mt-1 border-top border-secondary border-opacity-25">
+                <div className="d-flex align-items-center justify-content-between mb-2 px-1">
+                  <span className="small text-secondary fw-semibold">Appearance</span>
                   <button
                     type="button"
-                    onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
-                    className="btn btn-primary rounded-pill px-4 py-2 fw-bold text-uppercase d-flex align-items-center gap-2 text-decoration-none shadow-sm transition-all"
-                    style={{ fontSize: '0.8rem', letterSpacing: '0.05em' }}
+                    className="btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5"
+                    onClick={cycleTheme}
+                    style={{
+                      background: 'var(--bg-surface-solid)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-heading)',
+                      fontSize: '0.8rem',
+                      fontWeight: 600
+                    }}
                   >
-                    <i className="bi bi-box-arrow-in-right fs-6"></i>
-                    <span>Login</span>
+                    {themeMode === 'system' ? (
+                      <>
+                        <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
+                        <span>Auto ({resolvedTheme === 'dark' ? 'Dark' : 'Light'})</span>
+                      </>
+                    ) : themeMode === 'dark' ? (
+                      <>
+                        <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
+                        <span>Dark Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-sun-fill text-warning"></i>
+                        <span>Light Mode</span>
+                      </>
+                    )}
                   </button>
-                </li>
-              )}
-            </ul>
+                </div>
+                {isAuthenticated ? (
+                  <div className="p-3 rounded-4 d-flex align-items-center justify-content-between" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
+                    <div className="d-flex align-items-center" style={{ gap: '10px', minWidth: 0 }}>
+                      <div className="user-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '0.85rem', flexShrink: 0 }}>
+                        {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="fw-bold text-dynamic text-truncate" style={{ fontSize: '0.85rem', lineHeight: '1.2' }}>{displayName}</div>
+                        <div className="text-secondary text-truncate" style={{ fontSize: '0.7rem' }}>{isStaff ? 'Administrator' : 'User Account'}</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center frosted-signout-btn shadow-sm"
+                      onClick={(e) => { handleLogout(e); closeMobileNav(); }}
+                      style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        letterSpacing: '0.02em',
+                        flexShrink: 0,
+                        padding: '8px 16px',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                        border: 'none',
+                        color: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                        lineHeight: '1'
+                      }}
+                    >
+                      <i className="bi bi-box-arrow-right" style={{ fontSize: '0.9rem', lineHeight: '1' }}></i>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="d-flex justify-content-center pt-1 pb-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
+                      className="btn mobile-login-btn rounded-pill d-inline-flex align-items-center justify-content-center shadow-sm"
+                      style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.92rem',
+                        fontWeight: '600',
+                        letterSpacing: '0.02em',
+                        height: '42px',
+                        padding: '0 28px',
+                        gap: '8px',
+                        lineHeight: '1',
+                        width: 'auto'
+                      }}
+                    >
+                      <i className="bi bi-box-arrow-in-right" style={{ fontSize: '1.05rem' }}></i>
+                      <span>Login</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </nav>
     </>
   );
 }
-

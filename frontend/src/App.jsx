@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import API from './api/axios';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import UnknownCapturesModal from './components/UnknownCapturesModal';
@@ -54,7 +55,6 @@ export default function App() {
       const token = localStorage.getItem('access_token');
       if (token) {
         try {
-          const API = (await import('./api/axios')).default;
           const res = await API.get('/auth/me/');
           setUser(res.data);
           localStorage.setItem('user', JSON.stringify(res.data));
@@ -125,7 +125,7 @@ export default function App() {
         /* ── Android Push Notification Styling (Matches base.html) ── */
         .android-notification-container {
           position: fixed;
-          top: 75px;
+          top: max(68px, calc(env(safe-area-inset-top, 0px) + 64px));
           left: 50%;
           transform: translateX(-50%);
           z-index: 10800;
