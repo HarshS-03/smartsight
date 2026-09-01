@@ -51,6 +51,10 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
       if (meta) meta.setAttribute('content', active === 'dark' ? '#0b0f19' : '#ffffff');
       localStorage.setItem('theme_mode', themeMode);
       localStorage.setItem('theme', active);
+
+      if (window.electronAPI && typeof window.electronAPI.updateTitleBarTheme === 'function') {
+        window.electronAPI.updateTitleBarTheme(active);
+      }
     };
 
     applyTheme();
@@ -607,18 +611,29 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         }
         /* ── Electron Safe Area & Drag Region ── */
         .is-electron-navbar {
-           padding-top: max(32px, env(safe-area-inset-top, 0px)) !important;
            -webkit-app-region: drag;
+        }
+        .is-electron-navbar .desktop-right-actions {
+           margin-right: calc(138px + env(safe-area-inset-right, 0px)) !important;
+        }
+        .is-electron-navbar .mobile-header-actions {
+           margin-right: calc(138px + env(safe-area-inset-right, 0px)) !important;
         }
         .is-electron-navbar a,
         .is-electron-navbar button,
         .is-electron-navbar .dropdown,
-        .is-electron-navbar input {
+        .is-electron-navbar input,
+        .is-electron-navbar .nav-link,
+        .is-electron-navbar .user-profile-pill,
+        .is-electron-navbar .navbar-toggler,
+        .is-electron-navbar .desktop-right-actions,
+        .is-electron-navbar .mobile-header-actions,
+        .is-electron-navbar .nav-item {
            -webkit-app-region: no-drag;
         }
       `}</style>
-      <nav className={`navbar navbar-expand-lg sticky-top ${navigator.userAgent.toLowerCase().includes('electron') ? 'is-electron-navbar' : ''}`}>
-        <div className="container position-relative d-flex align-items-center justify-content-between">
+      <nav className={`navbar navbar-expand-lg sticky-top ${navigator.userAgent.toLowerCase().includes('electron') || window.electronAPI?.isElectron ? 'is-electron-navbar' : ''}`}>
+        <div className="container-fluid px-3 px-lg-4 position-relative d-flex align-items-center justify-content-between">
           {/* 1. Left: Brand Logo */}
           <a
             className="navbar-brand text-dynamic fw-bold m-0"
@@ -631,7 +646,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           {/* 2. Center: Desktop Liquid Navigation Links (>= 992px) */}
           <ul
             ref={navContainerRef}
-            className="navbar-nav position-absolute start-50 translate-middle-x d-none d-lg-flex align-items-center p-0 m-0"
+            className="navbar-nav position-absolute start-50 top-50 translate-middle d-none d-lg-flex align-items-center p-0 m-0"
             onMouseLeave={() => setHoveredPage(null)}
             style={{ gap: '6px', zIndex: 10 }}
           >
@@ -709,7 +724,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           </ul>
 
           {/* 3. Right: Desktop Actions (>= 992px) */}
-          <div className="d-none d-lg-flex align-items-center gap-2">
+          <div className="d-none d-lg-flex align-items-center gap-2 desktop-right-actions">
             <button
               type="button"
               className="theme-toggle-btn"
@@ -757,12 +772,6 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                   <li>
                     <hr className="dropdown-divider opacity-25 mx-3" style={{ borderColor: 'var(--border-color)' }} />
                   </li>
-                  <li>
-                    <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setShowServerModal(true); setShowUserDropdown(false); }}>
-                      <i className="bi bi-hdd-network text-primary"></i>
-                      <span>Server IP Config</span>
-                    </a>
-                  </li>
                   {isStaff && (
                     <li>
                       <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setActivePage('admin'); closeMobileNav(); }}>
@@ -793,7 +802,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           </div>
 
           {/* 4. Mobile Header Actions (< 992px) */}
-          <div className="d-flex align-items-center ms-auto d-lg-none">
+          <div className="d-flex align-items-center ms-auto d-lg-none mobile-header-actions">
             <button
               className={`navbar-toggler mobile-menu-btn ${isNavOpen ? 'is-active' : ''}`}
               type="button"

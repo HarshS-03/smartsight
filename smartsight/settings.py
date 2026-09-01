@@ -64,10 +64,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS configuration (Allow ALL origins with Wildcard *)
+# CORS configuration (Allow ALL origins with Wildcard * and custom schemes)
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://.*$",
+    r"^https://.*$",
+    r"^capacitor://.*$",
+    r"^capacitor-electron://.*$",
+    r"^electron://.*$",
+    r"^null$",
+]
 
 # Allow mobile app (Capacitor) and local network origins for CSRF
 CSRF_TRUSTED_ORIGINS = [

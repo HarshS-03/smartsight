@@ -709,7 +709,10 @@ export default function NotificationsPage({ setActivePage, user }) {
           onClick={() => setSelectedImage(null)}
         >
           {/* Top Floating Control Bar */}
-          <div className="position-absolute top-0 start-0 end-0 d-flex align-items-center justify-content-between p-3 px-md-4" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.85), transparent)', zIndex: 100000 }} onClick={e => e.stopPropagation()}>
+          <div
+            className="position-absolute top-0 start-0 end-0 d-flex align-items-center justify-content-between image-preview-floating-bar"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="d-flex align-items-center gap-2 text-white">
               <i className="bi bi-person-bounding-box text-primary fs-5"></i>
               <span className="fw-bold small">Intruder Image Preview</span>

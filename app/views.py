@@ -1005,3 +1005,17 @@ class ComputePersonEmbeddingsAPIView(APIView):
             'skipped': skipped,
             'errors': errors,
         })
+
+
+@api_view(['GET', 'HEAD', 'OPTIONS'])
+@permission_classes([permissions.AllowAny])
+def health_check(request):
+    """
+    Lightweight health check endpoint for desktop/mobile app connectivity tests.
+    """
+    return Response({
+        'status': 'ok',
+        'app': 'SmartSight',
+        'timestamp': timezone.now().isoformat()
+    })
+

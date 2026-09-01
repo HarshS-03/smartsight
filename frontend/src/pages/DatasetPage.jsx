@@ -670,8 +670,8 @@ export default function DatasetPage() {
                     </div>
                   )}
                 </div>
-                <div className="modal-footer border-0 p-3 p-md-4" style={{ background: 'rgba(255, 255, 255, 0.4)', borderTop: '1px solid rgba(15, 23, 42, 0.08)' }}>
-                  <form className="w-100 d-flex flex-column gap-3" onSubmit={handleUploadMore}>
+                <div className="modal-footer border-0 p-3" style={{ background: 'var(--bg-surface-solid, #111827)', borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))' }}>
+                  <form className="w-100 d-flex flex-column gap-2" onSubmit={handleUploadMore}>
                     <input
                       type="file"
                       ref={uploadMoreInputRef}
@@ -682,25 +682,27 @@ export default function DatasetPage() {
                     />
 
                     {/* Glassy Pill Upload Selector */}
-                    <div className="upload-pill-bar p-1.5 rounded-4 rounded-sm-pill d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2"
+                    <div className="upload-pill-bar p-1.5 rounded-pill d-flex align-items-center justify-content-between gap-2"
                       style={{
-                        background: 'rgba(13, 110, 253, 0.06)',
-                        border: '1px solid rgba(13, 110, 253, 0.2)',
+                        background: 'var(--bg-input, rgba(255, 255, 255, 0.04))',
+                        border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
+                        minHeight: '48px',
                       }}>
                       <button
                         type="button"
-                        className="btn btn-primary rounded-pill px-4 py-2 text-nowrap d-flex align-items-center gap-2 shadow-sm flex-shrink-0"
+                        className="btn btn-primary rounded-pill px-3.5 py-1.5 text-nowrap d-flex align-items-center gap-2 shadow-sm flex-shrink-0"
                         onClick={() => uploadMoreInputRef.current && uploadMoreInputRef.current.click()}
+                        style={{ fontSize: '0.85rem' }}
                       >
                         <i className="bi bi-images fs-6"></i>
                         <span className="fw-bold">Choose Photos</span>
                       </button>
 
-                      <div className="pe-3 d-flex align-items-center gap-2 min-w-0">
-                        <i className={`bi ${moreFiles.length > 0 ? 'bi-check-circle-fill text-success fs-6' : 'bi-info-circle text-muted'}`}></i>
-                        <span className="small text-heading text-truncate font-mono fw-semibold" style={{ fontSize: '0.82rem' }}>
+                      <div className="pe-3 ps-1 d-flex align-items-center gap-2 min-w-0 flex-grow-1 justify-content-end text-end">
+                        <i className={`bi ${moreFiles.length > 0 ? 'bi-check-circle-fill text-success' : 'bi-info-circle text-muted'}`} style={{ fontSize: '0.9rem' }}></i>
+                        <span className="small text-heading text-truncate font-mono fw-semibold" style={{ fontSize: '0.8rem' }}>
                           {moreFiles.length > 0
-                            ? `${moreFiles.length} photos selected`
+                            ? `${moreFiles.length} photo${moreFiles.length > 1 ? 's' : ''}`
                             : 'No new photos'}
                         </span>
                       </div>
@@ -708,16 +710,19 @@ export default function DatasetPage() {
 
                     <button
                       type="submit"
-                      className="btn btn-primary rounded-pill py-2.5 w-100 text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-sm"
+                      className="btn btn-primary rounded-pill py-2 w-100 text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-sm"
                       disabled={moreFiles.length === 0}
                       style={{
                         opacity: moreFiles.length === 0 ? 0.45 : 1,
                         cursor: moreFiles.length === 0 ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        fontSize: '0.88rem',
+                        fontWeight: 700,
+                        minHeight: '42px'
                       }}
                     >
                       <i className="bi bi-cloud-arrow-up-fill fs-5"></i>
-                      <span className="fw-bold">Upload More</span>
+                      <span>{moreFiles.length > 0 ? `Upload ${moreFiles.length} Photo${moreFiles.length > 1 ? 's' : ''}` : 'Upload More'}</span>
                     </button>
                   </form>
                 </div>
@@ -984,7 +989,10 @@ export default function DatasetPage() {
               onClick={() => setPreviewFullImage(null)}
             >
               {/* Top Floating Control Bar */}
-              <div className="position-absolute top-0 start-0 end-0 d-flex align-items-center justify-content-between p-3 px-md-4" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.85), transparent)', zIndex: 100000 }} onClick={e => e.stopPropagation()}>
+              <div
+                className="position-absolute top-0 start-0 end-0 d-flex align-items-center justify-content-between image-preview-floating-bar"
+                onClick={e => e.stopPropagation()}
+              >
                 <div className="d-flex align-items-center gap-2 text-white">
                   <i className="bi bi-image text-primary fs-5"></i>
                   <span className="fw-bold small">Dataset Image Preview</span>

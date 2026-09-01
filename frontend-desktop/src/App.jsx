@@ -104,18 +104,7 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    const pageTitles = {
-      home: 'Smart Sight',
-      about: 'About',
-      login: 'Login',
-      forgot_password: 'Forgot Password',
-      detection: 'Detection',
-      cameras: 'Cameras',
-      dataset: 'Dataset',
-      reports: 'Reports',
-      notifications: 'Notification Alerts',
-    };
-    document.title = pageTitles[activePage] || 'Smart Sight';
+    document.title = 'Smart Sight';
   }, [activePage]);
 
   return (

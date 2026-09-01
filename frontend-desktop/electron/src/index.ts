@@ -1,7 +1,7 @@
 import type { CapacitorElectronConfig } from '@capacitor-community/electron';
 import { getCapacitorElectronConfig, setupElectronDeepLinking } from '@capacitor-community/electron';
 import type { MenuItemConstructorOptions } from 'electron';
-import { app, MenuItem } from 'electron';
+import { app, MenuItem, ipcMain, nativeTheme } from 'electron';
 import electronIsDev from 'electron-is-dev';
 import unhandled from 'electron-unhandled';
 import { autoUpdater } from 'electron-updater';
@@ -46,7 +46,18 @@ if (electronIsDev) {
   // Initialize our app, build windows, and load content.
   await myCapacitorApp.init();
   // Check for updates if we are in a packaged app.
-  autoUpdater.checkForUpdatesAndNotify();
+  if (!electronIsDev && app.isPackaged) {
+    autoUpdater.on('error', (err) => {
+      console.warn('Auto updater encountered an error:', err?.message || err);
+    });
+    try {
+      autoUpdater.checkForUpdatesAndNotify()?.catch?.((err) => {
+        console.warn('Auto updater check failed:', err?.message || err);
+      });
+    } catch (err) {
+      console.warn('Auto updater invocation error:', err);
+    }
+  }
 })();
 
 // Handle when all of our windows are close (platforms have their own expectations).
@@ -68,3 +79,33 @@ app.on('activate', async function () {
 });
 
 // Place all ipc or other electron api calls and custom functionality under this line
+
+const updateTitleBarOverlayTheme = (theme: string) => {
+  const isDark = theme === 'dark';
+  nativeTheme.themeSource = isDark ? 'dark' : 'light';
+  const mainWindow = myCapacitorApp.getMainWindow();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    const bgColor = isDark ? '#0f172a' : '#ffffff';
+    const symbolColor = isDark ? '#ffffff' : '#0f172a';
+    mainWindow.setBackgroundColor(bgColor);
+
+    if (process.platform === 'win32') {
+      try {
+        mainWindow.setTitleBarOverlay({
+          color: bgColor,
+          symbolColor: symbolColor,
+          height: 52,
+        });
+      } catch (err) {
+        console.error('Failed to update titleBarOverlay:', err);
+      }
+    }
+  }
+};
+
+ipcMain.on('update-titlebar-theme', (_event, data) => {
+  if (data && typeof data.theme === 'string') {
+    updateTitleBarOverlayTheme(data.theme);
+  }
+});
+

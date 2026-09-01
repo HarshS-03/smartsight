@@ -266,12 +266,12 @@ export default function DetectionPage() {
               <div className="row mb-4 g-3 align-items-stretch">
                 {/* Left: Camera View Card */}
                 <div className="col-12 col-md-5 col-lg-4">
-                  <div className="detection-control-card h-100 d-flex flex-column justify-content-between">
+                  <div className="detection-control-card h-100 d-flex flex-column justify-content-center p-3">
                     <div className="d-flex align-items-center gap-2 mb-2">
                       <i className="bi bi-camera-video text-primary"></i>
                       <span className="fw-semibold text-heading" style={{ fontSize: '0.92rem' }}>Camera View</span>
                     </div>
-                    <div className="d-flex gap-2 flex-grow-1 w-100">
+                    <div className="d-flex gap-2 w-100">
                       <button onClick={() => setViewMode('single')} className={`btn view-toggle-card-btn w-50 ${viewMode === 'single' ? 'active' : ''}`}>
                         <i className="bi bi-camera-video"></i>
                         <span style={{ fontSize: '0.82rem' }}>Single Camera</span>
@@ -287,7 +287,7 @@ export default function DetectionPage() {
                 {/* Right: Model Selection */}
                 <div className="col-12 col-md-7 col-lg-8">
                   {/* Model Selector Card */}
-                  <div className="detection-control-card h-100 d-flex flex-column justify-content-between py-2 px-3"
+                  <div className="detection-control-card h-100 d-flex flex-column justify-content-center p-3"
                     style={{ position: 'relative', zIndex: modelDropdownOpen ? 100 : 2 }}>
                     <div className="d-flex align-items-center gap-2 mb-2">
                       <i className="bi bi-cpu text-primary"></i>

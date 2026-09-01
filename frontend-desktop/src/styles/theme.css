@@ -861,20 +861,19 @@ p,
 .view-toggle-card-btn {
   background: transparent !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 12px !important;
+  border-radius: 999px !important;
   color: var(--text-muted) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  padding: 8px 6px !important;
+  padding: 8px 14px !important;
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px;
+  gap: 8px;
   font-weight: 600 !important;
-  height: 100% !important;
-  min-height: 80px !important;
+  min-height: 48px !important;
+  height: 48px !important;
   flex: 1 1 0 !important;
-  width: 50% !important;
   min-width: 0 !important;
 }
 
@@ -1020,7 +1019,7 @@ p,
 
 .dropdown-options {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   background: var(--bg-surface-solid) !important;
@@ -1041,6 +1040,15 @@ p,
 
 .dropdown-options.open {
   display: block;
+}
+
+.image-preview-floating-bar {
+  padding-top: max(calc(var(--status-bar-height, 0px) + 16px), calc(env(safe-area-inset-top, 0px) + 16px), 54px) !important;
+  padding-bottom: 16px !important;
+  padding-left: max(18px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(18px, env(safe-area-inset-right, 0px)) !important;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.8) 70%, transparent 100%) !important;
+  z-index: 100000 !important;
 }
 
 .dropdown-option {
@@ -1995,7 +2003,7 @@ p,
   -webkit-background-clip: unset !important;
   -webkit-text-fill-color: initial !important;
   background-clip: unset !important;
-  color: #00ba7c !important;
+  color: #059669 !important;
 }
 
 @keyframes gradientShift {
@@ -2245,8 +2253,8 @@ p,
 }
 
 .btn-excel {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #059669 !important;
+  background-color: #059669 !important;
   background-image: none !important;
   border: none !important;
   color: #ffffff !important;
@@ -2268,16 +2276,16 @@ p,
 }
 
 .btn-excel:hover {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #047857 !important;
+  background-color: #047857 !important;
   background-image: none !important;
-  opacity: 0.92 !important;
+  opacity: 0.95 !important;
   box-shadow: none !important;
   color: #ffffff !important;
 }
 
 .reports-title .accent {
-  color: #00ba7c !important;
+  color: #059669 !important;
   transition: color 0.2s ease;
 }
 
@@ -2315,8 +2323,8 @@ p,
 }
 
 .btn-excel:active {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #065f46 !important;
+  background-color: #065f46 !important;
   opacity: 0.85 !important;
   transform: translateY(1px);
   box-shadow: none !important;
@@ -2329,8 +2337,8 @@ p,
 }
 
 .btn-modal-download {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #059669 !important;
+  background-color: #059669 !important;
   background-image: none !important;
   border: none !important;
   color: #ffffff !important;
@@ -4177,13 +4185,13 @@ td {
 }
 
 .tech-card-yolo::before {
-  background: radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 30%, rgba(13, 110, 253, 0.12) 0%, transparent 70%);
 }
 
 .tech-card-yolo:hover {
   transform: translateY(-2px) !important;
-  border-color: #ef4444 !important;
-  box-shadow: inset 0 0 0 1px #ef4444, 0 16px 36px rgba(0, 0, 0, 0.08), 0 0 28px rgba(239, 68, 68, 0.35) !important;
+  border-color: #2563eb !important;
+  box-shadow: inset 0 0 0 1px #2563eb, 0 16px 36px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(37, 99, 235, 0.15) !important;
 }
 
 .tech-card-opencv::before {
@@ -4245,17 +4253,19 @@ td {
   height: 42px;
 }
 
-.tech-icon img {
+.tech-icon img,
+.tech-icon svg {
   width: 36px;
   height: 36px;
   object-fit: contain;
   transition: var(--transition);
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-.tech-card:hover .tech-icon img {
-  transform: scale(1.18) translateY(-2px);
-  filter: drop-shadow(0 4px 12px var(--primary-glow));
+.tech-card:hover .tech-icon img,
+.tech-card:hover .tech-icon svg {
+  transform: scale(1.1) translateY(-2px);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
 .tech-name {
@@ -5587,7 +5597,7 @@ td {
 }
 
 .reports-title .accent {
-  color: #00ba7c !important;
+  color: #059669 !important;
   background: none !important;
   -webkit-background-clip: unset !important;
   -webkit-text-fill-color: initial !important;
@@ -5769,8 +5779,8 @@ td {
 }
 
 .btn-excel {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #059669 !important;
+  background-color: #059669 !important;
   border: none !important;
   color: #ffffff !important;
   font-weight: 700;
@@ -5790,9 +5800,9 @@ td {
 }
 
 .btn-excel:hover {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
-  opacity: 0.92 !important;
+  background: #047857 !important;
+  background-color: #047857 !important;
+  opacity: 0.95 !important;
   box-shadow: none !important;
   color: #ffffff !important;
 }
@@ -5823,8 +5833,8 @@ td {
 }
 
 .btn-excel:active {
-  background: #00ba7c !important;
-  background-color: #00ba7c !important;
+  background: #065f46 !important;
+  background-color: #065f46 !important;
   opacity: 0.85 !important;
   transform: translateY(1px);
   box-shadow: none !important;

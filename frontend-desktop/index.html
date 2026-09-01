@@ -18,6 +18,9 @@
         document.documentElement.style.colorScheme = active;
         var meta = document.getElementById('theme-color-meta');
         if (meta) meta.setAttribute('content', isDark ? '#0b0f19' : '#ffffff');
+        if (window.electronAPI && typeof window.electronAPI.updateTitleBarTheme === 'function') {
+          window.electronAPI.updateTitleBarTheme(active);
+        }
       } catch(e) {}
     })();
   </script>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
 
@@ -83,36 +85,79 @@ export default function ReportsPage() {
         if (match && match[1]) filename = match[1];
       }
 
-      // Check if running in Capacitor WebView
-      const isCapacitor = window.Capacitor !== undefined || window.location.protocol === 'capacitor:';
+      // Check if running on native Capacitor Android platform
+      const isNative = Capacitor.isNativePlatform();
 
-      if (isCapacitor) {
-        // Use Capacitor Filesystem to save report to Downloads/smartsight
+      if (isNative) {
+        // Use Capacitor Filesystem to save report
         const reader = new FileReader();
         reader.onloadend = async () => {
           try {
             let base64Data = reader.result;
-            if (base64Data.includes(',')) {
+            if (typeof base64Data === 'string' && base64Data.includes(',')) {
               base64Data = base64Data.split(',')[1];
             }
-            const path = `Download/smartsight/${filename}`;
-            await Filesystem.writeFile({
-              path: path,
-              data: base64Data,
-              directory: Directory.ExternalStorage,
-              recursive: true
-            });
+
+            // Check / request storage permissions gracefully if supported
+            try {
+              if (Filesystem.checkPermissions && Filesystem.requestPermissions) {
+                const perm = await Filesystem.checkPermissions();
+                if (perm?.publicStorage !== 'granted') {
+                  await Filesystem.requestPermissions();
+                }
+              }
+            } catch (permErr) {
+              console.warn('Storage permission request info:', permErr);
+            }
+
+            // Try saving to Documents directory first (accessible on Android 10+)
+            let savedLocation = 'Documents/SmartSight';
+            try {
+              await Filesystem.writeFile({
+                path: `SmartSight/${filename}`,
+                data: base64Data,
+                directory: Directory.Documents,
+                recursive: true
+              });
+            } catch (docErr) {
+              console.warn('Writing to Documents folder failed, writing to Cache storage:', docErr);
+              await Filesystem.writeFile({
+                path: filename,
+                data: base64Data,
+                directory: Directory.Cache,
+                recursive: true
+              });
+              savedLocation = 'App Storage';
+            }
+
             if (window.showToast) {
-              window.showToast(`Report saved to Downloads/smartsight/\n${filename}`, 'success', 'SUCCESS');
+              window.showToast(`Report saved successfully to ${savedLocation}:\n${filename}`, 'success', 'SUCCESS');
             } else if (showToast) {
-              showToast(`Report saved to Downloads/smartsight/\n${filename}`, 'success');
+              showToast(`Report saved successfully to ${savedLocation}:\n${filename}`, 'success');
             }
           } catch (e) {
-            console.error('Filesystem error:', e);
-            if (window.showToast) {
-              window.showToast('Failed to save report. Please check storage permissions.', 'error', 'SYSTEM ALERT');
-            } else if (showToast) {
-              showToast('Failed to save report. Please check storage permissions.', 'error');
+            console.error('Filesystem save error, falling back to browser download:', e);
+            // Fallback to standard blob download in webview
+            try {
+              const url = window.URL.createObjectURL(response.data);
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', filename);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+              if (window.showToast) {
+                window.showToast(`Report downloaded:\n${filename}`, 'success', 'SUCCESS');
+              } else if (showToast) {
+                showToast(`Report downloaded:\n${filename}`, 'success');
+              }
+            } catch (fallbackErr) {
+              if (window.showToast) {
+                window.showToast('Failed to save report. Please check storage permissions.', 'error', 'SYSTEM ALERT');
+              } else if (showToast) {
+                showToast('Failed to save report. Please check storage permissions.', 'error');
+              }
             }
           }
         };
@@ -1632,9 +1677,9 @@ export default function ReportsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{
                       width: '40px', height: '40px', borderRadius: '10px',
-                      background: 'rgba(0,186,124,0.12)', border: '1px solid rgba(0,186,124,0.2)',
+                      background: 'rgba(5,150,105,0.12)', border: '1px solid rgba(5,150,105,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#00ba7c', fontSize: '1.1rem', flexShrink: 0
+                      color: '#059669', fontSize: '1.1rem', flexShrink: 0
                     }}>
                       <i className="bi bi-file-earmark-spreadsheet-fill"></i>
                     </div>
@@ -1673,7 +1718,7 @@ export default function ReportsPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         {[
-                          { id: 'daily',   label: 'Daily',    icon: 'bi-lightning-charge-fill', color: '#10b981' },
+                          { id: 'daily',   label: 'Daily',    icon: 'bi-lightning-charge-fill', color: '#059669' },
                           { id: 'weekly',  label: 'Weekly',   icon: 'bi-calendar-week',          color: '#3b82f6' },
                           { id: 'monthly', label: 'Monthly',  icon: 'bi-calendar3',              color: '#f59e0b' },
                           { id: 'yearly',  label: 'Yearly',   icon: 'bi-calendar2-check',        color: '#ef4444' },
@@ -1719,7 +1764,7 @@ export default function ReportsPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         {[
-                          { id: 'all',     label: 'All',     icon: 'bi-people-fill',       color: '#00ba7c' },
+                          { id: 'all',     label: 'All',     icon: 'bi-people-fill',       color: '#059669' },
                           { id: 'known',   label: 'Known',   icon: 'bi-person-check-fill', color: '#3b82f6' },
                           { id: 'unknown', label: 'Unknown', icon: 'bi-person-slash',      color: '#f59e0b' },
                         ].map(opt => {
@@ -1875,9 +1920,10 @@ export default function ReportsPage() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            background: 'rgba(0, 0, 0, 0.75)',
-            zIndex: 9999,
-            padding: '20px'
+            background: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 99999,
+            padding: '20px',
+            paddingTop: 'max(calc(var(--status-bar-height, 0px) + 20px), calc(env(safe-area-inset-top, 0px) + 20px), 36px)',
           }}
           onClick={() => setSelectedImage(null)}
         >

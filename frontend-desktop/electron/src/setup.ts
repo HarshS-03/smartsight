@@ -6,7 +6,7 @@ import {
 } from '@capacitor-community/electron';
 import chokidar from 'chokidar';
 import type { MenuItemConstructorOptions } from 'electron';
-import { app, BrowserWindow, Menu, MenuItem, nativeImage, Tray, session } from 'electron';
+import { app, BrowserWindow, Menu, MenuItem, nativeImage, Tray, session, nativeTheme } from 'electron';
 import electronIsDev from 'electron-is-dev';
 import electronServe from 'electron-serve';
 import windowStateKeeper from 'electron-window-state';
@@ -107,16 +107,26 @@ export class ElectronCapacitorApp {
     });
     // Setup preload script path and construct our main window.
     const preloadPath = join(app.getAppPath(), 'build', 'src', 'preload.js');
+    const isDark = nativeTheme.shouldUseDarkColors;
+    const initialBg = isDark ? '#0f172a' : '#ffffff';
+    const initialSymbol = isDark ? '#ffffff' : '#0f172a';
+
     this.MainWindow = new BrowserWindow({
+      title: 'Smart Sight',
       icon,
       show: false,
       autoHideMenuBar: true,
+      backgroundColor: initialBg,
       titleBarStyle: 'hidden',
-      titleBarOverlay: {
-        color: '#0f172a',
-        symbolColor: '#ffffff',
-        height: 32
-      },
+      ...(process.platform === 'win32'
+        ? {
+            titleBarOverlay: {
+              color: initialBg,
+              symbolColor: initialSymbol,
+              height: 52,
+            },
+          }
+        : {}),
       x: this.mainWindowState.x,
       y: this.mainWindowState.y,
       width: this.mainWindowState.width,
@@ -124,6 +134,8 @@ export class ElectronCapacitorApp {
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: true,
+        webSecurity: false,
+        allowRunningInsecureContent: true,
         // Use preload to inject the electron varriant overrides for capacitor plugins.
         // preload: join(app.getAppPath(), "node_modules", "@capacitor-community", "electron", "dist", "runtime", "electron-rt.js"),
         preload: preloadPath,
@@ -230,9 +242,7 @@ export function setupContentSecurityPolicy(customScheme: string): void {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          electronIsDev
-            ? `default-src ${customScheme}://* 'unsafe-inline' devtools://* 'unsafe-eval' data:`
-            : `default-src ${customScheme}://* 'unsafe-inline' data:`,
+          `default-src ${customScheme}://* 'unsafe-inline' 'unsafe-eval' data: blob: http: https: ws: wss: devtools:; connect-src * ${customScheme}://* http: https: ws: wss:; img-src * ${customScheme}://* data: blob: http: https:; media-src * ${customScheme}://* data: blob: http: https:; font-src * ${customScheme}://* data: https:; style-src * ${customScheme}://* 'unsafe-inline' https:; script-src * ${customScheme}://* 'unsafe-inline' 'unsafe-eval' devtools:;`,
         ],
       },
     });

@@ -1596,9 +1596,9 @@ export default function ReportsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{
                       width: '40px', height: '40px', borderRadius: '10px',
-                      background: 'rgba(0,186,124,0.12)', border: '1px solid rgba(0,186,124,0.2)',
+                      background: 'rgba(5,150,105,0.12)', border: '1px solid rgba(5,150,105,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#00ba7c', fontSize: '1.1rem', flexShrink: 0
+                      color: '#059669', fontSize: '1.1rem', flexShrink: 0
                     }}>
                       <i className="bi bi-file-earmark-spreadsheet-fill"></i>
                     </div>
@@ -1637,7 +1637,7 @@ export default function ReportsPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         {[
-                          { id: 'daily',   label: 'Daily',    icon: 'bi-lightning-charge-fill', color: '#10b981' },
+                          { id: 'daily',   label: 'Daily',    icon: 'bi-lightning-charge-fill', color: '#059669' },
                           { id: 'weekly',  label: 'Weekly',   icon: 'bi-calendar-week',          color: '#3b82f6' },
                           { id: 'monthly', label: 'Monthly',  icon: 'bi-calendar3',              color: '#f59e0b' },
                           { id: 'yearly',  label: 'Yearly',   icon: 'bi-calendar2-check',        color: '#ef4444' },
@@ -1683,7 +1683,7 @@ export default function ReportsPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         {[
-                          { id: 'all',     label: 'All',     icon: 'bi-people-fill',       color: '#00ba7c' },
+                          { id: 'all',     label: 'All',     icon: 'bi-people-fill',       color: '#059669' },
                           { id: 'known',   label: 'Known',   icon: 'bi-person-check-fill', color: '#3b82f6' },
                           { id: 'unknown', label: 'Unknown', icon: 'bi-person-slash',      color: '#f59e0b' },
                         ].map(opt => {

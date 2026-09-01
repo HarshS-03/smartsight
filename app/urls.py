@@ -94,6 +94,9 @@ router.register(r'persons', views.PersonViewSet, basename='person')
 router.register(r'logs', views.RecognitionLogViewSet, basename='log')
 
 urlpatterns = [
+    # Health Check API Endpoint
+    path('health/', views.health_check, name='api_health_check'),
+
     # JWT & Auth API Endpoints
     path('auth/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
