@@ -7,6 +7,12 @@ node_modules/
 # Python Cache
 __pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
 # Database & Logs
 *.sqlite3
@@ -15,9 +21,12 @@ __pycache__/
 
 # Environment & Credentials
 .env
+.env.*
+!.env.example
 firebase-credentials.json
 local.properties
 *.keystore
+*.jks
 
 # ML Models
 *.onnx
@@ -30,10 +39,10 @@ dist/
 build/
 frontend/dist/
 frontend-android/dist/
-frontend-desktop/dist/
-frontend-desktop/electron/app/
-frontend-desktop/electron/dist/
-frontend-desktop/electron/make/
+desktop/dist/
+desktop/electron/app/
+desktop/electron/dist/
+desktop/electron/make/
 *.apk
 *.exe
 *.blockmap
@@ -41,3 +50,7 @@ frontend-desktop/electron/make/
 .jdk17/
 .vscode/
 .idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
