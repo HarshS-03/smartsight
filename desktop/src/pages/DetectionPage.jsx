@@ -249,7 +249,7 @@ export default function DetectionPage() {
                 Live <span className="accent">Detection</span>
               </h1>
               <p className="page-hero-sub mx-auto" data-reveal="true" data-reveal-delay="120">
-                AI-powered YOLOv8 face detection on live streams. Choose single feed or monitor multiple streams simultaneously.
+                AI-powered YOLO face detection and ArcFace face recognition on live streams. Choose single feed or monitor multiple streams simultaneously.
               </p>
             </div>
           </div>
@@ -257,9 +257,10 @@ export default function DetectionPage() {
       </section>
 
       {/* ── Detection Console ─────────────────────────────────── */}
-      <div className="container pb-5">
+      {/* ── Detection Console ─────────────────────────────────── */}
+      <div className="container-fluid px-lg-4 pb-5">
         <div className="row justify-content-center">
-          <div className="col-lg-10">
+          <div className="col-12 col-xl-11">
             <div className="video-panel">
 
               {/* Controls View Mode and Model selectors */}
@@ -267,18 +268,31 @@ export default function DetectionPage() {
                 {/* Left: Camera View Card */}
                 <div className="col-12 col-md-5 col-lg-4">
                   <div className="detection-control-card h-100 d-flex flex-column justify-content-center p-3">
-                    <div className="d-flex align-items-center gap-2 mb-2">
-                      <i className="bi bi-camera-video text-primary"></i>
-                      <span className="fw-semibold text-heading" style={{ fontSize: '0.92rem' }}>Camera View</span>
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="d-flex align-items-center gap-2">
+                        <i className="bi bi-camera-video text-primary"></i>
+                        <span className="fw-semibold text-heading" style={{ fontSize: '0.88rem' }}>Camera View</span>
+                      </div>
+                      <span className="badge rounded-pill" style={{ fontSize: '0.68rem', background: 'rgba(37, 99, 235, 0.12)', color: '#3b82f6', border: '1px solid rgba(37, 99, 235, 0.25)', padding: '3px 8px' }}>
+                        {viewMode === 'single' ? 'Single' : 'Multi-Grid'}
+                      </span>
                     </div>
-                    <div className="d-flex gap-2 w-100">
-                      <button onClick={() => setViewMode('single')} className={`btn view-toggle-card-btn w-50 ${viewMode === 'single' ? 'active' : ''}`}>
+                    <div className="segmented-view-switch">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('single')}
+                        className={`segmented-switch-btn ${viewMode === 'single' ? 'active' : ''}`}
+                      >
                         <i className="bi bi-camera-video"></i>
-                        <span style={{ fontSize: '0.82rem' }}>Single Camera</span>
+                        <span>Single</span>
                       </button>
-                      <button onClick={() => setViewMode('grid')} className={`btn view-toggle-card-btn w-50 ${viewMode === 'grid' ? 'active' : ''}`}>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('grid')}
+                        className={`segmented-switch-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                      >
                         <i className="bi bi-grid-3x3-gap"></i>
-                        <span style={{ fontSize: '0.82rem' }}>Multi-Camera Grid</span>
+                        <span>Multi-Grid</span>
                       </button>
                     </div>
                   </div>
@@ -346,261 +360,317 @@ export default function DetectionPage() {
                 </div>
               </div>
 
-              {/* Single Video feed Panel */}
-              {viewMode === 'single' && (
-                <div id="video-feed-container" className={`mb-4 d-flex align-items-center justify-content-center ${isFeedRunning ? 'feed-active' : ''}`}>
-                  {/* HUD Corners */}
-                  <div className="vid-hud-corner vid-hud-tl"></div>
-                  <div className="vid-hud-corner vid-hud-tr"></div>
-                  <div className="vid-hud-corner vid-hud-bl"></div>
-                  <div className="vid-hud-corner vid-hud-br"></div>
+              {/* ── Main Surveillance Layout: LEFT = Viewport, RIGHT = Vertical Panel ── */}
+              <div className="row g-4 align-items-stretch">
+                {/* LEFT: Camera Viewport */}
+                <div className="col-12 col-lg-8 col-xl-8 col-xxl-9 d-flex flex-column">
+                  {/* Single Video feed Panel */}
+                  {viewMode === 'single' && (
+                    <div id="video-feed-container" className={`w-100 d-flex align-items-center justify-content-center flex-grow-1 ${isFeedRunning ? 'feed-active' : ''}`} style={{ minHeight: '460px', margin: 0 }}>
+                      {/* HUD Corners */}
+                      <div className="vid-hud-corner vid-hud-tl"></div>
+                      <div className="vid-hud-corner vid-hud-tr"></div>
+                      <div className="vid-hud-corner vid-hud-bl"></div>
+                      <div className="vid-hud-corner vid-hud-br"></div>
 
-                  {/* Offline placeholder */}
-                  {!isFeedRunning && (
-                    <div className="text-center text-secondary">
-                      <i className="bi bi-camera-video-off display-4 mb-3 d-block" style={{ opacity: .35 }}></i>
-                      <h5 className="fw-bold text-white mb-1">Camera Offline</h5>
-                      <p className="small text-muted mb-0">Click <strong>Start Feed</strong> to begin monitoring.</p>
+                      {/* Offline placeholder */}
+                      {!isFeedRunning && (
+                        <div className="text-center text-secondary">
+                          <i className="bi bi-camera-video-off display-4 mb-3 d-block" style={{ opacity: .35 }}></i>
+                          <h5 className="fw-bold text-white mb-1">Camera Offline</h5>
+                          <p className="small text-muted mb-0">Click <strong>Start Feed</strong> to begin monitoring.</p>
+                        </div>
+                      )}
+
+                      {/* Error placeholder */}
+                      {isFeedRunning && feedError && (
+                        <div className="text-center text-secondary p-4">
+                          <i className="bi bi-exclamation-triangle-fill text-warning display-4 mb-3 d-block" style={{ opacity: .8 }}></i>
+                          <h5 className="fw-bold text-white mb-1">Stream Signal Error</h5>
+                          <p className="small text-muted mb-0">Could not connect to stream feed or camera is offline.</p>
+                        </div>
+                      )}
+
+                      <img
+                        ref={liveFeedRef}
+                        src={isFeedRunning ? feedUrl : ''}
+                        alt=""
+                        className="w-100 h-100"
+                        style={{ objectFit: 'contain', display: isFeedRunning && !feedError ? 'block' : 'none' }}
+                        onLoad={() => setFeedError(false)}
+                        onError={() => {
+                          if (isFeedRunning) setFeedError(true);
+                        }}
+                      />
                     </div>
                   )}
 
-                  {/* Error placeholder */}
-                  {isFeedRunning && feedError && (
-                    <div className="text-center text-secondary p-4">
-                      <i className="bi bi-exclamation-triangle-fill text-warning display-4 mb-3 d-block" style={{ opacity: .8 }}></i>
-                      <h5 className="fw-bold text-white mb-1">Stream Signal Error</h5>
-                      <p className="small text-muted mb-0">Could not connect to stream feed or camera is offline.</p>
-                    </div>
-                  )}
+                  {/* Multi-Camera Grid Container */}
+                  {viewMode === 'grid' && (() => {
+                    const gridCameras = cameras.length > 0
+                      ? (cameras.some(c => String(c.id) === '0') ? cameras : [{ id: '0', name: 'Default Webcam' }, ...cameras])
+                      : [{ id: '0', name: 'Default Webcam' }];
 
-                  <img
-                    ref={liveFeedRef}
-                    src={isFeedRunning ? feedUrl : ''}
-                    alt=""
-                    className="w-100 h-100"
-                    style={{ objectFit: 'contain', display: isFeedRunning && !feedError ? 'block' : 'none' }}
-                    onLoad={() => setFeedError(false)}
-                    onError={() => {
-                      if (isFeedRunning) setFeedError(true);
-                    }}
-                  />
+                    return (
+                      <div className="row row-cols-1 row-cols-md-2 g-3">
+                        {gridCameras.map(camera => (
+                          <div className="col" key={camera.id}>
+                            <div className="p-3 rounded-4"
+                              style={{ background: 'var(--bg-surface-solid)', border: `1px solid ${isFeedRunning ? 'rgba(34, 197, 94, 0.4)' : 'var(--border-subtle)'}`, position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', transition: 'border-color 0.4s ease' }}>
+
+                              {/* Card Header */}
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="fw-bold small text-uppercase"
+                                  style={{ letterSpacing: '0.5px', fontSize: '0.8rem', color: 'var(--text-heading)' }}><i
+                                    className="bi bi-camera-video-fill text-primary me-2"></i>{camera.name}</span>
+                                <span className={`badge rounded-pill px-2.5 py-1 status-badge-indicator ${isFeedRunning ? 'badge-active' : 'badge-inactive'}`}
+                                  style={{ fontSize: '0.65rem' }}>{isFeedRunning ? 'Online' : 'Offline'}</span>
+                              </div>
+
+                              {/* Video Frame */}
+                              <div
+                                className="position-relative overflow-hidden rounded-3 mb-2 bg-black d-flex align-items-center justify-content-center"
+                                style={{ aspectRatio: '16/9', border: '1px solid var(--border-subtle)' }}>
+                                {!isFeedRunning && (
+                                  <div className="text-center py-4">
+                                    <i className="bi bi-camera-video-off display-6 mb-2 d-block text-secondary" style={{ opacity: .5 }}></i>
+                                    <p className="small mb-0 text-secondary font-mono" style={{ fontSize: '0.75rem' }}>Feed Stopped</p>
+                                  </div>
+                                )}
+                                <img
+                                  src={isFeedRunning ? `${getBackendBaseUrl()}/video_feed/?src=${camera.id}&model=${modelType}&stats_key=${camera.id}&t=${Date.now()}` : ''}
+                                  alt={camera.name}
+                                  className="w-100 h-100"
+                                  style={{ objectFit: 'contain', display: isFeedRunning ? 'block' : 'none' }}
+                                  decoding="async"
+                                />
+                              </div>
+
+                              {/* Card Stats/Actions Footer */}
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div className="d-flex gap-3 font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                  <div>
+                                    <span className="fw-bold" style={{ color: 'var(--text-heading)' }}>{isFeedRunning ? (stats.fps || '0.0') : '0.0'}</span> <span className="opacity-75"
+                                      style={{ fontSize: '0.68rem' }}>FPS</span>
+                                  </div>
+                                  <div>
+                                    <span className="fw-bold" style={{ color: 'var(--text-heading)' }}>{isFeedRunning ? (stats.faces || 0) : 0}</span> <span className="opacity-75"
+                                      style={{ fontSize: '0.68rem' }}>Faces</span>
+                                  </div>
+                                </div>
+                                <div className="d-flex gap-2">
+                                  <button className="btn btn-sm rounded-pill px-2.5 py-1 fw-bold grid-maximize-btn"
+                                    style={{ fontSize: '0.72rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-heading)' }} onClick={() => { setViewMode('single'); setCameraType(camera.id); }}>
+                                    <i className="bi bi-arrows-angle-expand me-1 text-primary"></i> Maximize
+                                  </button>
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
-              )}
 
-              {/* Multi-Camera Grid Container */}
-              {viewMode === 'grid' && (() => {
-                const gridCameras = cameras.length > 0
-                  ? (cameras.some(c => String(c.id) === '0') ? cameras : [{ id: '0', name: 'Default Webcam' }, ...cameras])
-                  : [{ id: '0', name: 'Default Webcam' }];
-
-                return (
-                  <div className="row row-cols-1 row-cols-md-2 g-4 mb-4">
-                    {gridCameras.map(camera => (
-                      <div className="col" key={camera.id}>
-                        <div className="p-3 rounded-4"
-                          style={{ background: 'var(--bg-surface-solid)', border: `1px solid ${isFeedRunning ? 'rgba(34, 197, 94, 0.4)' : 'var(--border-subtle)'}`, position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', transition: 'border-color 0.4s ease' }}>
-
-                          {/* Card Header */}
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <span className="fw-bold small text-uppercase"
-                              style={{ letterSpacing: '0.5px', fontSize: '0.825rem', color: 'var(--text-heading)' }}><i
-                                className="bi bi-camera-video-fill text-primary me-2"></i>{camera.name}</span>
-                            <span className={`badge rounded-pill px-2.5 py-1 status-badge-indicator ${isFeedRunning ? 'badge-active' : 'badge-inactive'}`}
-                              style={{ fontSize: '0.65rem' }}>{isFeedRunning ? 'Online' : 'Offline'}</span>
-                          </div>
-
-                          {/* Video Frame */}
-                          <div
-                            className="position-relative overflow-hidden rounded-3 mb-3 bg-black d-flex align-items-center justify-content-center"
-                            style={{ aspectRatio: '16/9', border: '1px solid var(--border-subtle)' }}>
-                            {!isFeedRunning && (
-                              <div className="text-center py-4">
-                                <i className="bi bi-camera-video-off display-6 mb-2 d-block text-secondary" style={{ opacity: .5 }}></i>
-                                <p className="small mb-0 text-secondary font-mono" style={{ fontSize: '0.75rem' }}>Feed Stopped</p>
-                              </div>
-                            )}
-                            <img
-                              src={isFeedRunning ? `${getBackendBaseUrl()}/video_feed/?src=${camera.id}&model=${modelType}&stats_key=${camera.id}&t=${Date.now()}` : ''}
-                              alt={camera.name}
-                              className="w-100 h-100"
-                              style={{ objectFit: 'contain', display: isFeedRunning ? 'block' : 'none' }}
-                              decoding="async"
-                            />
-                          </div>
-
-                          {/* Card Stats/Actions Footer */}
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div className="d-flex gap-3 font-mono" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                              <div>
-                                <span className="fw-bold" style={{ color: 'var(--text-heading)' }}>{isFeedRunning ? (stats.fps || '0.0') : '0.0'}</span> <span className="opacity-75"
-                                  style={{ fontSize: '0.7rem' }}>FPS</span>
-                              </div>
-                              <div>
-                                <span className="fw-bold" style={{ color: 'var(--text-heading)' }}>{isFeedRunning ? (stats.faces || 0) : 0}</span> <span className="opacity-75"
-                                  style={{ fontSize: '0.7rem' }}>Faces</span>
-                              </div>
-                            </div>
-                            <div className="d-flex gap-2">
-                              <button className="btn btn-sm rounded-pill px-3 py-1 fw-bold grid-maximize-btn"
-                                style={{ fontSize: '0.75rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-heading)' }} onClick={() => { setViewMode('single'); setCameraType(camera.id); }}>
-                                <i className="bi bi-arrows-angle-expand me-1 text-primary"></i> Maximize
-                              </button>
-                            </div>
-                          </div>
-
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* Camera Source Dropdown Selector (Single View Only) */}
-              {viewMode === 'single' && (
-                <>
-                  <div className="row mb-4 justify-content-center g-4">
-                    <div className="col-12">
-                      <div className="d-flex align-items-center gap-2 mb-3">
-                        <span className="hud-label" style={{ margin: 0 }}>Active Camera Source</span>
-                      </div>
-                      <div className="d-flex gap-2">
-                        <span className="control-pill-badge-rect d-none d-sm-inline-flex align-items-center px-3 fw-bold">
-                          <span className="control-pill-icon d-inline-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px' }}>
-                            <i className="bi bi-camera" style={{ fontSize: '0.85rem' }}></i>
-                          </span>
-                          SOURCE
-                        </span>
-
-                        <div className="custom-dropdown flex-grow-1" onClick={() => { setCameraDropdownOpen(!cameraDropdownOpen); setModelDropdownOpen(false); }}>
-                          <div className="dropdown-selected-rect">
-                            <span className="text-truncate me-2">
-                              {cameraType === '0' && 'Default Webcam'}
-                              {cameraType === 'url' && 'IP Camera (URL)'}
-                              {cameras.find(c => c.id === cameraType)?.name}
+                {/* RIGHT: Vertical Control/Status Sidebar */}
+                <div className="col-12 col-lg-4 col-xl-4 col-xxl-3">
+                  <div className="detection-sidebar-container h-100" style={{ position: 'relative', zIndex: cameraDropdownOpen ? 90 : 1 }}>
+                    <div className="detection-sidebar">
+                      {/* Active Camera Source Section */}
+                      {viewMode === 'single' ? (
+                        <div className="sidebar-section">
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="sidebar-section-label">
+                              <i className="bi bi-camera-video"></i> ACTIVE SOURCE
                             </span>
-                            <div className="d-flex align-items-center gap-2 ms-auto me-2">
-                              {isFeedRunning && (stats.resolution || '640x480') && (
-                                <span className="badge rounded-pill px-2.5 py-1 text-primary border border-primary border-opacity-25 font-mono fw-bold"
-                                  style={{ background: 'rgba(13, 110, 253, 0.12)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                  <i className="bi bi-aspect-ratio me-1"></i>{stats.resolution || '640x480'}
+                            <span className="badge rounded-pill" style={{ fontSize: '0.65rem', background: 'rgba(37, 99, 235, 0.12)', color: '#3b82f6', border: '1px solid rgba(37, 99, 235, 0.25)', padding: '3px 8px', letterSpacing: '0.5px', fontWeight: 600 }}>
+                              Source 1
+                            </span>
+                          </div>
+                          <div className="custom-dropdown w-100" onClick={() => { setCameraDropdownOpen(!cameraDropdownOpen); setModelDropdownOpen(false); }}>
+                            <div className="sidebar-camera-select w-100 d-flex align-items-center justify-content-between">
+                              <div className="d-flex align-items-center min-w-0 flex-grow-1 me-2">
+                                <div className="camera-icon-badge me-2">
+                                  <i className="bi bi-camera-fill"></i>
+                                </div>
+                                <span className="text-truncate fw-semibold" style={{ fontSize: '0.88rem' }}>
+                                  {cameraType === '0' && 'Default Webcam'}
+                                  {cameraType === 'url' && 'IP Camera (URL)'}
+                                  {cameras.find(c => c.id === cameraType)?.name}
                                 </span>
-                              )}
+                              </div>
+                              <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                                {isFeedRunning && (stats.resolution || '640x480') && (
+                                  <span className="badge rounded-pill px-2 py-0.5 text-primary border border-primary border-opacity-25 font-mono fw-bold"
+                                    style={{ background: 'rgba(13, 110, 253, 0.12)', fontSize: '0.68rem' }}>
+                                    {stats.resolution || '640x480'}
+                                  </span>
+                                )}
+                                <i className={`bi bi-chevron-down small opacity-50 dropdown-chevron ${cameraDropdownOpen ? 'open' : ''}`}></i>
+                              </div>
                             </div>
-                            <i className="bi bi-chevron-down small opacity-50 flex-shrink-0"></i>
+                            <div className={`dropdown-options ${cameraDropdownOpen ? 'open' : ''}`}>
+                              {cameras.map((camera, i) => (
+                                <div key={camera.id} className={`dropdown-option ${cameraType === camera.id ? 'active' : ''}`} onClick={() => setCameraType(camera.id)}>{camera.name}</div>
+                              ))}
+                              {cameras.length === 0 && <div className={`dropdown-option ${cameraType === '0' ? 'active' : ''}`} onClick={() => setCameraType('0')}>Default Webcam</div>}
+                              <div className={`dropdown-option ${cameraType === 'url' ? 'active' : ''}`} onClick={() => setCameraType('url')}>IP Camera (URL)</div>
+                            </div>
+                          </div>
 
+                          {cameraType === 'url' && (
+                            <div className="mt-2">
+                              <input type="text" className="form-control shadow-none rounded-3"
+                                placeholder="Enter IP Camera URL"
+                                value={cameraUrl}
+                                onChange={(e) => setCameraUrl(e.target.value)}
+                                style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', height: '42px', color: 'var(--text-heading)', fontSize: '0.82rem' }} />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="sidebar-section">
+                          <span className="sidebar-section-label d-flex mb-2">
+                            <i className="bi bi-grid-3x3-gap"></i> GRID MONITORING
+                          </span>
+                          <div className="p-2.5 rounded-3 d-flex align-items-center gap-2" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
+                            <i className="bi bi-grid-3x3-gap text-primary fs-5"></i>
+                            <span className="small fw-semibold text-heading">Multi-Camera Grid Mode</span>
                           </div>
-                          <div className={`dropdown-options ${cameraDropdownOpen ? 'open' : ''}`}>
-                            {cameras.map((camera, i) => (
-                              <div key={camera.id} className={`dropdown-option ${cameraType === camera.id ? 'active' : ''}`} onClick={() => setCameraType(camera.id)}>{camera.name}</div>
-                            ))}
-                            {cameras.length === 0 && <div className={`dropdown-option ${cameraType === '0' ? 'active' : ''}`} onClick={() => setCameraType('0')}>Default Webcam</div>}
-                            <div className={`dropdown-option ${cameraType === 'url' ? 'active' : ''}`} onClick={() => setCameraType('url')}>IP Camera (URL)</div>
+                        </div>
+                      )}
+
+                      {/* ── Telemetry Section Divider ── */}
+                      <div className="sidebar-section-divider mt-2">
+                        <span className="sidebar-section-label">
+                          <i className="bi bi-activity"></i> TELEMETRY
+                        </span>
+                      </div>
+
+                      {/* Status Card — clean full width */}
+                      <div className="detection-stat-card stat-card-status">
+                        <div className="d-flex align-items-center w-100 gap-3">
+                          <div className={`stat-icon-badge ${isFeedRunning ? 'stat-icon-green' : 'stat-icon-red'}`}>
+                            <i className={`bi ${isFeedRunning ? 'bi-broadcast' : 'bi-slash-circle'}`}></i>
                           </div>
+                          <div className="flex-grow-1 min-w-0 d-flex flex-column justify-content-center">
+                            <div className="stat-label-sub mb-1" style={{ marginTop: 0 }}>STREAM STATUS</div>
+                            <div className="fw-bold text-truncate" style={{ fontSize: '1.05rem', color: isFeedRunning ? '#22c55e' : '#f87171', letterSpacing: '-0.2px' }}>
+                              {isFeedRunning ? 'Live • Active' : 'Offline'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* FPS + Detections — side by side */}
+                      <div className="row g-2 mb-1">
+                        <div className="col-6">
+                          <div className="detection-stat-card h-100 position-relative">
+                            <div className="d-flex align-items-start justify-content-between mb-2 w-100">
+                              <div className="stat-icon-badge stat-icon-blue stat-icon-sm">
+                                <i className="bi bi-speedometer2"></i>
+                              </div>
+                              <span className="stat-badge-mini badge-blue">FPS</span>
+                            </div>
+                            <div className="d-flex flex-column align-items-start w-100 mt-1">
+                              <div className="d-flex align-items-baseline gap-1">
+                                <span className={`fw-bold font-mono ${isFeedRunning ? 'text-blue-glow' : 'text-muted'}`} style={{ fontSize: '1.6rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
+                                  {isFeedRunning ? (stats.fps || '0.0') : '0.0'}
+                                </span>
+                              </div>
+                              <div className="stat-label-sub mt-2">FRAMERATE</div>
+                            </div>
+                            <div className="stat-meter-track mt-2">
+                              <div className="stat-meter-fill bg-blue" style={{ width: isFeedRunning ? `${Math.min(100, (parseFloat(stats.fps) || 0) / 60 * 100)}%` : '0%' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-6">
+                          <div className="detection-stat-card h-100 position-relative">
+                            <div className="d-flex align-items-start justify-content-between mb-2 w-100">
+                              <div className={`stat-icon-badge stat-icon-sm ${isFeedRunning && stats.faces > 0 ? 'stat-icon-green' : 'stat-icon-dim'}`}>
+                                <i className="bi bi-person-bounding-box"></i>
+                              </div>
+                              <span className={`stat-badge-mini ${isFeedRunning && stats.faces > 0 ? 'badge-green' : 'badge-dim'}`}>
+                                {isFeedRunning && stats.faces > 0 ? 'ACTIVE' : 'IDLE'}
+                              </span>
+                            </div>
+                            <div className="d-flex flex-column align-items-start w-100 mt-1">
+                              <div className="d-flex align-items-baseline gap-1">
+                                <span className={`fw-bold font-mono ${isFeedRunning && stats.faces > 0 ? 'text-green-glow' : 'text-muted'}`} style={{ fontSize: '1.6rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
+                                  {isFeedRunning ? (stats.faces || 0) : 0}
+                                </span>
+                              </div>
+                              <div className="stat-label-sub mt-2">DETECTIONS</div>
+                            </div>
+                            <div className="stat-meter-track mt-2">
+                              <div className={`stat-meter-fill ${isFeedRunning && stats.faces > 0 ? 'bg-green' : 'bg-dim'}`} style={{ width: isFeedRunning ? `${Math.min(100, (stats.faces || 0) * 20)}%` : '0%' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── Controls Section Divider ── */}
+                      <div className="sidebar-section-divider mt-2">
+                        <span className="sidebar-section-label">
+                          <i className="bi bi-toggles"></i> CONTROLS
+                        </span>
+                      </div>
+
+                      {/* Action Buttons: Side-by-side grid */}
+                      <div className="row g-2 mt-1">
+                        <div className="col-6">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.currentTarget.blur(); handleStartFeed(); }}
+                            className={`btn-detect-action btn-detect-start-action w-100 ${isFeedRunning ? 'is-running' : ''}`}
+                            title="Start live video detection feed"
+                          >
+                            <i className={`bi ${isFeedRunning ? 'bi-broadcast' : 'bi-play-fill'} me-1.5`}></i>
+                            <span>{isFeedRunning ? 'Active' : 'Start Feed'}</span>
+                          </button>
+                        </div>
+                        <div className="col-6">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.currentTarget.blur(); handleStopFeed(); }}
+                            className={`btn-detect-action btn-detect-stop-action w-100 ${isFeedRunning ? 'is-active' : 'is-standby'}`}
+                            title="Stop video detection feed"
+                          >
+                            <i className={`bi ${isFeedRunning ? 'bi-stop-circle-fill' : 'bi-stop-fill'} me-1.5`}></i>
+                            <span>Stop Feed</span>
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  {cameraType === 'url' && (
-                    <div className="row mb-4 justify-content-center">
-                      <div className="col-12">
-                        <div className="d-flex align-items-center gap-2 mb-3">
-                          <span className="hud-label" style={{ margin: 0 }}>IP Camera URL</span>
-                        </div>
-                        <div className="d-flex gap-2">
-                          <span className="d-none d-sm-flex align-items-center px-4 rounded-pill font-mono"
-                            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', whiteSpace: 'nowrap', fontSize: '.85rem', color: 'var(--text-secondary)' }}>
-                            <i className="bi bi-link-45deg me-2 text-primary"></i> URL
-                          </span>
-                          <input type="text" className="form-control shadow-none rounded-3 flex-grow-1"
-                            placeholder="Enter IP Camera URL (e.g. http://192.168.1.100:8080/video)"
-                            value={cameraUrl}
-                            onChange={(e) => setCameraUrl(e.target.value)}
-                            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', height: '48px', color: 'var(--text-heading)' }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Unified Telemetry HUD Bar (Matching user screenshot) */}
-                  {/* Unified Telemetry HUD Bar */}
-                  <div className="mb-4 py-3 px-2 rounded-4 shadow-sm"
-                    style={{ background: 'var(--bg-surface-solid)', border: '1px solid var(--border-color)' }}>
-                    <div className="row text-center align-items-center g-0">
-                      {/* Status Column */}
-                      <div className="col-4" style={{ borderRight: '1px solid var(--border-subtle)' }}>
-                        <div className="d-flex align-items-center justify-content-center mb-1" style={{ gap: '8px' }}>
-                          <div id="status-dot" className={`rounded-circle flex-shrink-0 ${isFeedRunning ? 'dot-active' : ''}`}
-                            style={{ width: '8px', height: '8px', background: isFeedRunning ? '#22c55e' : '#ef4444', boxShadow: isFeedRunning ? '0 0 10px rgba(34,197,94,.8)' : '0 0 10px rgba(239,68,68,.7)' }}></div>
-                          <span className="fw-bold" style={{ fontSize: 'clamp(0.95rem, 3.2vw, 1.2rem)', color: isFeedRunning ? '#22c55e' : '#ef4444' }}>
-                            {isFeedRunning ? 'Online' : 'Offline'}
-                          </span>
-                        </div>
-                        <div className="text-secondary text-uppercase fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.8px' }}>
-                          STATUS
-                        </div>
-                      </div>
-
-                      {/* Framerate Column */}
-                      <div className="col-4" style={{ borderRight: '1px solid var(--border-subtle)' }}>
-                        <div className="d-flex align-items-baseline justify-content-center gap-1 mb-1">
-                          <span className="fw-bold font-mono" style={{ fontSize: 'clamp(1.05rem, 3.5vw, 1.3rem)', color: 'var(--text-heading)' }}>
-                            {isFeedRunning ? (stats.fps || '0.0') : '0.0'}
-                          </span>
-                          <span className="text-secondary font-mono fw-bold" style={{ fontSize: '0.68rem' }}>FPS</span>
-                        </div>
-                        <div className="text-secondary text-uppercase fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.8px' }}>
-                          FRAMERATE
-                        </div>
-                      </div>
-
-                      {/* Detections Column */}
-                      <div className="col-4">
-                        <div className="d-flex align-items-baseline justify-content-center gap-1 mb-1">
-                          <span className="fw-bold font-mono" style={{ fontSize: 'clamp(1.05rem, 3.5vw, 1.3rem)', color: 'var(--text-heading)' }}>
-                            {isFeedRunning ? (stats.faces || 0) : 0}
-                          </span>
-                          <span className="text-secondary font-mono fw-semibold" style={{ fontSize: '0.68rem' }}>Active</span>
-                        </div>
-                        <div className="text-secondary text-uppercase fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.8px' }}>
-                          DETECTIONS
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Controls */}
-              <div className="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap w-100">
-                <button onClick={(e) => { e.currentTarget.blur(); handleStartFeed(); }} className="btn-detect-start">
-                  <i className="bi bi-play-fill fs-5"></i> Start Feed
-                </button>
-                <button onClick={(e) => { e.currentTarget.blur(); handleStopFeed(); }} className="btn-detect-stop">
-                  <i className="bi bi-stop-fill fs-5"></i> Stop Feed
-                </button>
+                </div>
               </div>
             </div>
 
             {/* Redesigned Live Detections HUD Panel */}
             <div className="video-panel mt-3" style={{ display: isFeedRunning ? 'block' : 'none' }}>
               {/* Card Header */}
-              <div className="d-flex justify-content-between align-items-center mb-2.5 pb-2" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                <div className="d-flex align-items-center gap-2 min-w-0">
-                  <i className="bi bi-radar text-primary fs-5 flex-shrink-0"></i>
+              <div className="d-flex justify-content-between align-items-center mb-3 pb-2.5" style={{ borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))' }}>
+                <div className="d-flex align-items-center gap-2.5 min-w-0">
+                  <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '34px', height: '34px', background: 'rgba(37, 99, 235, 0.12)', border: '1px solid rgba(37, 99, 235, 0.25)', color: '#2563eb' }}>
+                    <i className="bi bi-radar fs-6"></i>
+                  </div>
                   <div className="min-w-0">
-                    <h6 className="fw-bold text-dynamic mb-0 text-uppercase text-truncate" style={{ letterSpacing: '0.8px', fontSize: '0.85rem' }}>
+                    <h6 className="fw-bold text-heading mb-0 text-uppercase text-truncate" style={{ letterSpacing: '0.8px', fontSize: '0.85rem' }}>
                       Live Detections
                     </h6>
                     <span className="text-secondary font-mono d-block text-truncate" style={{ fontSize: '0.7rem' }}>Real-time face telemetry</span>
                   </div>
                 </div>
                 <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                  <span className="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center" style={{ fontSize: '0.72rem', background: stats.names.length > 0 ? 'rgba(34, 197, 94, 0.12)' : 'rgba(13, 110, 253, 0.08)', color: stats.names.length > 0 ? '#22c55e' : '#2563eb', border: `1px solid ${stats.names.length > 0 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(13, 110, 253, 0.2)'}` }}>
-                    <span className="rounded-circle flex-shrink-0" style={{ width: '6px', height: '6px', marginRight: '7px', background: stats.names.length > 0 ? '#22c55e' : '#2563eb', boxShadow: stats.names.length > 0 ? '0 0 6px rgba(34, 197, 94, 0.8)' : '0 0 6px rgba(13, 110, 253, 0.8)' }}></span>
+                  <span className="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center" style={{ fontSize: '0.72rem', background: stats.names.length > 0 ? 'rgba(34, 197, 94, 0.14)' : 'rgba(100, 116, 139, 0.12)', color: stats.names.length > 0 ? '#22c55e' : '#94a3b8', border: `1px solid ${stats.names.length > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(100, 116, 139, 0.25)'}` }}>
+                    <span className="rounded-circle flex-shrink-0" style={{ width: '6px', height: '6px', marginRight: '7px', background: stats.names.length > 0 ? '#22c55e' : '#94a3b8', boxShadow: stats.names.length > 0 ? '0 0 6px rgba(34, 197, 94, 0.8)' : 'none' }}></span>
                     <span>{stats.names.length} Active</span>
                   </span>
-                  <button type="button" className="btn btn-sm text-secondary p-1 border-0 rounded-circle flex-shrink-0" onClick={() => setIsDetectionsMinimized(!isDetectionsMinimized)} style={{ background: 'var(--bg-input)', lineHeight: 1 }}>
+                  <button type="button" className="btn btn-sm text-secondary p-1 border-0 rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" onClick={() => setIsDetectionsMinimized(!isDetectionsMinimized)} style={{ width: '28px', height: '28px', background: 'var(--bg-input, #1e293b)', lineHeight: 1 }}>
                     <i className={`bi ${isDetectionsMinimized ? 'bi-chevron-down' : 'bi-chevron-up'}`} style={{ fontSize: '0.8rem' }}></i>
                   </button>
                 </div>
@@ -615,21 +685,53 @@ export default function DetectionPage() {
                       <p className="text-muted small mb-0" style={{ fontSize: '0.78rem' }}>Scanning stream feed for recognized or unknown faces...</p>
                     </div>
                   ) : (
-                    <div className="d-flex flex-column gap-2">
+                    <div className="d-flex flex-column gap-2.5">
                       {stats.names.map((name, i) => {
                         const isUnknown = name.toLowerCase() === 'unknown';
                         return (
-                          <div key={i} className="d-flex align-items-center justify-content-between p-2.5 rounded-3" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)' }}>
-                            <div className="d-flex align-items-center gap-2.5">
-                              <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', background: isUnknown ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)', color: isUnknown ? '#ef4444' : '#10b981' }}>
-                                <i className={`bi ${isUnknown ? 'bi-person-x-fill' : 'bi-person-check-fill'}`}></i>
+                          <div
+                            key={i}
+                            className="d-flex align-items-center justify-content-between p-3 rounded-3"
+                            style={{
+                              background: isUnknown ? 'rgba(239, 68, 68, 0.07)' : 'rgba(37, 99, 235, 0.06)',
+                              border: isUnknown ? '1px solid rgba(239, 68, 68, 0.28)' : '1px solid rgba(16, 185, 129, 0.25)',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                style={{
+                                  width: '38px',
+                                  height: '38px',
+                                  background: isUnknown ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                  border: isUnknown ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(16, 185, 129, 0.35)',
+                                  color: isUnknown ? '#f87171' : '#34d399'
+                                }}
+                              >
+                                <i className={`bi ${isUnknown ? 'bi-shield-slash-fill' : 'bi-person-check-fill'} fs-6`}></i>
                               </div>
-                              <span className="fw-bold" style={{ color: isUnknown ? '#ef4444' : 'var(--text-heading)', fontSize: '0.88rem' }}>
-                                {name}
-                              </span>
+                              <div>
+                                <span className="fw-bold d-block" style={{ color: isUnknown ? '#fca5a5' : 'var(--text-heading, #ffffff)', fontSize: '0.90rem', lineHeight: 1.2 }}>
+                                  {isUnknown ? 'Unknown Person' : name}
+                                </span>
+                                <span className="small font-mono d-block" style={{ fontSize: '0.68rem', color: isUnknown ? 'rgba(248, 113, 113, 0.8)' : 'rgba(52, 211, 153, 0.8)', letterSpacing: '0.3px', marginTop: '2px' }}>
+                                  {isUnknown ? 'Unregistered Face • High Alert' : 'Verified Identity • Match Confirmed'}
+                                </span>
+                              </div>
                             </div>
-                            <span className="badge rounded-pill px-2.5 py-1 fw-bold" style={{ fontSize: '0.7rem', background: isUnknown ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: isUnknown ? '#ef4444' : '#10b981', border: `1px solid ${isUnknown ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}` }}>
-                              {isUnknown ? 'UNKNOWN INTRUDER' : 'VERIFIED PERSON'}
+                            <span
+                              className="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 text-nowrap"
+                              style={{
+                                fontSize: '0.72rem',
+                                letterSpacing: '0.4px',
+                                background: isUnknown ? 'rgba(239, 68, 68, 0.18)' : 'rgba(16, 185, 129, 0.18)',
+                                color: isUnknown ? '#fca5a5' : '#6ee7b7',
+                                border: isUnknown ? '1px solid rgba(239, 68, 68, 0.45)' : '1px solid rgba(16, 185, 129, 0.45)'
+                              }}
+                            >
+                              <i className={`bi ${isUnknown ? 'bi-exclamation-octagon-fill' : 'bi-shield-fill-check'}`} style={{ fontSize: '0.74rem' }}></i>
+                              <span>{isUnknown ? 'UNKNOWN INTRUDER' : 'VERIFIED PERSON'}</span>
                             </span>
                           </div>
                         );

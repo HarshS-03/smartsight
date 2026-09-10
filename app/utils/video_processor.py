@@ -272,10 +272,25 @@ def draw_detection_box(frame, box, label_text, box_color):
     cv.line(frame, (x2, y2), (x2 - length, y2), box_color, thickness)
     cv.line(frame, (x2, y2), (x2, y2 - length), box_color, thickness)
     
-    # Label
-    (w, h), _ = cv.getTextSize(label_text, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-    cv.rectangle(frame, (x1, y1 - 25), (x1 + w, y1), box_color, -1)
-    cv.putText(frame, label_text, (x1, y1 - 8), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv.LINE_AA)
+    # Label badge with dynamic width, height & bounds protection
+    (w, h), baseline = cv.getTextSize(label_text, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+    badge_h = h + 10
+    if y1 - badge_h >= 0:
+        bg_y1 = y1 - badge_h
+        bg_y2 = y1
+        text_y = y1 - 6
+    else:
+        bg_y1 = y1
+        bg_y2 = y1 + badge_h
+        text_y = y1 + h + 4
+
+    badge_w = min(fw - x1, w + 12)
+    cv.rectangle(frame, (x1, bg_y1), (x1 + badge_w, bg_y2), box_color, -1)
+    
+    # High-contrast text color: black on bright badges (e.g. yellow), white on dark/green/red
+    brightness = 0.299 * box_color[2] + 0.587 * box_color[1] + 0.114 * box_color[0]
+    text_color = (15, 15, 15) if brightness > 140 else (255, 255, 255)
+    cv.putText(frame, label_text, (x1 + 6, text_y), cv.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1, cv.LINE_AA)
 
 
 def gen_face_login_frames(token=None):
@@ -513,7 +528,18 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                         person_count += 1
                         person_detected = True
                         x1, y1, x2, y2 = [int(v) for v in det['bbox']]
-                        name = det['person_name'] if det['is_known'] else 'Unknown'
+                        raw_name = det.get('person_name')
+                        display = det.get('display_name')
+                        if det.get('is_known') and (not display or '[' not in str(display)):
+                            try:
+                                from app.utils.embedding_engine import get_gallery
+                                p_info = get_gallery().get_person_info(det.get('person_id'), raw_name)
+                                cls = p_info.get('class_name') or p_info.get('department') or ''
+                                if cls and raw_name:
+                                    display = f"{raw_name} [{cls}]"
+                            except Exception:
+                                pass
+                        name = display or (raw_name if det['is_known'] else 'Unknown')
                         sim = det['recognition_similarity']
                         det_conf = det['detection_confidence']
 

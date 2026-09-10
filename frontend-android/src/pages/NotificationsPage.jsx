@@ -497,6 +497,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       <img
                         src={getImageUrl(notif.image_url)}
                         alt="Intruder"
+                        className="w-100 h-100 object-fit-cover"
                       />
                     ) : (notif.title || '').toLowerCase().includes('brute') || (notif.title || '').toLowerCase().includes('security') ? (
                       <div className="w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(239, 68, 68, 0.12)' }}>

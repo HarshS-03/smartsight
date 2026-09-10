@@ -120,9 +120,21 @@ class CameraViewSet(viewsets.ModelViewSet):
 # ==============================================================================
 
 class PersonViewSet(viewsets.ModelViewSet):
-    queryset = Person.objects.all().order_by('name')
     serializer_class = PersonSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Person.objects.all().order_by('name')
+        category = self.request.query_params.get('category')
+        if category and category.upper() != 'ALL':
+            queryset = queryset.filter(category=category.upper())
+        class_name = self.request.query_params.get('class_name')
+        if class_name and class_name.upper() != 'ALL':
+            queryset = queryset.filter(class_name__iexact=class_name)
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        return queryset
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -149,12 +161,21 @@ class DatasetUploadView(APIView):
 
     def post(self, request):
         person_name = request.data.get('name')
+        category = request.data.get('category', 'STUDENT').upper()
+        class_name = request.data.get('class_name', '').strip()
+        department = request.data.get('department', '').strip()
         images = request.FILES.getlist('images')
 
         if not person_name:
             return Response({'error': 'Person name is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         person, created = Person.objects.get_or_create(name=person_name.strip())
+        person.category = category
+        if category == 'STUDENT' and class_name:
+            person.class_name = class_name
+        elif department:
+            person.department = department
+        person.save()
 
         uploaded_images = []
         embedding_count = 0
@@ -212,7 +233,17 @@ class AssignClassifiedGroupAPIView(APIView):
             if not group_images or not person_name:
                 return Response({'status': 'error', 'message': 'Missing group images or person name.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            success, msg = assign_person(group_images, person_name)
+            category = request.data.get('category', 'STUDENT')
+            class_name = request.data.get('class_name', '').strip()
+            department = request.data.get('department', '').strip()
+
+            success, msg = assign_person(
+                group_images,
+                person_name,
+                category=category,
+                class_name=class_name,
+                department=department
+            )
             if success:
                 return Response({'status': 'success', 'message': msg}, status=status.HTTP_200_OK)
             else:

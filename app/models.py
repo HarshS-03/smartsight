@@ -28,11 +28,22 @@ class Camera(models.Model):
 
 
 class Person(models.Model):
+    CATEGORY_CHOICES = [
+        ('STUDENT', 'Student'),
+        ('FACULTY', 'Faculty'),
+        ('OFFICE_STAFF', 'Office Member'),
+        ('PEON', 'Peon'),
+        ('LAB_STAFF', 'Lab Staff'),
+        ('OTHER', 'Other'),
+    ]
     name = models.CharField(max_length=100, unique=True)
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='STUDENT')
+    class_name = models.CharField(max_length=100, blank=True, null=True, help_text="Class / Batch for student")
+    department = models.CharField(max_length=100, blank=True, null=True, help_text="Department / Role for staff")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.get_category_display()})"
 
 def person_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/dataset/<person_name>/<filename>

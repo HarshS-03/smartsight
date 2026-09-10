@@ -99,9 +99,10 @@ def cluster_faces():
     return groups_list
 
 
-def assign_person(group_images, person_name):
+def assign_person(group_images, person_name, category='STUDENT', class_name='', department=''):
     """
-    Assign a group of unknown images to a registered person and move them
+    Assign a group of unknown images to a known or new person.
+    Moves files from media/unknown/
     to media/dataset/<person_name>/.
     """
     if not group_images or not person_name.strip():
@@ -114,7 +115,20 @@ def assign_person(group_images, person_name):
         with transaction.atomic():
             person = Person.objects.filter(name__iexact=person_name).first()
             if not person:
-                person = Person.objects.create(name=person_name)
+                person = Person.objects.create(
+                    name=person_name,
+                    category=category,
+                    class_name=class_name if category == 'STUDENT' else '',
+                    department=department if category != 'STUDENT' else ''
+                )
+            else:
+                if category:
+                    person.category = category
+                if class_name and category == 'STUDENT':
+                    person.class_name = class_name
+                if department and category != 'STUDENT':
+                    person.department = department
+                person.save()
 
             person_name = person.name
             dataset_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', person_name)

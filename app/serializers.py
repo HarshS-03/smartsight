@@ -54,10 +54,11 @@ class PersonImageSerializer(serializers.ModelSerializer):
 class PersonSerializer(serializers.ModelSerializer):
     images = PersonImageSerializer(many=True, read_only=True)
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
 
     class Meta:
         model = Person
-        fields = ['id', 'name', 'created_at', 'images']
+        fields = ['id', 'name', 'category', 'category_display', 'class_name', 'department', 'created_at', 'images']
 
 class RecognitionLogSerializer(serializers.ModelSerializer):
     timestamp = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%SZ", read_only=True)

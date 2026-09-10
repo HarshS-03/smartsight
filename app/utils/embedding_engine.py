@@ -138,6 +138,7 @@ class EmbeddingGallery:
         self._gallery: dict[int, list[tuple[np.ndarray, str]]] = {}
         self._matrix: np.ndarray | None = None
         self._meta: list[tuple[str, int]] = []  # [(person_name, person_id), ...]
+        self._person_info: dict[int, dict] = {}  # {person_id: {'name': str, 'class_name': str, 'department': str, 'category': str}}
         self._loaded = False
         
         self.cache_dir = os.path.join(settings.MEDIA_ROOT, 'cache')
@@ -165,12 +166,63 @@ class EmbeddingGallery:
             pids = np.array([m[1] for m in self._meta])
             np.savez_compressed(self.cache_file, matrix=self._matrix, names=names, pids=pids, count=count)
 
+    def _refresh_person_info(self):
+        """Cache person metadata (class_name, department, category) for fast labeling."""
+        try:
+            from app.models import Person
+            with self._lock:
+                self._person_info = {
+                    p.id: {
+                        'name': p.name,
+                        'category': p.category,
+                        'class_name': p.class_name or '',
+                        'department': p.department or '',
+                    }
+                    for p in Person.objects.all()
+                }
+        except Exception:
+            pass
+
+    def get_person_info(self, person_id=None, person_name=None) -> dict:
+        """Retrieve person metadata with on-demand DB fetch fallback."""
+        if person_id is not None:
+            try:
+                person_id = int(person_id)
+            except (ValueError, TypeError):
+                pass
+            with self._lock:
+                if person_id in self._person_info:
+                    return self._person_info[person_id]
+
+        try:
+            from app.models import Person
+            p = None
+            if person_id is not None:
+                p = Person.objects.filter(id=person_id).first()
+            if not p and person_name:
+                p = Person.objects.filter(name__iexact=str(person_name).strip()).first()
+            
+            if p:
+                info = {
+                    'name': p.name,
+                    'category': p.category,
+                    'class_name': p.class_name or '',
+                    'department': p.department or '',
+                }
+                with self._lock:
+                    self._person_info[p.id] = info
+                return info
+        except Exception:
+            pass
+        return {}
+
     # ------------------------------------------------------------------
     # Load / Reload
     # ------------------------------------------------------------------
     def load_gallery(self):
         """Load from NPZ cache if valid, else from DB."""
         from app.models import PersonEmbedding
+        self._refresh_person_info()
         with self._lock:
             try:
                 db_count = PersonEmbedding.objects.count()
@@ -551,10 +603,20 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
                     track['frames'] += 1
 
                     if track['frames'] < 12:
+                        # Ensure tracked face has class/dept resolved
+                        if track['is_known'] and ('[' not in str(track.get('display_name', ''))):
+                            p_info = gallery.get_person_info(track.get('person_id'), track.get('person_name'))
+                            cls = p_info.get('class_name') or p_info.get('department') or ''
+                            if cls:
+                                track['class_name'] = cls
+                                track['display_name'] = f"{track['person_name']} [{cls}]"
+
                         # Fast path: instant identity reuse, 0ms neural latency
                         results_list.append({
                             'bbox': current_bbox,
                             'person_name': track['person_name'],
+                            'display_name': track.get('display_name') or (track['person_name'] if track['is_known'] else 'Unknown'),
+                            'class_name': track.get('class_name', ''),
                             'person_id': track['person_id'],
                             'detection_confidence': det_conf,
                             'recognition_similarity': track['recognition_similarity'],
@@ -571,9 +633,19 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
 
                 person_name, person_id, similarity = None, None, 0.0
                 is_known = False
+                display_name = 'Unknown'
+                class_name = ''
                 if embedding is not None:
                     person_name, person_id, similarity = gallery.match(embedding, threshold)
                     is_known = person_name is not None
+                    if is_known:
+                        p_info = gallery.get_person_info(person_id, person_name)
+                        cls = p_info.get('class_name') or p_info.get('department') or ''
+                        class_name = cls
+                        if cls:
+                            display_name = f"{person_name} [{cls}]"
+                        else:
+                            display_name = person_name
 
                 # Register or update track
                 if matched_track_id is None:
@@ -583,6 +655,8 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
                 _face_tracks[matched_track_id] = {
                     'bbox': current_bbox,
                     'person_name': person_name,
+                    'display_name': display_name,
+                    'class_name': class_name,
                     'person_id': person_id,
                     'detection_confidence': det_conf,
                     'recognition_similarity': similarity,
@@ -595,6 +669,8 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
                 results_list.append({
                     'bbox': current_bbox,
                     'person_name': person_name,
+                    'display_name': display_name,
+                    'class_name': class_name,
                     'person_id': person_id,
                     'detection_confidence': det_conf,
                     'recognition_similarity': similarity,

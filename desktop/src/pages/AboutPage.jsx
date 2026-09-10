@@ -300,7 +300,7 @@ export default function AboutPage() {
               {/* DeepFace AI */}
               <a href="https://github.com/serengil/deepface" target="_blank" rel="noopener noreferrer" className="tech-card tech-card-deepface text-decoration-none" data-reveal="scale" data-reveal-delay="200">
                 <div className="tech-icon">
-                  <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     {/* Top-Left Corner */}
                     <path d="M12 32V20C12 15.58 15.58 12 20 12H32" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round" />
                     {/* Top-Right Corner */}

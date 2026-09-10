@@ -300,7 +300,7 @@ export default function AboutPage() {
               {/* DeepFace AI */}
               <a href="https://github.com/serengil/deepface" target="_blank" rel="noopener noreferrer" className="tech-card tech-card-deepface text-decoration-none" data-reveal="scale" data-reveal-delay="200">
                 <div className="tech-icon">
-                  <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     {/* Top-Left Corner */}
                     <path d="M12 32V20C12 15.58 15.58 12 20 12H32" stroke="var(--text-heading)" strokeWidth="6.5" strokeLinecap="round" />
                     {/* Top-Right Corner */}
@@ -389,7 +389,7 @@ export default function AboutPage() {
 
                       {/* Actual Blue & Yellow Snakes */}
                       <path d="M49.5 0C22.6 0 24.2 11.6 24.2 11.6L24.3 23.6H49.9V27.3H14.2C14.2 27.3 0 25.7 0 52.8C0 79.9 12.4 78.4 12.4 78.4H19.8V68C19.8 53.6 32.2 53.8 32.2 53.8H57.7C57.7 53.8 69.4 54.3 69.4 42.1V12.1C69.4 12.1 71.4 0 49.5 0ZM36 7.5C38.5 7.5 40.5 9.5 40.5 12C40.5 14.5 38.5 16.5 36 16.5C33.5 16.5 31.5 14.5 31.5 12C31.5 9.5 33.5 7.5 36 7.5Z" fill="#1E689F" />
-                      <path d="M50.5 100C77.4 100 75.8 88.4 75.8 88.4L75.7 76.4H50.1V72.7H85.8C85.8 72.7 100 74.3 100 47.2C100 20.1 87.6 21.6 87.6 21.6H80.2V32C80.2 46.4 67.8 46.2 67.8 46.2H42.3C42.3 46.2 30.6 45.7 30.6 57.9V87.9C30.6 87.9 28.6 100 50.5 100Z" stroke="white" strokeWidth="8" strokeLinejoin="round" fill="white" />
+                      <path d="M50.5 100C77.4 100 75.8 88.4 75.8 88.4L75.7 76.4H50.1V72.7H85.8C85.8 72.7 100 74.3 100 47.2C100 20.1 87.6 21.6 87.6 21.6H80.2V32C80.2 46.4 67.8 46.2 67.8 46.2H42.3C42.3 46.2 30.6 45.7 30.6 57.9V87.9C30.6 87.9 28.6 100 50.5 100ZM64 92.5C61.5 92.5 59.5 90.5 59.5 88C59.5 85.5 61.5 83.5 64 83.5C66.5 83.5 68.5 85.5 68.5 88C68.5 90.5 66.5 92.5 64 92.5Z" fill="#FFC82F" />
                     </g>
                   </svg>
                 </div>
