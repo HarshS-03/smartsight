@@ -145,6 +145,7 @@ export default function DatasetPage() {
 
   // Editing person role / class inline
   const [isEditingPersonMeta, setIsEditingPersonMeta] = useState(false);
+  const [editPersonName, setEditPersonName] = useState('');
   const [editCategory, setEditCategory] = useState('STUDENT');
   const [editStudentCourse, setEditStudentCourse] = useState('AIML');
   const [editStudentSem, setEditStudentSem] = useState('Sem 1');
@@ -195,6 +196,21 @@ export default function DatasetPage() {
   const [batchDept, setBatchDept] = useState('');
   const [batchUploading, setBatchUploading] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentName: '' });
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
+
+  const showToast = (message, type = 'success', duration = 4500) => {
+    const id = ++toastIdRef.current;
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, duration);
+  };
+
+  // Upload progress state (for single-person uploads)
+  const [uploadProgress, setUploadProgress] = useState(null); // { status: 'uploading'|'computing', personName, imageCount, embeddingsComputed }
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -282,6 +298,7 @@ export default function DatasetPage() {
 
   const openPersonDetail = (person) => {
     setSelectedPerson(person);
+    setEditPersonName(person.name || '');
     const cat = person.category || 'STUDENT';
     setEditCategory(cat);
     const cls = person.class_name || '';
@@ -312,9 +329,15 @@ export default function DatasetPage() {
 
   const handleSavePersonMeta = async () => {
     if (!selectedPerson) return;
+    const trimmedName = editPersonName.trim();
+    if (!trimmedName) {
+      showToast("Person name cannot be empty.", 'warning');
+      return;
+    }
     setSavingEditMeta(true);
     try {
       const payload = {
+        name: trimmedName,
         category: editCategory,
         class_name: editCategory === 'STUDENT' ? editClass.trim() : '',
         department: editCategory !== 'STUDENT' ? editDept.trim() : '',
@@ -323,9 +346,10 @@ export default function DatasetPage() {
       setSelectedPerson(res.data);
       setIsEditingPersonMeta(false);
       fetchPersons();
+      showToast(`Updated "${res.data.name}" successfully`, 'success');
     } catch (err) {
       console.error("Failed to update person details", err);
-      alert("Failed to update details. Please try again.");
+      showToast("Failed to update details. Please try again.", 'error');
     } finally {
       setSavingEditMeta(false);
     }
@@ -636,15 +660,18 @@ export default function DatasetPage() {
     setShowBatchModal(false);
     setBatchGroups([]);
     fetchPersons();
-    alert(`Batch Upload Complete: ${successCount} people added successfully${failCount > 0 ? `, ${failCount} failed` : ''}.`);
+    showToast(`Batch Upload Complete: ${successCount} people added successfully${failCount > 0 ? `, ${failCount} failed` : ''}.`, failCount > 0 ? 'warning' : 'success', 6000);
   };
 
   const handleAddPersonSubmit = async (e) => {
     e.preventDefault();
     if (!newPersonName || filesToUpload.length === 0) return;
 
+    const personNameTrimmed = newPersonName.trim();
+    const imageCount = filesToUpload.length;
+
     const formData = new FormData();
-    formData.append('name', newPersonName.trim());
+    formData.append('name', personNameTrimmed);
     formData.append('category', newPersonCategory);
     if (newPersonCategory === 'STUDENT') {
       if (newPersonClass.trim()) formData.append('class_name', newPersonClass.trim());
@@ -653,10 +680,21 @@ export default function DatasetPage() {
     }
     filesToUpload.forEach(file => formData.append('images', file));
 
+    // Show progress overlay
+    setUploadProgress({ status: 'uploading', personName: personNameTrimmed, imageCount, embeddingsComputed: 0 });
+
     try {
-      await API.post('/dataset/upload/', formData, {
+      setUploadProgress({ status: 'computing', personName: personNameTrimmed, imageCount, embeddingsComputed: 0 });
+      const response = await API.post('/dataset/upload/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      const embCount = response.data?.embeddings_computed || 0;
+      setUploadProgress({ status: 'done', personName: personNameTrimmed, imageCount, embeddingsComputed: embCount });
+
+      // Brief pause to show completion state
+      await new Promise(r => setTimeout(r, 600));
+      setUploadProgress(null);
+
       setShowAddPersonModal(false);
       setNewPersonName('');
       setNewPersonCategory('STUDENT');
@@ -667,19 +705,24 @@ export default function DatasetPage() {
       setPreviewImages([]);
       setFilesToUpload([]);
       fetchPersons();
+      showToast(`"${personNameTrimmed}" uploaded — ${imageCount} image${imageCount !== 1 ? 's' : ''}${embCount > 0 ? `, ${embCount} embeddings` : ''}`, 'success');
     } catch (error) {
       console.error("Failed to add person", error);
-      alert("Failed to add person. " + (error.response?.data?.error || ''));
+      setUploadProgress(null);
+      showToast('Upload failed — ' + (error.response?.data?.error || 'try again'), 'error', 5000);
     }
   };
 
   const handleDeletePerson = async (id) => {
+    const personName = selectedPerson?.name || 'Person';
     try {
       await API.delete(`/persons/${id}/`);
       setSelectedPerson(null);
       fetchPersons();
+      showToast(`"${personName}" deleted`, 'deleted');
     } catch (error) {
       console.error("Failed to delete person", error);
+      showToast(`Failed to delete "${personName}"`, 'error');
     }
   };
 
@@ -691,8 +734,10 @@ export default function DatasetPage() {
         setSelectedPerson({ ...selectedPerson, images: updatedImages });
       }
       fetchPersons();
+      showToast('Image deleted', 'deleted', 2500);
     } catch (error) {
       console.error("Failed to delete image", error);
+      showToast('Failed to delete image', 'error');
     }
   };
 
@@ -708,21 +753,29 @@ export default function DatasetPage() {
     e.preventDefault();
     if (!selectedPerson || moreFiles.length === 0) return;
 
+    const fileCount = moreFiles.length;
     const formData = new FormData();
     formData.append('name', selectedPerson.name);
     moreFiles.forEach(file => formData.append('images', file));
 
+    setUploadProgress({ status: 'computing', personName: selectedPerson.name, imageCount: fileCount, embeddingsComputed: 0 });
+
     try {
-      await API.post('/dataset/upload/', formData, {
+      const response = await API.post('/dataset/upload/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      const embCount = response.data?.embeddings_computed || 0;
+      setUploadProgress(null);
       setMoreFiles([]);
       if (uploadMoreInputRef.current) uploadMoreInputRef.current.value = '';
       fetchPersons();
       const res = await API.get(`/persons/${selectedPerson.id}/`);
       setSelectedPerson(res.data);
+      showToast(`${fileCount} photo${fileCount !== 1 ? 's' : ''} added to "${selectedPerson.name}"`, 'success');
     } catch (error) {
       console.error("Failed to upload more images", error);
+      setUploadProgress(null);
+      showToast('Upload failed — try again', 'error');
     }
   };
 
@@ -793,7 +846,7 @@ export default function DatasetPage() {
 
     const personName = (groupNames[groupId] || '').trim();
     if (!personName) {
-      alert('Please enter a name for the person.');
+      showToast('Please enter a name for the person.', 'warning', 3500);
       return;
     }
 
@@ -817,11 +870,11 @@ export default function DatasetPage() {
         fetchPersons();
         fetchUnknowns();
       } else {
-        alert(response.data?.message || 'Failed to register group.');
+        showToast(response.data?.message || 'Failed to register group.', 'error');
       }
     } catch (error) {
       console.error("Failed to assign group", error);
-      alert(error.response?.data?.message || 'Error occurred while registering group.');
+      showToast(error.response?.data?.message || 'Error occurred while registering group.', 'error');
     } finally {
       setRegisteringGroupId(null);
     }
@@ -1259,7 +1312,7 @@ export default function DatasetPage() {
                     {newPersonCategory === 'STUDENT' ? (
                       <div className="mb-3 p-3 rounded-4" style={{ background: 'var(--bg-surface-solid, rgba(255,255,255,0.03))', border: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
                         <label className="form-label text-heading small text-uppercase fw-800 letter-spacing-wide mb-2 d-flex justify-content-between align-items-center">
-                          <span><i className="bi bi-mortarboard-fill text-primary me-1"></i> Course / Degree</span>
+                          <span><i className="bi bi-mortarboard-fill text-primary me-1"></i> Course</span>
                           <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style={{ fontSize: '0.72rem' }}>
                             {newPersonClass || 'Select Course & Sem'}
                           </span>
@@ -1273,18 +1326,18 @@ export default function DatasetPage() {
                               <div className="col-6 col-sm-3" key={cKey}>
                                 <button
                                   type="button"
-                                  className={`btn w-100 py-2 px-2 rounded-3 text-center d-flex flex-column align-items-center justify-content-center transition-all ${
+                                  className={`btn w-100 py-2.5 px-2 rounded-3 text-center d-flex flex-column align-items-center justify-content-center gap-1 transition-all ${
                                     isSelected
                                       ? 'btn-primary shadow-sm border-primary'
                                       : 'btn-outline-secondary text-heading border-secondary border-opacity-25'
                                   }`}
                                   onClick={() => handleAddPersonCourseSelect(cKey)}
                                 >
-                                  <div className="d-flex align-items-center gap-1.5 fw-bold" style={{ fontSize: '0.85rem' }}>
+                                  <div className="d-flex align-items-center justify-content-center gap-2 fw-bold" style={{ fontSize: '0.85rem' }}>
                                     <i className={`bi ${cfg.icon}`}></i>
                                     <span>{cfg.label}</span>
                                   </div>
-                                  <span className="small opacity-75 mt-0.5" style={{ fontSize: '0.68rem' }}>
+                                  <span className="small opacity-75" style={{ fontSize: '0.68rem', lineHeight: '1.2' }}>
                                     {cfg.duration} • {cfg.totalSem} Sem
                                   </span>
                                 </button>
@@ -1301,7 +1354,7 @@ export default function DatasetPage() {
                             </span>
                             <span className="text-secondary small" style={{ fontSize: '0.72rem' }}>Click semester pill</span>
                           </div>
-                          <div className="d-flex flex-wrap gap-1.5">
+                          <div className="d-flex flex-wrap gap-2">
                             {getCourseSemesters(newStudentCourse).map(sem => {
                               const isSemActive = newStudentSem === sem;
                               return (
@@ -1393,17 +1446,60 @@ export default function DatasetPage() {
                       )}
                     </div>
                   </div>
-                  <div className="modal-footer border-0 p-4 pt-0 d-flex gap-2">
-                    <button type="button" className="btn btn-cancel-red rounded-pill px-4 flex-grow-1" onClick={() => {
-                      setShowAddPersonModal(false);
-                      setPreviewImages([]);
-                      setFilesToUpload([]);
-                      setNewPersonName('');
-                      setNewStudentCourse('AIML');
-                      setNewStudentSem('Sem 1');
-                      setNewPersonClass('AIML - Sem 1');
-                    }}>Cancel</button>
-                    <button type="submit" className="btn btn-primary px-5 rounded-pill fw-bold flex-grow-1">Initialize Folder</button>
+                  <div className="modal-footer border-0 p-4 pt-0 d-flex flex-column gap-2">
+                    {/* In-modal progress bar when uploading */}
+                    {uploadProgress && (
+                      <div className="w-100 p-3 rounded-4 mb-1" style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.25)' }}>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="small fw-bold text-heading d-flex align-items-center gap-2">
+                            {uploadProgress.status === 'done' ? (
+                              <i className="bi bi-check-circle-fill text-success"></i>
+                            ) : (
+                              <span className="spinner-border spinner-border-sm text-primary" role="status"></span>
+                            )}
+                            {uploadProgress.status === 'uploading' && 'Uploading Images...'}
+                            {uploadProgress.status === 'computing' && 'Computing Facial Embeddings...'}
+                            {uploadProgress.status === 'done' && 'Complete!'}
+                          </span>
+                          <span className="small font-mono fw-bold text-primary">
+                            {uploadProgress.imageCount} image{uploadProgress.imageCount !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="progress" style={{ height: '6px', background: 'rgba(255,255,255,0.08)' }}>
+                          <div
+                            className={`progress-bar ${uploadProgress.status === 'done' ? 'bg-success' : 'progress-bar-striped progress-bar-animated bg-primary'}`}
+                            style={{ width: '100%' }}
+                          ></div>
+                        </div>
+                        {uploadProgress.status === 'computing' && (
+                          <span className="small text-secondary d-block mt-1.5" style={{ fontSize: '0.7rem' }}>
+                            <i className="bi bi-cpu-fill text-primary me-1"></i>
+                            Processing ArcFace 512-d embeddings for each uploaded face...
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="d-flex gap-2 w-100">
+                      <button type="button" className="btn btn-cancel-red rounded-pill px-4 flex-grow-1" disabled={!!uploadProgress} onClick={() => {
+                        setShowAddPersonModal(false);
+                        setPreviewImages([]);
+                        setFilesToUpload([]);
+                        setNewPersonName('');
+                        setNewStudentCourse('AIML');
+                        setNewStudentSem('Sem 1');
+                        setNewPersonClass('AIML - Sem 1');
+                      }}>Cancel</button>
+                      <button type="submit" className="btn btn-primary px-5 rounded-pill fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-2" disabled={!!uploadProgress}>
+                        {uploadProgress ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm" role="status"></span>
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          'Initialize Folder'
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -1447,18 +1543,19 @@ export default function DatasetPage() {
                         {!isEditingPersonMeta && (
                           <button
                             type="button"
-                            className="btn btn-outline-secondary btn-sm rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1 border-secondary border-opacity-25"
-                            style={{ fontSize: '0.72rem' }}
+                            className="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1.5 border-secondary border-opacity-25"
+                            style={{ fontSize: '0.74rem' }}
                             onClick={() => {
+                              setEditPersonName(selectedPerson.name || '');
                               setEditCategory(selectedPerson.category || 'STUDENT');
                               setEditClass(selectedPerson.class_name || '');
                               setEditDept(selectedPerson.department || '');
                               setIsEditingPersonMeta(true);
                             }}
-                            title="Edit Category or Class"
+                            title="Edit Name, Category or Class"
                           >
                             <i className="bi bi-pencil-fill" style={{ fontSize: '0.68rem' }}></i>
-                            <span>Edit Role</span>
+                            <span>Edit Details</span>
                           </button>
                         )}
                       </div>
@@ -1468,18 +1565,37 @@ export default function DatasetPage() {
                         <div className="d-flex flex-column gap-2.5 mt-2 w-100 p-3 rounded-4" style={{ background: 'var(--bg-surface-solid, rgba(255,255,255,0.04))', border: '1px solid var(--border-color, rgba(255,255,255,0.12))' }}>
                           <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-1 border-bottom border-white border-opacity-10">
                             <span className="small fw-bold text-heading text-uppercase letter-spacing-wide d-flex align-items-center gap-1.5" style={{ fontSize: '0.74rem' }}>
-                              <i className="bi bi-pencil-square text-primary"></i> Edit Classification
+                              <i className="bi bi-pencil-square text-primary"></i> Edit Person Details
                             </span>
-                            <select
-                              className="form-select form-select-sm rounded-pill px-3 py-1"
-                              style={{ width: 'auto', fontSize: '0.78rem', background: 'var(--bg-input, #0f172a)', color: 'var(--text-heading, #fff)' }}
-                              value={editCategory}
-                              onChange={e => setEditCategory(e.target.value)}
-                            >
-                              {CATEGORIES.filter(c => c.key !== 'ALL').map(c => (
-                                <option key={c.key} value={c.key}>{c.label}</option>
-                              ))}
-                            </select>
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="small text-secondary fw-bold text-uppercase" style={{ fontSize: '0.7rem' }}>Role:</span>
+                              <select
+                                className="form-select form-select-sm rounded-pill px-3 py-1"
+                                style={{ width: 'auto', fontSize: '0.78rem', background: 'var(--bg-input, #0f172a)', color: 'var(--text-heading, #fff)' }}
+                                value={editCategory}
+                                onChange={e => setEditCategory(e.target.value)}
+                              >
+                                {CATEGORIES.filter(c => c.key !== 'ALL').map(c => (
+                                  <option key={c.key} value={c.key}>{c.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Full Name Edit Input */}
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="small text-secondary fw-bold text-uppercase" style={{ fontSize: '0.7rem', minWidth: '70px' }}>
+                              Name:
+                            </span>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm rounded-pill px-3 py-1 flex-grow-1"
+                              style={{ maxWidth: '340px', fontSize: '0.82rem', background: 'var(--bg-input, #0f172a)', color: 'var(--text-heading, #fff)' }}
+                              placeholder="Full Name..."
+                              value={editPersonName}
+                              onChange={e => setEditPersonName(e.target.value)}
+                              required
+                            />
                           </div>
 
                           {editCategory === 'STUDENT' ? (
@@ -1647,7 +1763,32 @@ export default function DatasetPage() {
                     </div>
                   )}
                 </div>
-                <div className="modal-footer border-0 p-3" style={{ background: 'var(--bg-surface-solid, #111827)', borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))' }}>
+                <div className="modal-footer border-0 p-3 d-flex flex-column gap-0" style={{ background: 'var(--bg-surface-solid, #111827)', borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))' }}>
+                  {/* Progress bar when uploading more photos */}
+                  {uploadProgress && (
+                    <div className="w-100 p-3 rounded-4 mb-2" style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.25)' }}>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="small fw-bold text-heading d-flex align-items-center gap-2">
+                          {uploadProgress.status === 'done' ? (
+                            <i className="bi bi-check-circle-fill text-success"></i>
+                          ) : (
+                            <span className="spinner-border spinner-border-sm text-primary" role="status"></span>
+                          )}
+                          {uploadProgress.status === 'computing' && 'Computing Embeddings...'}
+                          {uploadProgress.status === 'done' && 'Complete!'}
+                        </span>
+                        <span className="small font-mono fw-bold text-primary">
+                          {uploadProgress.imageCount} image{uploadProgress.imageCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="progress" style={{ height: '6px', background: 'rgba(255,255,255,0.08)' }}>
+                        <div
+                          className={`progress-bar ${uploadProgress.status === 'done' ? 'bg-success' : 'progress-bar-striped progress-bar-animated bg-primary'}`}
+                          style={{ width: '100%' }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
                   <form className="w-100 d-flex flex-column gap-2" onSubmit={handleUploadMore}>
                     <input
                       type="file"
@@ -1668,6 +1809,7 @@ export default function DatasetPage() {
                       <button
                         type="button"
                         className="btn btn-primary rounded-pill px-3.5 py-1.5 text-nowrap d-flex align-items-center gap-2 shadow-sm flex-shrink-0"
+                        disabled={!!uploadProgress}
                         onClick={() => uploadMoreInputRef.current && uploadMoreInputRef.current.click()}
                         style={{ fontSize: '0.85rem' }}
                       >
@@ -1688,18 +1830,27 @@ export default function DatasetPage() {
                     <button
                       type="submit"
                       className="btn btn-primary rounded-pill py-2 w-100 text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-sm"
-                      disabled={moreFiles.length === 0}
+                      disabled={moreFiles.length === 0 || !!uploadProgress}
                       style={{
-                        opacity: moreFiles.length === 0 ? 0.45 : 1,
-                        cursor: moreFiles.length === 0 ? 'not-allowed' : 'pointer',
+                        opacity: (moreFiles.length === 0 || uploadProgress) ? 0.45 : 1,
+                        cursor: (moreFiles.length === 0 || uploadProgress) ? 'not-allowed' : 'pointer',
                         transition: 'all 0.3s ease',
                         fontSize: '0.88rem',
                         fontWeight: 700,
                         minHeight: '42px'
                       }}
                     >
-                      <i className="bi bi-cloud-arrow-up-fill fs-5"></i>
-                      <span>{moreFiles.length > 0 ? `Upload ${moreFiles.length} Photo${moreFiles.length > 1 ? 's' : ''}` : 'Upload More'}</span>
+                      {uploadProgress ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm" role="status"></span>
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-cloud-arrow-up-fill fs-5"></i>
+                          <span>{moreFiles.length > 0 ? `Upload ${moreFiles.length} Photo${moreFiles.length > 1 ? 's' : ''}` : 'Upload More'}</span>
+                        </>
+                      )}
                     </button>
                   </form>
                 </div>
@@ -2317,6 +2468,101 @@ export default function DatasetPage() {
         </>,
         document.body
       )}
+
+      {/* Toast Notification System */}
+      {toasts.length > 0 && createPortal(
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 99999,
+          display: 'flex',
+          flexDirection: 'column-reverse',
+          gap: '10px',
+          maxWidth: '440px',
+          width: '100%',
+          pointerEvents: 'none',
+        }}>
+          {toasts.map(toast => {
+            const isSuccess = toast.type === 'success';
+            const isDeleted = toast.type === 'deleted';
+            const isError = toast.type === 'error';
+            const isWarning = toast.type === 'warning';
+
+            const bgColor = isSuccess ? '#065f46' :
+                            isDeleted ? '#7f1d1d' :
+                            isError ? '#991b1b' :
+                            isWarning ? '#78350f' : '#065f46';
+            const borderColor = isSuccess ? '#10b981' :
+                                isDeleted ? '#ef4444' :
+                                isError ? '#ef4444' :
+                                isWarning ? '#f59e0b' : '#10b981';
+            const iconColor = isSuccess ? '#34d399' :
+                              isDeleted ? '#fca5a5' :
+                              isError ? '#fca5a5' :
+                              isWarning ? '#fcd34d' : '#34d399';
+            const icon = isSuccess ? 'bi-check-circle-fill' :
+                         isDeleted ? 'bi-trash3-fill' :
+                         isError ? 'bi-exclamation-triangle-fill' :
+                         isWarning ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill';
+
+            return (
+              <div
+                key={toast.id}
+                className="ds-toast-notification"
+                style={{
+                  pointerEvents: 'auto',
+                  background: bgColor,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                  animation: 'dsToastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                }}
+              >
+                <i className={`bi ${icon} flex-shrink-0`} style={{ color: iconColor, fontSize: '1.05rem' }}></i>
+                <span style={{ color: '#fff', fontSize: '0.84rem', fontWeight: 600, lineHeight: 1.4 }}>{toast.message}</span>
+                <button
+                  type="button"
+                  onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    padding: '0',
+                    marginLeft: 'auto',
+                    flexShrink: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: 1,
+                  }}
+                  title="Dismiss"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              </div>
+            );
+          })}
+        </div>,
+        document.body
+      )}
+
+
+      {/* Toast + Progress Animation Styles */}
+      <style>{`
+        @keyframes dsToastSlideIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes dsProgressPulse {
+          0% { opacity: 0.7; }
+          50% { opacity: 1; }
+          100% { opacity: 0.7; }
+        }
+      `}</style>
     </>
   );
 }

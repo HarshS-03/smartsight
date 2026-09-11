@@ -141,6 +141,20 @@ class PersonViewSet(viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        try:
+            from app.utils.embedding_engine import get_gallery
+            get_gallery().update_person_meta(
+                person_id=instance.id,
+                new_name=instance.name,
+                category=instance.category,
+                class_name=instance.class_name,
+                department=instance.department,
+            )
+        except Exception as e:
+            logger.warning(f"[Gallery] Failed to update person meta for {instance.id}: {e}")
+
 
 class PersonImageDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]

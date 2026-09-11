@@ -318,6 +318,31 @@ class EmbeddingGallery:
             self._rebuild_matrix()
             self._save_cache(PersonEmbedding.objects.count())
 
+    def update_person_meta(self, person_id: int, new_name: str = None, category: str = None, class_name: str = None, department: str = None):
+        """Update a person's name and metadata across in-memory structures and disk cache."""
+        with self._lock:
+            if person_id in self._gallery and new_name:
+                updated_entries = []
+                for emb, _ in self._gallery[person_id]:
+                    updated_entries.append((emb, new_name))
+                self._gallery[person_id] = updated_entries
+                self._rebuild_matrix()
+                from app.models import PersonEmbedding
+                self._save_cache(PersonEmbedding.objects.count())
+
+            # Update cached metadata
+            if person_id in self._person_info:
+                if new_name is not None:
+                    self._person_info[person_id]['name'] = new_name
+                if category is not None:
+                    self._person_info[person_id]['category'] = category
+                if class_name is not None:
+                    self._person_info[person_id]['class_name'] = class_name
+                if department is not None:
+                    self._person_info[person_id]['department'] = department
+            else:
+                self._refresh_person_info()
+
     # ------------------------------------------------------------------
     # Matching
     # ------------------------------------------------------------------
