@@ -631,6 +631,37 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         .is-electron-navbar .nav-item {
            -webkit-app-region: no-drag;
         }
+
+        /* ── Compact Electron Window: prevent nav overlap ── */
+        @media (max-width: 1200px) {
+          .is-electron-navbar .navbar-nav.position-absolute {
+            position: relative !important;
+            transform: none !important;
+            left: auto !important;
+            top: auto !important;
+            flex: 1;
+            justify-content: center;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            max-width: calc(100% - 400px);
+            margin: 0 auto;
+          }
+          .is-electron-navbar .navbar-nav.position-absolute::-webkit-scrollbar {
+            display: none;
+          }
+        }
+        @media (max-width: 900px) {
+          .is-electron-navbar .navbar-nav.position-absolute {
+            max-width: calc(100% - 340px);
+            gap: 2px !important;
+          }
+          .is-electron-navbar .navbar-nav .nav-link {
+            font-size: 0.7rem !important;
+            padding: 6px 8px !important;
+          }
+        }
       `}</style>
       <nav className={`navbar navbar-expand-lg sticky-top ${navigator.userAgent.toLowerCase().includes('electron') || window.electronAPI?.isElectron ? 'is-electron-navbar' : ''}`}>
         <div className="container-fluid px-3 px-lg-4 position-relative d-flex align-items-center justify-content-between">
@@ -638,6 +669,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           <a
             className="navbar-brand text-dynamic fw-bold m-0"
             href="#"
+            style={{ fontSize: '1.75rem', letterSpacing: '-0.5px' }}
             onClick={(e) => { e.preventDefault(); setActivePage('home'); closeMobileNav(); }}
           >
             Smart <span style={{ color: '#2563eb' }}>Sight</span>

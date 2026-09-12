@@ -125,7 +125,7 @@ export default function CamerasPage() {
                 Camera <span className="accent">Management</span>
               </h1>
               <p className="page-hero-sub mx-auto ms-md-0">
-                Configure, activate, and arrange surveillance video feeds for real-time YOLOv8 object detection.
+                Configure, activate, and arrange surveillance video feeds for real-time YOLO face detection.
               </p>
             </div>
             <div className="col-md-4 text-center text-md-end">

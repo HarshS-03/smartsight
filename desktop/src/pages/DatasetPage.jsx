@@ -7,7 +7,7 @@ export const CATEGORIES = [
   { key: 'ALL', label: 'All Personnel', icon: 'bi-people-fill' },
   { key: 'STUDENT', label: 'Students', icon: 'bi-mortarboard-fill' },
   { key: 'FACULTY', label: 'Faculties', icon: 'bi-person-video3' },
-  { key: 'OFFICE_STAFF', label: 'Office Members', icon: 'bi-briefcase-fill' },
+  { key: 'OFFICE_STAFF', label: 'Office Staff', icon: 'bi-briefcase-fill' },
   { key: 'PEON', label: 'Peons', icon: 'bi-person-badge-fill' },
   { key: 'LAB_STAFF', label: 'Lab Staff', icon: 'bi-cpu-fill' },
 ];
@@ -976,11 +976,11 @@ export default function DatasetPage() {
               </div>
 
               {/* Row 2: Category Filter Bar - Single clean horizontal scroll track so it NEVER breaks into 3 ragged rows */}
-              <div className="ds-filter-row d-flex align-items-center gap-2">
-                <span className="ds-filter-label text-uppercase">
+              <div className="ds-filter-row d-flex align-items-start gap-2">
+                <span className="ds-filter-label text-uppercase mt-1">
                   <i className="bi bi-people-fill text-primary"></i> Role:
                 </span>
-                <div className="ds-filter-scroll-track d-flex align-items-center gap-2 flex-grow-1">
+                <div className="d-grid gap-2 flex-grow-1 w-100" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))' }}>
                   {CATEGORIES.map(cat => {
                     const count = cat.key === 'ALL'
                       ? persons.length
@@ -1010,11 +1010,11 @@ export default function DatasetPage() {
 
               {/* Row 3: Course Filter Bar (shown if 'ALL' or 'STUDENT' is selected) */}
               {(selectedCategory === 'ALL' || selectedCategory === 'STUDENT') && availableClasses.length > 0 && (
-                <div className="ds-filter-row d-flex align-items-center gap-2 pt-2 border-top border-white border-opacity-10">
-                  <span className="ds-filter-label text-uppercase">
+                <div className="ds-filter-row d-flex align-items-start gap-2 pt-2 border-top border-white border-opacity-10">
+                  <span className="ds-filter-label text-uppercase mt-1">
                     <i className="bi bi-mortarboard-fill text-primary"></i> Course:
                   </span>
-                  <div className="ds-filter-scroll-track d-flex align-items-center gap-2 flex-grow-1">
+                  <div className="d-grid gap-2 flex-grow-1 w-100" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))' }}>
                     <button
                       type="button"
                       className={`ds-pill-btn ${selectedCourse === 'ALL' ? 'active' : ''}`}
@@ -1055,11 +1055,11 @@ export default function DatasetPage() {
 
               {/* Row 4: Semester Sub-Filter Pills (shown if a specific COURSE_CONFIG course is selected) */}
               {(selectedCategory === 'ALL' || selectedCategory === 'STUDENT') && COURSE_CONFIG[selectedCourse] && (
-                <div className="ds-filter-row d-flex align-items-center gap-2 pt-2 border-top border-white border-opacity-10">
-                  <span className="ds-filter-label text-uppercase">
+                <div className="ds-filter-row d-flex align-items-start gap-2 pt-2 border-top border-white border-opacity-10">
+                  <span className="ds-filter-label text-uppercase mt-1">
                     <i className="bi bi-calendar2-range-fill text-primary"></i> Sem:
                   </span>
-                  <div className="ds-filter-scroll-track d-flex align-items-center gap-2 flex-grow-1">
+                  <div className="d-grid gap-2 flex-grow-1 w-100" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))' }}>
                     <button
                       type="button"
                       className={`ds-pill-btn ${selectedSem === 'ALL' ? 'active' : ''}`}
@@ -1515,53 +1515,72 @@ export default function DatasetPage() {
           <div className="modal fade show d-block" tabIndex="-1" aria-hidden="true" onClick={() => setSelectedPerson(null)} style={{ zIndex: 10550 }}>
             <div className="modal-dialog modal-xl modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content overflow-hidden shadow-2xl border-0">
-                <div className="modal-header border-0 p-4 pb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <div className="d-flex align-items-center flex-grow-1 min-w-0">
-                    <div className="bg-primary bg-opacity-10 rounded-4 me-3 border border-primary border-opacity-10 flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
-                      <i className="bi bi-folder-fill text-primary fs-4"></i>
-                    </div>
-                    <div className="flex-grow-1 min-w-0">
-                      <div className="d-flex align-items-center gap-2 flex-wrap">
-                        <h4 className="modal-title fw-bold text-heading text-capitalize mb-0" style={{ lineHeight: 1.2 }}>{selectedPerson.name}</h4>
-                        {(() => {
-                          const badge = getCategoryBadge(selectedPerson.category, selectedPerson.class_name, selectedPerson.department);
-                          return (
-                            <span
-                              className="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1.5"
-                              style={{
-                                background: badge.bg,
-                                color: badge.color,
-                                border: `1px solid ${badge.border}`,
-                                fontSize: '0.74rem',
-                              }}
-                            >
-                              <i className={`bi ${badge.icon}`}></i>
-                              <span>{badge.label}</span>
-                            </span>
-                          );
-                        })()}
+                <div className="modal-header border-0 p-3 p-md-4 pb-2 pb-md-3 d-flex flex-column gap-3 w-100">
+                  {/* Top Header Row */}
+                  <div className="d-flex justify-content-between align-items-start gap-3 w-100">
+                    <div className="d-flex align-items-start gap-2 gap-sm-3 flex-grow-1 min-w-0">
+                      <div className="bg-primary bg-opacity-10 rounded-4 border border-primary border-opacity-10 flex-shrink-0 d-none d-sm-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
+                        <i className="bi bi-folder-fill text-primary fs-4"></i>
+                      </div>
+                      <div className="flex-grow-1 min-w-0">
+                        <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+                          <h4 className="modal-title fw-bold text-heading text-capitalize mb-0 text-truncate" style={{ lineHeight: 1.2, fontSize: '1.25rem', maxWidth: '100%' }}>{selectedPerson.name}</h4>
+                          {(() => {
+                            const badge = getCategoryBadge(selectedPerson.category, selectedPerson.class_name, selectedPerson.department);
+                            return (
+                              <span
+                                className="badge rounded-pill px-2 py-1 fw-semibold d-inline-flex align-items-center gap-1.5"
+                                style={{
+                                  background: badge.bg,
+                                  color: badge.color,
+                                  border: `1px solid ${badge.border}`,
+                                  fontSize: '0.7rem',
+                                }}
+                              >
+                                <i className={`bi ${badge.icon}`}></i>
+                                <span>{badge.label}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        
                         {!isEditingPersonMeta && (
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1.5 border-secondary border-opacity-25"
-                            style={{ fontSize: '0.74rem' }}
-                            onClick={() => {
-                              setEditPersonName(selectedPerson.name || '');
-                              setEditCategory(selectedPerson.category || 'STUDENT');
-                              setEditClass(selectedPerson.class_name || '');
-                              setEditDept(selectedPerson.department || '');
-                              setIsEditingPersonMeta(true);
-                            }}
-                            title="Edit Name, Category or Class"
-                          >
-                            <i className="bi bi-pencil-fill" style={{ fontSize: '0.68rem' }}></i>
-                            <span>Edit Details</span>
-                          </button>
+                          <div className="d-flex align-items-center gap-3 flex-wrap mt-2">
+                            <div className="text-secondary small d-flex align-items-center gap-1.5">
+                              <i className="bi bi-shield-check text-success"></i>
+                              <span className="fw-semibold">{selectedPerson.images.length} Images</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-dark btn-sm rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1.5 border-secondary border-opacity-25 shadow-sm"
+                              style={{ fontSize: '0.7rem', background: 'rgba(0, 0, 0, 0.4)' }}
+                              onClick={() => {
+                                setEditPersonName(selectedPerson.name || '');
+                                setEditCategory(selectedPerson.category || 'STUDENT');
+                                setEditClass(selectedPerson.class_name || '');
+                                setEditDept(selectedPerson.department || '');
+                                setIsEditingPersonMeta(true);
+                              }}
+                              title="Edit Name, Category or Class"
+                            >
+                              <i className="bi bi-pencil-fill" style={{ fontSize: '0.68rem' }}></i>
+                              <span>Edit Details</span>
+                            </button>
+                          </div>
                         )}
                       </div>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                      <button type="button" className="btn btn-cancel-red btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px', padding: 0 }} onClick={() => { if (selectedPerson) handleDeletePerson(selectedPerson.id); }} title="Delete Person">
+                        <i className="bi bi-trash3-fill" style={{ fontSize: '0.85rem' }}></i>
+                      </button>
+                      <button type="button" className="btn-close text-dynamic ms-1" onClick={() => setSelectedPerson(null)} aria-label="Close"></button>
+                    </div>
+                  </div>
 
-                      {/* Inline Role & Class Editor */}
-                      {isEditingPersonMeta ? (
+                  {/* Inline Role & Class Editor */}
+                  {isEditingPersonMeta && (
+                    <div className="w-100">
                         <div className="d-flex flex-column gap-2.5 mt-2 w-100 p-3 rounded-4" style={{ background: 'var(--bg-surface-solid, rgba(255,255,255,0.04))', border: '1px solid var(--border-color, rgba(255,255,255,0.12))' }}>
                           <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-1 border-bottom border-white border-opacity-10">
                             <span className="small fw-bold text-heading text-uppercase letter-spacing-wide d-flex align-items-center gap-1.5" style={{ fontSize: '0.74rem' }}>
@@ -1707,23 +1726,11 @@ export default function DatasetPage() {
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="text-secondary small d-flex align-items-center gap-2 mt-1">
-                          <i className="bi bi-shield-check text-success flex-shrink-0 me-1"></i>
-                          <span className="text-nowrap fw-semibold">{selectedPerson.images.length} Images</span>
-                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-                    <button type="button" className="btn btn-cancel-red btn-sm rounded-pill px-3.5 py-1.5 text-nowrap d-flex align-items-center gap-2 shadow-sm" onClick={() => { if (selectedPerson) handleDeletePerson(selectedPerson.id); }}>
-                      <i className="bi bi-trash3-fill" style={{ fontSize: '0.85rem' }}></i>
-                      <span className="small fw-bold">Delete</span>
-                    </button>
-                    <button type="button" className="btn-close text-dynamic" onClick={() => setSelectedPerson(null)} aria-label="Close"></button>
-                  </div>
+                  )}
                 </div>
-                <div className="modal-body p-4 pt-1" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                <div className="modal-body p-3 p-md-4 pt-1" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
                   {selectedPerson.images.length > 0 ? (
                     <>
                       <div className="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
@@ -1732,8 +1739,8 @@ export default function DatasetPage() {
                           return (
                             <div className="col" key={img.id}>
                               <div className="unknown-card rounded-4 overflow-hidden position-relative h-100 shadow-sm border border-secondary border-opacity-25 cursor-pointer" onClick={() => setPreviewFullImage({ url: fullUrl, id: img.id, type: 'person' })}>
-                                <div className="position-relative overflow-hidden" style={{ background: '#0f172a', aspectRatio: '1/1' }}>
-                                  <img src={fullUrl} className="w-100 h-100 object-fit-cover d-block" alt="Sample" loading="lazy" decoding="async" />
+                                <div className="position-relative overflow-hidden" style={{ background: '#000000', aspectRatio: '1/1' }}>
+                                  <img src={fullUrl} className="w-100 h-100 object-fit-cover d-block" alt="Sample" loading="lazy" decoding="async" style={{ opacity: 0.95 }} />
                                   <div className="unknown-card-actions">
                                     <button type="button" className="btn btn-primary btn-sm rounded-circle shadow-lg" title="View Full Image" onClick={(e) => { e.stopPropagation(); setPreviewFullImage({ url: fullUrl, id: img.id, type: 'person' }); }}>
                                       <i className="bi bi-eye-fill"></i>
@@ -1789,7 +1796,7 @@ export default function DatasetPage() {
                       </div>
                     </div>
                   )}
-                  <form className="w-100 d-flex flex-column gap-2" onSubmit={handleUploadMore}>
+                  <form className="w-100 d-flex flex-wrap flex-md-nowrap gap-2 align-items-center justify-content-center" onSubmit={handleUploadMore}>
                     <input
                       type="file"
                       ref={uploadMoreInputRef}
@@ -1800,20 +1807,20 @@ export default function DatasetPage() {
                     />
 
                     {/* Glassy Pill Upload Selector */}
-                    <div className="upload-pill-bar p-1.5 rounded-pill d-flex align-items-center justify-content-between gap-2"
+                    <div className="upload-pill-bar p-1.5 rounded-pill d-flex align-items-center justify-content-between gap-2 flex-grow-1 min-w-0"
                       style={{
                         background: 'var(--bg-input, rgba(255, 255, 255, 0.04))',
                         border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
-                        minHeight: '48px',
+                        minHeight: '44px',
                       }}>
                       <button
                         type="button"
-                        className="btn btn-primary rounded-pill px-3.5 py-1.5 text-nowrap d-flex align-items-center gap-2 shadow-sm flex-shrink-0"
+                        className="btn btn-secondary rounded-pill px-3 py-1 text-nowrap d-flex align-items-center gap-2 shadow-sm flex-shrink-0"
                         disabled={!!uploadProgress}
                         onClick={() => uploadMoreInputRef.current && uploadMoreInputRef.current.click()}
-                        style={{ fontSize: '0.85rem' }}
+                        style={{ fontSize: '0.85rem', background: 'rgba(255, 255, 255, 0.1)', border: 'none' }}
                       >
-                        <i className="bi bi-images fs-6"></i>
+                        <i className="bi bi-images"></i>
                         <span className="fw-bold">Choose Photos</span>
                       </button>
 
@@ -1829,7 +1836,7 @@ export default function DatasetPage() {
 
                     <button
                       type="submit"
-                      className="btn btn-primary rounded-pill py-2 w-100 text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-sm"
+                      className="btn btn-primary rounded-pill px-4 text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-sm flex-shrink-0"
                       disabled={moreFiles.length === 0 || !!uploadProgress}
                       style={{
                         opacity: (moreFiles.length === 0 || uploadProgress) ? 0.45 : 1,
@@ -1837,18 +1844,18 @@ export default function DatasetPage() {
                         transition: 'all 0.3s ease',
                         fontSize: '0.88rem',
                         fontWeight: 700,
-                        minHeight: '42px'
+                        minHeight: '44px',
                       }}
                     >
                       {uploadProgress ? (
                         <>
                           <span className="spinner-border spinner-border-sm" role="status"></span>
-                          <span>Processing...</span>
+                          <span>Processing</span>
                         </>
                       ) : (
                         <>
                           <i className="bi bi-cloud-arrow-up-fill fs-5"></i>
-                          <span>{moreFiles.length > 0 ? `Upload ${moreFiles.length} Photo${moreFiles.length > 1 ? 's' : ''}` : 'Upload More'}</span>
+                          <span>{moreFiles.length > 0 ? `Upload ${moreFiles.length}` : 'Upload More'}</span>
                         </>
                       )}
                     </button>

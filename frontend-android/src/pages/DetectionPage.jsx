@@ -474,176 +474,160 @@ export default function DetectionPage() {
                   })()}
                 </div>
 
-                {/* RIGHT: Vertical Control/Status Sidebar */}
-                <div className="col-12 col-lg-4 col-xl-4 col-xxl-3">
-                  <div className="detection-sidebar-container h-100" style={{ position: 'relative', zIndex: cameraDropdownOpen ? 90 : 1 }}>
-                    <div className="detection-sidebar">
-                      {/* Active Camera Source Section */}
-                      {viewMode === 'single' ? (
-                        <div className="sidebar-section">
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <span className="sidebar-section-label">
-                              <i className="bi bi-camera-video"></i> ACTIVE SOURCE
-                            </span>
-                            <span className="badge rounded-pill" style={{ fontSize: '0.65rem', background: 'rgba(37, 99, 235, 0.12)', color: '#3b82f6', border: '1px solid rgba(37, 99, 235, 0.25)', padding: '3px 8px', letterSpacing: '0.5px', fontWeight: 600 }}>
-                              Source 1
-                            </span>
-                          </div>
-                          <div className="custom-dropdown w-100" onClick={() => { setCameraDropdownOpen(!cameraDropdownOpen); setModelDropdownOpen(false); }}>
-                            <div className="sidebar-camera-select w-100 d-flex align-items-center justify-content-between">
-                              <div className="d-flex align-items-center min-w-0 flex-grow-1 me-2">
-                                <div className="camera-icon-badge me-2">
-                                  <i className="bi bi-camera-fill"></i>
-                                </div>
-                                <span className="text-truncate fw-semibold" style={{ fontSize: '0.88rem' }}>
-                                  {cameraType === '0' && 'Default Webcam'}
-                                  {cameraType === 'url' && 'IP Camera (URL)'}
-                                  {cameras.find(c => c.id === cameraType)?.name}
-                                </span>
-                              </div>
-                              <div className="d-flex align-items-center gap-2 flex-shrink-0">
-                                {isFeedRunning && (stats.resolution || '640x480') && (
-                                  <span className="badge rounded-pill px-2 py-0.5 text-primary border border-primary border-opacity-25 font-mono fw-bold"
-                                    style={{ background: 'rgba(13, 110, 253, 0.12)', fontSize: '0.68rem' }}>
-                                    {stats.resolution || '640x480'}
-                                  </span>
-                                )}
-                                <i className={`bi bi-chevron-down small opacity-50 dropdown-chevron ${cameraDropdownOpen ? 'open' : ''}`}></i>
-                              </div>
-                            </div>
-                            <div className={`dropdown-options ${cameraDropdownOpen ? 'open' : ''}`}>
-                              {cameras.map((camera, i) => (
-                                <div key={camera.id} className={`dropdown-option ${cameraType === camera.id ? 'active' : ''}`} onClick={() => setCameraType(camera.id)}>{camera.name}</div>
-                              ))}
-                              {cameras.length === 0 && <div className={`dropdown-option ${cameraType === '0' ? 'active' : ''}`} onClick={() => setCameraType('0')}>Default Webcam</div>}
-                              <div className={`dropdown-option ${cameraType === 'url' ? 'active' : ''}`} onClick={() => setCameraType('url')}>IP Camera (URL)</div>
-                            </div>
-                          </div>
 
+                {/* RIGHT: Premium Command Panel */}
+                <div className="col-12 col-lg-4 col-xl-4 col-xxl-3">
+                  <div className="cp-wrap" style={{ position: 'relative', zIndex: cameraDropdownOpen ? 90 : 1 }}>
+                    <div className="cp-panel">
+
+                      {/* ── Top Strip: Source + Status pill ── */}
+                      <div className="cp-top-strip">
+                        <div className="cp-top-left">
+                          <span className="cp-top-eyebrow">
+                            <i className="bi bi-camera-video"></i> ACTIVE SOURCE
+                          </span>
+                          <div className={`cp-status-pill ${isFeedRunning ? 'live' : 'idle'}`}>
+                            <span className="cp-status-dot"></span>
+                            {isFeedRunning ? 'LIVE' : 'IDLE'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── Camera Selector ── */}
+                      {viewMode === 'single' ? (
+                        <div className="cp-cam-block">
+                          <div
+                            className="cp-cam-selector"
+                            onClick={() => { setCameraDropdownOpen(!cameraDropdownOpen); setModelDropdownOpen(false); }}
+                          >
+                            <div className={`cp-cam-icon-wrap ${isFeedRunning ? 'live' : 'offline'}`}>
+                              <i className="bi bi-camera-video-fill"></i>
+                              <span className={`cp-cam-dot ${isFeedRunning ? 'on' : ''}`}></span>
+                            </div>
+                            <div className="cp-cam-details">
+                              <span className="cp-cam-name">
+                                {cameraType === '0' && 'Default Webcam'}
+                                {cameraType === 'url' && 'IP Camera (URL)'}
+                                {cameras.find(c => c.id === cameraType)?.name}
+                              </span>
+                              <span className="cp-cam-sub">
+                                {isFeedRunning ? (stats.resolution && stats.resolution !== '0x0' ? stats.resolution : '640×480') : 'Click to switch source'}
+                              </span>
+                            </div>
+                            <i className={`bi bi-chevron-down cp-cam-chevron ${cameraDropdownOpen ? 'open' : ''}`}></i>
+                          </div>
+                          <div className={`dropdown-options ${cameraDropdownOpen ? 'open' : ''}`}>
+                            {cameras.map((camera) => (
+                              <div key={camera.id} className={`dropdown-option ${cameraType === camera.id ? 'active' : ''}`} onClick={() => setCameraType(camera.id)}>{camera.name}</div>
+                            ))}
+                            {cameras.length === 0 && <div className={`dropdown-option ${cameraType === '0' ? 'active' : ''}`} onClick={() => setCameraType('0')}>Default Webcam</div>}
+                            <div className={`dropdown-option ${cameraType === 'url' ? 'active' : ''}`} onClick={() => setCameraType('url')}>IP Camera (URL)</div>
+                          </div>
                           {cameraType === 'url' && (
-                            <div className="mt-2">
-                              <input type="text" className="form-control shadow-none rounded-3"
-                                placeholder="Enter IP Camera URL"
+                            <div className="cp-url-wrap">
+                              <input type="text" className="cp-url-input"
+                                placeholder="rtsp://192.168.1.50/live"
                                 value={cameraUrl}
-                                onChange={(e) => setCameraUrl(e.target.value)}
-                                style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', height: '42px', color: 'var(--text-heading)', fontSize: '0.82rem' }} />
+                                onChange={(e) => setCameraUrl(e.target.value)} />
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="sidebar-section">
-                          <span className="sidebar-section-label d-flex mb-2">
-                            <i className="bi bi-grid-3x3-gap"></i> GRID MONITORING
-                          </span>
-                          <div className="p-2.5 rounded-3 d-flex align-items-center gap-2" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
-                            <i className="bi bi-grid-3x3-gap text-primary fs-5"></i>
-                            <span className="small fw-semibold text-heading">Multi-Camera Grid Mode</span>
-                          </div>
+                        <div className="cp-grid-badge">
+                          <i className="bi bi-grid-3x3-gap-fill"></i>
+                          <span>Multi-Camera Grid Active</span>
                         </div>
                       )}
 
-                      {/* ── Telemetry Section Divider ── */}
-                      <div className="sidebar-section-divider mt-2">
-                        <span className="sidebar-section-label">
-                          <i className="bi bi-activity"></i> TELEMETRY
-                        </span>
+                      {/* ── Divider ── */}
+                      <div className="cp-rule">
+                        <span className="cp-rule-label"><i className="bi bi-activity"></i> TELEMETRY</span>
+                        <span className="cp-rule-line"></span>
                       </div>
 
-                      {/* Status Card — clean full width */}
-                      <div className="detection-stat-card stat-card-status">
-                        <div className="d-flex align-items-center w-100 gap-3">
-                          <div className={`stat-icon-badge ${isFeedRunning ? 'stat-icon-green' : 'stat-icon-red'}`}>
-                            <i className={`bi ${isFeedRunning ? 'bi-broadcast' : 'bi-slash-circle'}`}></i>
-                          </div>
-                          <div className="flex-grow-1 min-w-0 d-flex flex-column justify-content-center">
-                            <div className="stat-label-sub mb-1" style={{ marginTop: 0 }}>STREAM STATUS</div>
-                            <div className="fw-bold text-truncate" style={{ fontSize: '1.05rem', color: isFeedRunning ? '#22c55e' : '#f87171', letterSpacing: '-0.2px' }}>
-                              {isFeedRunning ? 'Live • Active' : 'Offline'}
-                            </div>
-                          </div>
+                      {/* ── Stream Status Banner ── */}
+                      <div className={`cp-stream-banner ${isFeedRunning ? 'live' : 'offline'}`}>
+                        <div className="cp-stream-icon">
+                          {isFeedRunning ? (
+                            <>
+                              <i className="bi bi-broadcast"></i>
+                              <span className="cp-ring"></span>
+                            </>
+                          ) : (
+                            <i className="bi bi-slash-circle"></i>
+                          )}
+                        </div>
+                        <div className="cp-stream-text">
+                          <span className="cp-stream-status-label">STREAM STATUS</span>
+                          <span className={`cp-stream-status-val ${isFeedRunning ? 'live' : 'off'}`}>
+                            {isFeedRunning ? 'Live' : 'Offline'}
+                          </span>
                         </div>
                       </div>
 
-                      {/* FPS + Detections — side by side */}
-                      <div className="row g-2 mb-1">
-                        <div className="col-6">
-                          <div className="detection-stat-card h-100 position-relative">
-                            <div className="d-flex align-items-start justify-content-between mb-2 w-100">
-                              <div className="stat-icon-badge stat-icon-blue stat-icon-sm">
-                                <i className="bi bi-speedometer2"></i>
-                              </div>
-                              <span className="stat-badge-mini badge-blue">FPS</span>
-                            </div>
-                            <div className="d-flex flex-column align-items-start w-100 mt-1">
-                              <div className="d-flex align-items-baseline gap-1">
-                                <span className={`fw-bold font-mono ${isFeedRunning ? 'text-blue-glow' : 'text-muted'}`} style={{ fontSize: '1.6rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
-                                  {isFeedRunning ? (stats.fps || '0.0') : '0.0'}
-                                </span>
-                              </div>
-                              <div className="stat-label-sub mt-2">FRAMERATE</div>
-                            </div>
-                            <div className="stat-meter-track mt-2">
-                              <div className="stat-meter-fill bg-blue" style={{ width: isFeedRunning ? `${Math.min(100, (parseFloat(stats.fps) || 0) / 60 * 100)}%` : '0%' }}></div>
-                            </div>
+                      {/* ── Metrics Row ── */}
+                      <div className="cp-metrics">
+                        {/* FPS */}
+                        <div className="cp-metric">
+                          <div className="cp-metric-top">
+                            <div className="cp-metric-icon blue"><i className="bi bi-speedometer2"></i></div>
+                            <span className="cp-metric-tag blue">FPS</span>
+                          </div>
+                          <span className={`cp-metric-num ${isFeedRunning ? 'blue' : ''}`}>
+                            {isFeedRunning ? (stats.fps || '0.0') : '0.0'}
+                          </span>
+                          <span className="cp-metric-label">FRAMERATE</span>
+                          <div className="cp-bar-track">
+                            <div className="cp-bar-fill blue" style={{ width: isFeedRunning ? `${Math.min(100, (parseFloat(stats.fps) || 0) / 60 * 100)}%` : '0%' }}></div>
                           </div>
                         </div>
-                        <div className="col-6">
-                          <div className="detection-stat-card h-100 position-relative">
-                            <div className="d-flex align-items-start justify-content-between mb-2 w-100">
-                              <div className={`stat-icon-badge stat-icon-sm ${isFeedRunning && stats.faces > 0 ? 'stat-icon-green' : 'stat-icon-dim'}`}>
-                                <i className="bi bi-person-bounding-box"></i>
-                              </div>
-                              <span className={`stat-badge-mini ${isFeedRunning && stats.faces > 0 ? 'badge-green' : 'badge-dim'}`}>
-                                {isFeedRunning && stats.faces > 0 ? 'ACTIVE' : 'IDLE'}
-                              </span>
-                            </div>
-                            <div className="d-flex flex-column align-items-start w-100 mt-1">
-                              <div className="d-flex align-items-baseline gap-1">
-                                <span className={`fw-bold font-mono ${isFeedRunning && stats.faces > 0 ? 'text-green-glow' : 'text-muted'}`} style={{ fontSize: '1.6rem', lineHeight: 1, letterSpacing: '-0.5px' }}>
-                                  {isFeedRunning ? (stats.faces || 0) : 0}
-                                </span>
-                              </div>
-                              <div className="stat-label-sub mt-2">DETECTIONS</div>
-                            </div>
-                            <div className="stat-meter-track mt-2">
-                              <div className={`stat-meter-fill ${isFeedRunning && stats.faces > 0 ? 'bg-green' : 'bg-dim'}`} style={{ width: isFeedRunning ? `${Math.min(100, (stats.faces || 0) * 20)}%` : '0%' }}></div>
-                            </div>
+
+                        {/* Detections */}
+                        <div className="cp-metric">
+                          <div className="cp-metric-top">
+                            <div className={`cp-metric-icon ${isFeedRunning && stats.faces > 0 ? 'green' : 'dim'}`}><i className="bi bi-person-bounding-box"></i></div>
+                            <span className={`cp-metric-tag ${isFeedRunning && stats.faces > 0 ? 'green' : 'dim'}`}>
+                              {isFeedRunning && stats.faces > 0 ? 'ACTIVE' : 'IDLE'}
+                            </span>
+                          </div>
+                          <span className={`cp-metric-num ${isFeedRunning && stats.faces > 0 ? 'green' : ''}`}>
+                            {isFeedRunning ? (stats.faces || 0) : 0}
+                          </span>
+                          <span className="cp-metric-label">DETECTIONS</span>
+                          <div className="cp-bar-track">
+                            <div className={`cp-bar-fill ${isFeedRunning && stats.faces > 0 ? 'green' : 'dim'}`} style={{ width: isFeedRunning ? `${Math.min(100, (stats.faces || 0) * 20)}%` : '0%' }}></div>
                           </div>
                         </div>
                       </div>
 
-                      {/* ── Controls Section Divider ── */}
-                      <div className="sidebar-section-divider mt-2">
-                        <span className="sidebar-section-label">
-                          <i className="bi bi-toggles"></i> CONTROLS
-                        </span>
+                      {/* ── Divider ── */}
+                      <div className="cp-rule">
+                        <span className="cp-rule-label"><i className="bi bi-sliders"></i> CONTROLS</span>
+                        <span className="cp-rule-line"></span>
                       </div>
 
-                      {/* Action Buttons: Side-by-side grid */}
-                      <div className="row g-2 mt-1">
-                        <div className="col-6">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.currentTarget.blur(); handleStartFeed(); }}
-                            className={`btn-detect-action btn-detect-start-action w-100 ${isFeedRunning ? 'is-running' : ''}`}
-                            title="Start live video detection feed"
-                          >
-                            <i className={`bi ${isFeedRunning ? 'bi-broadcast' : 'bi-play-fill'} me-1.5`}></i>
-                            <span>{isFeedRunning ? 'Active' : 'Start Feed'}</span>
-                          </button>
-                        </div>
-                        <div className="col-6">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.currentTarget.blur(); handleStopFeed(); }}
-                            className={`btn-detect-action btn-detect-stop-action w-100 ${isFeedRunning ? 'is-active' : 'is-standby'}`}
-                            title="Stop video detection feed"
-                          >
-                            <i className={`bi ${isFeedRunning ? 'bi-stop-circle-fill' : 'bi-stop-fill'} me-1.5`}></i>
-                            <span>Stop Feed</span>
-                          </button>
-                        </div>
+                      {/* ── Action Buttons (Segmented Switch matching Camera View) ── */}
+                      <div className="segmented-view-switch cp-segmented-switch">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.currentTarget.blur(); handleStartFeed(); }}
+                          className={`segmented-switch-btn cp-toggle-start ${isFeedRunning ? 'active' : ''}`}
+                          title="Start live video detection feed"
+                        >
+                          <i className={isFeedRunning ? "bi bi-broadcast" : "bi bi-play-fill"}></i>
+                          <span>{isFeedRunning ? 'Streaming' : 'Start Feed'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.currentTarget.blur(); handleStopFeed(); }}
+                          className={`segmented-switch-btn cp-toggle-stop ${!isFeedRunning ? 'active' : ''}`}
+                          title="Stop video detection feed"
+                        >
+                          <i className="bi bi-stop-fill"></i>
+                          <span>Stop Feed</span>
+                        </button>
                       </div>
+
                     </div>
                   </div>
                 </div>

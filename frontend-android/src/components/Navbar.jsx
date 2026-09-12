@@ -611,8 +611,9 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
       <nav className="navbar navbar-expand-lg sticky-top">
         <div className="container">
           <a
-            className="navbar-brand text-dynamic fw-bold"
+            className="navbar-brand text-dynamic fw-bold m-0"
             href="#"
+            style={{ fontSize: '1.75rem', letterSpacing: '-0.5px' }}
             onClick={(e) => { e.preventDefault(); setActivePage('home'); closeMobileNav(); }}
           >
             Smart <span style={{ color: '#2563eb' }}>Sight</span>

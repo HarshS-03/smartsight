@@ -55,8 +55,7 @@ export default function AboutPage() {
                 </h1>
 
                 <p className="hero-sub mb-5 mx-auto" data-reveal="true" data-reveal-delay="100">
-                  An intelligent surveillance project leveraging Computer Vision and YOLOv8 deep learning
-                  to detect faces, track movement, and transform passive CCTV into an active security hub.
+                  Harnessing YOLO object detection and <span className="text-nowrap">state-of-the-art</span> Computer Vision to automate tracking, detect faces, and ensure smarter monitoring in real-time.
                 </p>
 
                 <div className="hero-cta-group mb-5 justify-content-center" data-reveal="true" data-reveal-delay="200">
@@ -113,7 +112,7 @@ export default function AboutPage() {
                     <span>Intelligent Processing Core</span>
                   </div>
                   <p className="detail-text">
-                    At the heart of the system is the combination of OpenCV and YOLOv8 deep learning models. Traditional systems simply record footage, placing the burden of analysis on humans. Our system ingests live RTSP or local video streams, normalizes the frames, and runs inference pipelines in milliseconds to detect and identify faces, tracking occurrences instantly with zero frame drop.
+                    Smart Sight uses a YOLO face detection model paired with ArcFace deep metric learning for identity recognition. YOLO detects and localizes faces in every frame, then ArcFace extracts 512-dimensional embedding vectors and matches them against the trained dataset — delivering real-time, high-accuracy face recognition on live RTSP and local video streams.
                   </p>
                 </div>
               </div>
@@ -125,7 +124,7 @@ export default function AboutPage() {
                     <span>Robust Security Framework</span>
                   </div>
                   <p className="detail-text">
-                    Security is built directly into every tier. Authorized personnel access the platform via an encrypted role-based login system. The dataset storage, detection consoles, and report aggregators remain locked behind Django middleware guards. Bulk dataset imports are protected by custom system synchronization protocols that validate file trees programmatically before accepting logs.
+                    Security is embedded at every layer. Role-based JWT authentication gates all API endpoints, while Django middleware guards protect dataset storage, detection consoles, and report aggregators. Face-based biometric login adds an additional verification layer — the system runs ArcFace verification on live camera frames to authenticate users without passwords.
                   </p>
                 </div>
               </div>
@@ -134,10 +133,10 @@ export default function AboutPage() {
                 <div className="project-detail-card h-100">
                   <div className="detail-heading">
                     <i className="bi bi-database-fill-gear"></i>
-                    <span>Dataset & Model Training</span>
+                    <span>Dataset & ArcFace Training</span>
                   </div>
                   <p className="detail-text">
-                    We designed a streamlined, folder-based bulk import protocol that allows administrators to upload person datasets containing multiple training images with a simple drag-and-drop mechanism. The system automatically processes these images, updates database associations, and maps them to the recognition pipeline, ensuring seamless integration of newly authorized personnel without downtime.
+                    Administrators upload person datasets via a streamlined bulk import system — drag-and-drop folder structures containing multiple training images per person. The backend automatically processes uploads, generates ArcFace embeddings for each face, and indexes them into the recognition pipeline. New personnel are integrated instantly without retraining the core model.
                   </p>
                 </div>
               </div>
@@ -149,7 +148,7 @@ export default function AboutPage() {
                     <span>Advanced Reports & Insights</span>
                   </div>
                   <p className="detail-text">
-                    Detection events are compiled into structured, searchable database tables with entry and exit timestamps. The reports panel features a modern dashboard displaying metrics like total system detections, known vs. unknown intrusions, and daily attendance aggregations. This data can be filtered by dates or classification and exported directly to Microsoft Excel reports.
+                    Every detection event is logged with timestamps, confidence scores, and identity classification. The reports dashboard visualizes total detections, known vs. unknown breakdowns, and daily attendance patterns. Data can be filtered by date range or classification category and exported directly to Excel for offline analysis and compliance reporting.
                   </p>
                 </div>
               </div>
@@ -425,7 +424,7 @@ export default function AboutPage() {
                   </div>
                   <h3 className="pillar-title">AI at the Core</h3>
                   <p className="pillar-desc">
-                    AI-driven face and object recognition delivers fast, accurate detection across all connected camera feeds.
+                    AI-driven face detection and recognition delivers fast, accurate identification across all connected camera feeds.
                   </p>
                 </div>
               </div>
