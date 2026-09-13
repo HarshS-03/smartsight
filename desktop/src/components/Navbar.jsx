@@ -639,27 +639,63 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             transform: none !important;
             left: auto !important;
             top: auto !important;
-            flex: 1;
+            flex: 1 1 auto;
+            min-width: 0;
             justify-content: center;
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: hidden;
             scrollbar-width: none;
             -ms-overflow-style: none;
-            max-width: calc(100% - 400px);
-            margin: 0 auto;
+            margin: 0 0.5rem;
           }
           .is-electron-navbar .navbar-nav.position-absolute::-webkit-scrollbar {
             display: none;
           }
-        }
-        @media (max-width: 900px) {
-          .is-electron-navbar .navbar-nav.position-absolute {
-            max-width: calc(100% - 340px);
-            gap: 2px !important;
+          .is-electron-navbar .navbar-nav .nav-link {
+            font-size: 0.75rem !important;
+            padding: 0.4rem 0.65rem !important;
+            white-space: nowrap;
           }
+        }
+        @media (max-width: 1000px) {
           .is-electron-navbar .navbar-nav .nav-link {
             font-size: 0.7rem !important;
-            padding: 6px 8px !important;
+            padding: 0.35rem 0.5rem !important;
+            letter-spacing: 0.03em !important;
+          }
+          .is-electron-navbar .navbar-nav.position-absolute {
+            gap: 2px !important;
+          }
+        }
+        @media (max-width: 850px) {
+          .is-electron-navbar .navbar-nav .nav-link {
+            font-size: 0.65rem !important;
+            padding: 0.3rem 0.4rem !important;
+            letter-spacing: 0.02em !important;
+          }
+          .is-electron-navbar .navbar-nav.position-absolute {
+            gap: 1px !important;
+            margin: 0 0.25rem;
+          }
+          .is-electron-navbar .navbar-brand {
+            font-size: 1.3rem !important;
+          }
+          .is-electron-navbar .desktop-right-actions {
+            gap: 0.25rem !important;
+          }
+          .is-electron-navbar .theme-toggle-btn {
+            width: 34px;
+            height: 34px;
+          }
+          .is-electron-navbar .user-profile-pill {
+            padding: 0.2rem 0.5rem 0.2rem 0.2rem;
+          }
+          .is-electron-navbar .user-name-text {
+            font-size: 0.75rem;
+          }
+          .is-electron-navbar .user-avatar-circle {
+            width: 28px;
+            height: 28px;
+            font-size: 0.7rem;
           }
         }
       `}</style>
