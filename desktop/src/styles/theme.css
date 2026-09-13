@@ -787,13 +787,17 @@ p,
 }
 
 #video-feed-container {
-  aspect-ratio: 16/9;
+  aspect-ratio: 4/3;
   background: #000;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   position: relative;
   transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+#video-feed-container img {
+  object-fit: cover;
 }
 
 #video-feed-container.feed-active {

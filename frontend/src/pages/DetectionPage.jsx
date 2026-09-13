@@ -366,7 +366,7 @@ export default function DetectionPage() {
                 <div className="col-12 col-lg-8 col-xl-8 col-xxl-9 d-flex flex-column">
                   {/* Single Video feed Panel */}
                   {viewMode === 'single' && (
-                    <div id="video-feed-container" className={`w-100 d-flex align-items-center justify-content-center flex-grow-1 ${isFeedRunning ? 'feed-active' : ''}`} style={{ minHeight: '460px', margin: 0 }}>
+                    <div id="video-feed-container" className={`w-100 d-flex align-items-center justify-content-center flex-grow-1 ${isFeedRunning ? 'feed-active' : ''}`} style={{ margin: 0 }}>
                       {/* HUD Corners */}
                       <div className="vid-hud-corner vid-hud-tl"></div>
                       <div className="vid-hud-corner vid-hud-tr"></div>
@@ -396,7 +396,7 @@ export default function DetectionPage() {
                         src={isFeedRunning ? feedUrl : ''}
                         alt=""
                         className="w-100 h-100"
-                        style={{ objectFit: 'contain', display: isFeedRunning && !feedError ? 'block' : 'none' }}
+                        style={{ display: isFeedRunning && !feedError ? 'block' : 'none' }}
                         onLoad={() => setFeedError(false)}
                         onError={() => {
                           if (isFeedRunning) setFeedError(true);
@@ -441,7 +441,7 @@ export default function DetectionPage() {
                                   src={isFeedRunning ? `${getBackendBaseUrl()}/video_feed/?src=${camera.id}&model=${modelType}&stats_key=${camera.id}&t=${Date.now()}` : ''}
                                   alt={camera.name}
                                   className="w-100 h-100"
-                                  style={{ objectFit: 'contain', display: isFeedRunning ? 'block' : 'none' }}
+                                  style={{ objectFit: 'cover', display: isFeedRunning ? 'block' : 'none' }}
                                   decoding="async"
                                 />
                               </div>
