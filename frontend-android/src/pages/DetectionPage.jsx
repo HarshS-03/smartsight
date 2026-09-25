@@ -507,6 +507,7 @@ export default function DetectionPage() {
                             <div className="cp-cam-details">
                               <span className="cp-cam-name">
                                 {cameraType === '0' && 'Default Webcam'}
+                                {cameraType === '1' && 'Back Camera'}
                                 {cameraType === 'url' && 'IP Camera (URL)'}
                                 {cameras.find(c => c.id === cameraType)?.name}
                               </span>
@@ -520,7 +521,15 @@ export default function DetectionPage() {
                             {cameras.map((camera) => (
                               <div key={camera.id} className={`dropdown-option ${cameraType === camera.id ? 'active' : ''}`} onClick={() => setCameraType(camera.id)}>{camera.name}</div>
                             ))}
-                            {cameras.length === 0 && <div className={`dropdown-option ${cameraType === '0' ? 'active' : ''}`} onClick={() => setCameraType('0')}>Default Webcam</div>}
+                            {cameras.length === 0 && (
+                              <>
+                                <div className={`dropdown-option ${cameraType === '0' ? 'active' : ''}`} onClick={() => setCameraType('0')}>Default Webcam</div>
+                                <div className={`dropdown-option ${cameraType === '1' ? 'active' : ''}`} onClick={() => setCameraType('1')}>Back Camera</div>
+                              </>
+                            )}
+                            {cameras.length > 0 && !cameras.some(c => String(c.id) === '1') && (
+                              <div className={`dropdown-option ${cameraType === '1' ? 'active' : ''}`} onClick={() => setCameraType('1')}>Back Camera</div>
+                            )}
                             <div className={`dropdown-option ${cameraType === 'url' ? 'active' : ''}`} onClick={() => setCameraType('url')}>IP Camera (URL)</div>
                           </div>
                           {cameraType === 'url' && (
