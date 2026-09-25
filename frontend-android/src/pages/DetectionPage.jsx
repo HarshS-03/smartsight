@@ -30,6 +30,10 @@ export default function DetectionPage() {
   const [toastMessage, setToastMessage] = useState(null);
 
   const liveFeedRef = useRef(null);
+  const localVideoRef = useRef(null);
+  const localCanvasRef = useRef(null);
+  const loopIntervalRef = useRef(null);
+  const localStreamRef = useRef(null);
 
   const handleModelChange = async (newModel) => {
     if (newModel === modelType) {
@@ -199,18 +203,62 @@ export default function DetectionPage() {
     lastStartClickRef.current = Date.now();
     userStoppedRef.current = false;
     setFeedError(false);
-    const baseUrl = getBackendBaseUrl();
-    const src = `${baseUrl}/video_feed/?src=${cameraType === 'url' ? encodeURIComponent(cameraUrl) : cameraType}&model=${modelType}&stats_key=${cameraType}&t=${Date.now()}`;
-    setFeedUrl(src);
     setIsFeedRunning(true);
-    if (liveFeedRef.current) {
-      liveFeedRef.current.src = src;
-      liveFeedRef.current.style.display = 'block';
-    }
-    try {
-      await API.post('/start_video_feed/', { src: cameraType, model: modelType });
-    } catch (e) {
-      console.warn('Error sending start_video_feed command:', e);
+    
+    if (cameraType === '1') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        localStreamRef.current = stream;
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        
+        loopIntervalRef.current = setInterval(async () => {
+          if (!localVideoRef.current || !localCanvasRef.current || userStoppedRef.current) return;
+          if (localVideoRef.current.videoWidth === 0) return;
+          
+          const ctx = localCanvasRef.current.getContext('2d');
+          localCanvasRef.current.width = localVideoRef.current.videoWidth;
+          localCanvasRef.current.height = localVideoRef.current.videoHeight;
+          ctx.drawImage(localVideoRef.current, 0, 0);
+          
+          const base64Img = localCanvasRef.current.toDataURL('image/jpeg', 0.6);
+          try {
+            const res = await API.post('/process_client_frame/', {
+              image: base64Img,
+              model: modelType,
+              orientation: 'normal'
+            });
+            if (res.data && res.data.status === 'success') {
+               setFeedUrl(res.data.image);
+               if (liveFeedRef.current) {
+                 liveFeedRef.current.src = res.data.image;
+                 liveFeedRef.current.style.display = 'block';
+               }
+               setStats(prev => ({ ...prev, faces: res.data.faces || 0, fps: res.data.fps || 5.0 }));
+            }
+          } catch (e) {
+             // ignore
+          }
+        }, 200); // 5 FPS
+      } catch (err) {
+        setFeedError(true);
+        setIsFeedRunning(false);
+        console.error('Error accessing local camera:', err);
+      }
+    } else {
+      const baseUrl = getBackendBaseUrl();
+      const src = `${baseUrl}/video_feed/?src=${cameraType === 'url' ? encodeURIComponent(cameraUrl) : cameraType}&model=${modelType}&stats_key=${cameraType}&t=${Date.now()}`;
+      setFeedUrl(src);
+      if (liveFeedRef.current) {
+        liveFeedRef.current.src = src;
+        liveFeedRef.current.style.display = 'block';
+      }
+      try {
+        await API.post('/start_video_feed/', { src: cameraType, model: modelType });
+      } catch (e) {
+        console.warn('Error sending start_video_feed command:', e);
+      }
     }
   };
 
@@ -226,30 +274,38 @@ export default function DetectionPage() {
       liveFeedRef.current.removeAttribute('src');
       liveFeedRef.current.src = '';
     }
-    try {
-      await API.post('/stop_video_feed/', { src: cameraType });
-    } catch (e) {
-      console.warn('Error sending stop_video_feed command:', e);
+    
+    if (cameraType === '1') {
+      if (loopIntervalRef.current) clearInterval(loopIntervalRef.current);
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    } else {
+      try {
+        await API.post('/stop_video_feed/', { src: cameraType });
+      } catch (e) {
+        console.warn('Error sending stop_video_feed command:', e);
+      }
     }
   };
 
   return (
     <>
       {/* ── Page Hero ────────────────────────────────────────── */}
-      <section className="page-hero text-center">
+      <section className="page-hero text-center" style={{ paddingTop: '1rem', paddingBottom: '0.5rem' }}>
         <div className="page-hero-bg-wrapper">
           <div className="page-hero-bg"></div>
           <div className="page-hero-orb"></div>
         </div>
 
         <div className="container page-hero-content" style={{ zIndex: 2 }}>
-          <div className="row justify-content-center text-center mb-2">
+          <div className="row justify-content-center text-center mb-0">
             <div className="col-lg-8 col-md-10 mx-auto">
-              <h1 className="detect-title mb-2 text-center">
+              <h1 className="detect-title mb-1 text-center" style={{ fontSize: '2rem' }}>
                 Live <span className="accent">Detection</span>
               </h1>
-              <p className="page-hero-sub mx-auto" data-reveal="true" data-reveal-delay="120">
-                AI-powered YOLO face detection and ArcFace face recognition on live streams. Choose single feed or monitor multiple streams simultaneously.
+              <p className="page-hero-sub mx-auto mb-0" data-reveal="true" data-reveal-delay="120" style={{ fontSize: '0.85rem' }}>
+                Real-time AI Face Detection & Recognition.
               </p>
             </div>
           </div>
@@ -265,41 +321,8 @@ export default function DetectionPage() {
 
               {/* Controls View Mode and Model selectors */}
               <div className="row mb-4 g-3 align-items-stretch">
-                {/* Left: Camera View Card */}
-                <div className="col-12 col-md-5 col-lg-4">
-                  <div className="detection-control-card h-100 d-flex flex-column justify-content-center p-3">
-                    <div className="d-flex align-items-center justify-content-between mb-2">
-                      <div className="d-flex align-items-center gap-2">
-                        <i className="bi bi-camera-video text-primary"></i>
-                        <span className="fw-semibold text-heading" style={{ fontSize: '0.88rem' }}>Camera View</span>
-                      </div>
-                      <span className="badge rounded-pill" style={{ fontSize: '0.68rem', background: 'rgba(37, 99, 235, 0.12)', color: '#3b82f6', border: '1px solid rgba(37, 99, 235, 0.25)', padding: '3px 8px' }}>
-                        {viewMode === 'single' ? 'Single' : 'Multi-Grid'}
-                      </span>
-                    </div>
-                    <div className="segmented-view-switch">
-                      <button
-                        type="button"
-                        onClick={() => setViewMode('single')}
-                        className={`segmented-switch-btn ${viewMode === 'single' ? 'active' : ''}`}
-                      >
-                        <i className="bi bi-camera-video"></i>
-                        <span>Single</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setViewMode('grid')}
-                        className={`segmented-switch-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                      >
-                        <i className="bi bi-grid-3x3-gap"></i>
-                        <span>Multi-Grid</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: Model Selection */}
-                <div className="col-12 col-md-7 col-lg-8">
+                {/* Right: Model Selection (Now Full Width) */}
+                <div className="col-12">
                   {/* Model Selector Card */}
                   <div className="detection-control-card h-100 d-flex flex-column justify-content-center p-3"
                     style={{ position: 'relative', zIndex: modelDropdownOpen ? 100 : 2 }}>
@@ -508,7 +531,6 @@ export default function DetectionPage() {
                               <span className="cp-cam-name">
                                 {cameraType === '0' && 'Default Webcam'}
                                 {cameraType === '1' && 'Back Camera'}
-                                {cameraType === 'url' && 'IP Camera (URL)'}
                                 {cameras.find(c => c.id === cameraType)?.name}
                               </span>
                               <span className="cp-cam-sub">
@@ -530,16 +552,7 @@ export default function DetectionPage() {
                             {cameras.length > 0 && !cameras.some(c => String(c.id) === '1') && (
                               <div className={`dropdown-option ${cameraType === '1' ? 'active' : ''}`} onClick={() => setCameraType('1')}>Back Camera</div>
                             )}
-                            <div className={`dropdown-option ${cameraType === 'url' ? 'active' : ''}`} onClick={() => setCameraType('url')}>IP Camera (URL)</div>
                           </div>
-                          {cameraType === 'url' && (
-                            <div className="cp-url-wrap">
-                              <input type="text" className="cp-url-input"
-                                placeholder="rtsp://192.168.1.50/live"
-                                value={cameraUrl}
-                                onChange={(e) => setCameraUrl(e.target.value)} />
-                            </div>
-                          )}
                         </div>
                       ) : (
                         <div className="cp-grid-badge">
@@ -737,6 +750,10 @@ export default function DetectionPage() {
           </div>
         </div>
       </div>
+      
+      {/* Hidden elements for native phone camera WebRTC capture */}
+      <video ref={localVideoRef} autoPlay playsInline muted style={{ display: 'none' }} />
+      <canvas ref={localCanvasRef} style={{ display: 'none' }} />
     </>
   );
 }
