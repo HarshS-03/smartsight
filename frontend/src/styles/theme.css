@@ -49,29 +49,45 @@ body::-webkit-scrollbar {
 .gap-2\.5 { gap: 0.625rem !important; }
 .gap-3\.5 { gap: 0.875rem !important; }
 
-/* ── Full-Page Seamless Mesh Grid (Covers all pages, not just top hero) ── */
+/* ── Full-Page Seamless Mesh Grid (Covers all pages, fixed and unclipped) ── */
 body {
   background-color: var(--bg-body, #0b0f19) !important;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+  background-color: var(--bg-body, #0b0f19);
   background-image:
     radial-gradient(ellipse 90% 60% at 50% -10%, rgba(37, 99, 235, 0.16) 0%, transparent 65%),
     linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px) !important;
-  background-size: 100% 900px, 32px 32px, 32px 32px !important;
-  background-attachment: scroll, fixed, fixed !important;
-  background-repeat: no-repeat, repeat, repeat !important;
-  min-height: 100vh;
+    linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+  background-size: 100% 900px, 32px 32px, 32px 32px;
+  background-repeat: no-repeat, repeat, repeat;
 }
 
 [data-bs-theme="light"] body {
   background-color: #f8fafc !important;
+}
+
+[data-bs-theme="light"] body::before {
+  background-color: #f8fafc;
   background-image:
     radial-gradient(ellipse 90% 60% at 50% -10%, rgba(37, 99, 235, 0.09) 0%, transparent 65%),
     linear-gradient(rgba(37, 99, 235, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px) !important;
-  background-size: 100% 900px, 32px 32px, 32px 32px !important;
-  background-attachment: scroll, fixed, fixed !important;
-  background-repeat: no-repeat, repeat, repeat !important;
-  min-height: 100vh;
+    linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px);
+  background-size: 100% 900px, 32px 32px, 32px 32px;
+  background-repeat: no-repeat, repeat, repeat;
 }
 
 :root,
@@ -3486,12 +3502,39 @@ p,
 }
 
 .folder-icon-wrapper {
-  font-size: 2.5rem;
-  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-card-blue .folder-icon-wrapper {
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  color: #3b82f6;
+}
+
+.folder-card-red .folder-icon-wrapper {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
 }
 
 .folder-card:hover .folder-icon-wrapper {
-  transform: scale(1.1);
+  transform: scale(1.06);
+}
+
+.folder-card-blue:hover .folder-icon-wrapper {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+.folder-card-red:hover .folder-icon-wrapper {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 .folder-glow {
@@ -4967,7 +5010,7 @@ td {
 /* ── Native Smooth Page Transitions (Mobile & Desktop) ── */
 .page-transition-container {
   animation: pageFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 
 @keyframes pageFadeSlideIn {
@@ -4978,7 +5021,7 @@ td {
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: none;
   }
 }
 
@@ -4996,7 +5039,7 @@ td {
 
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -5032,78 +5075,63 @@ detection-hero-bg,
   }
 }
 
-/* ── Remove Visible Scrollbar in Mobile App & Browsers ── */
-::-webkit-scrollbar {
-  display: none !important;
-  width: 0px !important;
-  height: 0px !important;
-  background: transparent !important;
+/* ── Universal Modal Backdrop & Containment Across All UI ── */
+.modal-backdrop,
+.modern-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100% !important;
+  z-index: 10500 !important;
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
-html,
-body,
-div,
-section,
-main,
-table,
-tbody,
-tr,
-td {
-  -ms-overflow-style: none !important;
-  /* IE & Edge */
-  scrollbar-width: none !important;
-  /* Firefox & Mobile WebView */
+.modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10550 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 
-/* ── Native Smooth Page Transitions (Mobile & Desktop) ── */
-.page-transition-container {
-  animation: pageFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
+.modal-dialog {
+  max-height: calc(100vh - 2.5rem) !important;
+  margin: 1.25rem auto !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-@keyframes pageFadeSlideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.988);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.modal-content {
+  max-height: calc(100vh - 2.5rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
-@media (max-width: 991.98px) {
-  .page-transition-container {
-    animation: mobilePageSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
+.modal-content > form {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
 }
 
-@keyframes mobilePageSlideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Global Scrollbar Hide for Android/Mobile Web Views */
-::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
-}
-
-* {
-  -ms-overflow-style: none !important;
-  /* IE and Edge */
-  scrollbar-width: none !important;
-  /* Firefox */
+.modal-body {
+  max-height: 65vh !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* Solid Surface Modals & Solid Red Cancel Button */

@@ -34,6 +34,7 @@ class Person(models.Model):
         ('OFFICE_STAFF', 'Office Member'),
         ('PEON', 'Peon'),
         ('LAB_STAFF', 'Lab Staff'),
+        ('SECURITY', 'Security Staff'),
         ('OTHER', 'Other'),
     ]
     name = models.CharField(max_length=100, unique=True)

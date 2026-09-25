@@ -14,6 +14,7 @@ import DatasetPage from './pages/DatasetPage';
 import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import AdminPanelPage from './pages/AdminPanelPage';
+import { initFirebasePush } from './utils/firebasePush';
 
 const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'cameras', 'dataset', 'reports', 'notifications', 'admin'];
 
@@ -49,6 +50,13 @@ export default function App() {
       setActivePage('home');
     }
   }, [user, activePage]);
+
+  // Initialize Firebase Push Notifications when user is logged in
+  React.useEffect(() => {
+    if (user) {
+      initFirebasePush();
+    }
+  }, [user]);
 
   React.useEffect(() => {
     const fetchCurrentUser = async () => {

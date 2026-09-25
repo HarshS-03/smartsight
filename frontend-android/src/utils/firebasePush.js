@@ -5,11 +5,18 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { updateAppBadge } from './badgeHelper';
 import API from '../api/axios';
 
+let _fcmInitialized = false;
+
 export const initFirebasePush = async () => {
+  if (_fcmInitialized) {
+    console.log('[FCM Push] Already initialized, skipping.');
+    return;
+  }
   if (Capacitor.getPlatform() === 'web') {
     console.log('[FCM Push] Push notifications not supported on web platform.');
     return;
   }
+  _fcmInitialized = true;
 
   try {
     const permStatus = await PushNotifications.checkPermissions();

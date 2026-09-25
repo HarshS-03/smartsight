@@ -10,6 +10,7 @@ export const CATEGORIES = [
   { key: 'OFFICE_STAFF', label: 'Office Staff', icon: 'bi-briefcase-fill' },
   { key: 'PEON', label: 'Peons', icon: 'bi-person-badge-fill' },
   { key: 'LAB_STAFF', label: 'Lab Staff', icon: 'bi-cpu-fill' },
+  { key: 'SECURITY', label: 'Security Staff', icon: 'bi-shield-lock-fill' },
 ];
 
 export const COURSE_CONFIG = {
@@ -85,6 +86,14 @@ export const getCategoryBadge = (category, className, dept) => {
         color: '#06b6d4',
         border: 'rgba(6, 182, 212, 0.28)',
         icon: 'bi-cpu-fill'
+      };
+    case 'SECURITY':
+      return {
+        label: dept ? `Security • ${dept}` : 'Security Staff',
+        bg: 'rgba(239, 68, 68, 0.12)',
+        color: '#ef4444',
+        border: 'rgba(239, 68, 68, 0.28)',
+        icon: 'bi-shield-lock-fill'
       };
     default:
       return {
@@ -293,6 +302,10 @@ export default function DatasetPage() {
         if (!matchesName && !matchesClass && !matchesDept) return false;
       }
       return true;
+    }).sort((a, b) => {
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
     });
   }, [persons, selectedCategory, selectedCourse, selectedSem, personSearchQuery]);
 
@@ -1104,51 +1117,58 @@ export default function DatasetPage() {
                         style={{ cursor: 'pointer' }}
                       >
                         <div className="folder-glow"></div>
-                        <div>
-                          <div className="d-flex justify-content-between align-items-center mb-2.5">
+                        <div className="d-flex flex-column gap-3">
+                          {/* Card Header: Folder Icon on left, Photo Count pill badge on right */}
+                          <div className="d-flex align-items-center justify-content-between">
                             <div className="folder-icon-wrapper">
-                              <i className="bi bi-folder-fill text-primary" style={{ fontSize: '1.25rem' }}></i>
+                              <i className="bi bi-folder-fill" style={{ fontSize: '1.4rem' }}></i>
                             </div>
                             <span
-                              className="badge rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center text-nowrap"
+                              className="badge rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center text-nowrap"
                               style={{
-                                fontSize: '0.74rem',
-                                background: 'rgba(37, 99, 235, 0.16)',
+                                fontSize: '0.75rem',
+                                background: 'rgba(37, 99, 235, 0.14)',
                                 color: '#60a5fa',
-                                border: '1px solid rgba(37, 99, 235, 0.35)',
+                                border: '1px solid rgba(37, 99, 235, 0.3)',
                                 gap: '5px'
                               }}
                             >
-                              <i className="bi bi-images" style={{ fontSize: '0.72rem' }}></i>
+                              <i className="bi bi-images" style={{ fontSize: '0.8rem' }}></i>
                               <span>{(person.images || []).length} Photos</span>
                             </span>
                           </div>
-                          <div className="my-auto py-1">
-                            <h5 className="fw-bold text-heading mb-2 text-capitalize text-truncate" style={{ fontSize: '1.15rem', lineHeight: 1.3 }}>
+
+                          {/* Person Name & Category Badge */}
+                          <div className="d-flex flex-column gap-1.5">
+                            <h5 className="fw-bold text-heading mb-0 text-capitalize text-truncate" title={person.name} style={{ fontSize: '1.1rem', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
                               {person.name}
                             </h5>
-                            {/* Role / Class Badge */}
-                            <span
-                              className="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center"
-                              style={{
-                                background: badge.bg,
-                                color: badge.color,
-                                border: `1px solid ${badge.border}`,
-                                fontSize: '0.72rem',
-                                maxWidth: '100%',
-                                gap: '6px'
-                              }}
-                            >
-                              <i className={`bi ${badge.icon} flex-shrink-0`} style={{ marginRight: '5px', fontSize: '0.78rem' }}></i>
-                              <span className="text-truncate">{badge.label}</span>
-                            </span>
+                            <div className="d-flex align-items-center mt-0.5">
+                              <span
+                                className="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center"
+                                style={{
+                                  background: badge.bg,
+                                  color: badge.color,
+                                  border: `1px solid ${badge.border}`,
+                                  fontSize: '0.72rem',
+                                  maxWidth: '100%',
+                                  gap: '6px'
+                                }}
+                              >
+                                <i className={`bi ${badge.icon} flex-shrink-0`} style={{ fontSize: '0.75rem' }}></i>
+                                <span className="text-truncate">{badge.label}</span>
+                              </span>
+                            </div>
                           </div>
-                          <div className="pt-2 mt-2 border-top border-white border-opacity-10">
-                            <p className="text-secondary small mb-0 d-flex align-items-center" style={{ fontSize: '0.74rem' }}>
-                              <i className="bi bi-calendar3 text-primary flex-shrink-0 me-2"></i>
-                              <span className="text-truncate font-mono">{person.created_at}</span>
-                            </p>
+                        </div>
+
+                        {/* Card Footer: Timestamp */}
+                        <div className="pt-2.5 mt-3 border-top border-white border-opacity-10 d-flex align-items-center justify-content-between">
+                          <div className="text-secondary small mb-0 d-flex align-items-center gap-1.5" style={{ fontSize: '0.73rem', opacity: 0.85 }}>
+                            <i className="bi bi-calendar3 text-primary flex-shrink-0" style={{ fontSize: '0.75rem' }}></i>
+                            <span className="text-truncate font-mono">{person.created_at}</span>
                           </div>
+                          <i className="bi bi-chevron-right text-secondary opacity-50" style={{ fontSize: '0.72rem' }}></i>
                         </div>
                       </div>
                     </div>
@@ -1218,25 +1238,60 @@ export default function DatasetPage() {
                 <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
                   {unknowns.map((group, index) => (
                     <div className="col" key={index} data-reveal="true" data-reveal-delay="0">
-                      <div className="folder-card folder-card-red p-3 p-sm-3.5 p-md-4 rounded-4 h-100 position-relative overflow-hidden d-flex flex-column justify-content-between"
+                      <div className="folder-card folder-card-red p-3 p-md-4 rounded-4 h-100 position-relative overflow-hidden d-flex flex-column justify-content-between"
                         onClick={() => setSelectedUnknownDate(group)}>
                         <div className="folder-glow" style={{ background: 'radial-gradient(circle at 10% 10%, rgba(220, 53, 69, 0.1) 0%, transparent 50%)' }}></div>
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <div className="folder-icon-wrapper" style={{ background: 'rgba(220, 53, 69, 0.1)', border: '1px solid rgba(220, 53, 69, 0.2)' }}>
-                            <i className="bi bi-folder-fill text-danger"></i>
+                        <div className="d-flex flex-column gap-3">
+                          {/* Card Header: Folder Icon on left, Photo Count pill badge on right */}
+                          <div className="d-flex align-items-center justify-content-between">
+                            <div className="folder-icon-wrapper">
+                              <i className="bi bi-folder-fill" style={{ fontSize: '1.4rem' }}></i>
+                            </div>
+                            <span
+                              className="badge rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center text-nowrap"
+                              style={{
+                                fontSize: '0.75rem',
+                                background: 'rgba(239, 68, 68, 0.14)',
+                                color: '#f87171',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                gap: '5px'
+                              }}
+                            >
+                              <i className="bi bi-images" style={{ fontSize: '0.8rem' }}></i>
+                              <span>{group.logs.length} Photos</span>
+                            </span>
                           </div>
-                          <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1.5 fw-bold" style={{ fontSize: '0.74rem' }}>
-                            {group.logs.length} Photos
-                          </span>
+
+                          {/* Unknown Date / Label */}
+                          <div className="d-flex flex-column gap-1.5">
+                            <h5 className="fw-bold text-heading mb-0 text-truncate" title={group.date_str} style={{ fontSize: '1.1rem', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+                              {group.date_str}
+                            </h5>
+                            <div className="d-flex align-items-center mt-0.5">
+                              <span
+                                className="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.12)',
+                                  color: '#f87171',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  fontSize: '0.72rem',
+                                  gap: '6px'
+                                }}
+                              >
+                                <i className="bi bi-shield-exclamation text-danger flex-shrink-0" style={{ fontSize: '0.75rem' }}></i>
+                                <span>Unknown Captures</span>
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="my-auto py-2">
-                          <h5 className="fw-bold text-heading mb-0 text-truncate" style={{ fontSize: '1.15rem', lineHeight: 1.3 }}>{group.date_str}</h5>
-                        </div>
-                        <div className="pt-2 border-top border-white border-opacity-10">
-                          <p className="text-secondary small mb-0 d-flex align-items-center" style={{ fontSize: '0.74rem' }}>
-                            <i className="bi bi-shield-exclamation text-danger flex-shrink-0 me-2"></i>
-                            <span className="text-truncate">Unknown Captures</span>
-                          </p>
+
+                        {/* Card Footer */}
+                        <div className="pt-2.5 mt-3 border-top border-white border-opacity-10 d-flex align-items-center justify-content-between">
+                          <div className="text-secondary small mb-0 d-flex align-items-center gap-1.5" style={{ fontSize: '0.73rem', opacity: 0.85 }}>
+                            <i className="bi bi-clock-history text-danger flex-shrink-0" style={{ fontSize: '0.75rem' }}></i>
+                            <span className="text-truncate font-mono">Unrecognized</span>
+                          </div>
+                          <i className="bi bi-chevron-right text-secondary opacity-50" style={{ fontSize: '0.72rem' }}></i>
                         </div>
                       </div>
                     </div>
@@ -1272,7 +1327,7 @@ export default function DatasetPage() {
                   <button type="button" className="btn-close text-dynamic" onClick={() => setShowAddPersonModal(false)} aria-label="Close"></button>
                 </div>
                 <form onSubmit={handleAddPersonSubmit}>
-                  <div className="modal-body p-4">
+                  <div className="modal-body p-4" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
                     {/* Person Identification */}
                     <div className="mb-3">
                       <label className="form-label text-heading small text-uppercase fw-800 letter-spacing-wide mb-2">Person Identification</label>
@@ -1726,7 +1781,6 @@ export default function DatasetPage() {
                             </div>
                           )}
                         </div>
-                      )}
                     </div>
                   )}
                 </div>
