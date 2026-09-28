@@ -376,3 +376,292 @@ def generate_reports_excel(reports, title_suffix="FULL REPORT"):
     wb.save(output)
     output.seek(0)
     return output
+
+
+def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
+    """
+    Generate an executive PDF biometric audit report with actual captured face photos.
+    Uses ReportLab to build a formatted table with embedded images.
+    For KNOWN persons without a snapshot, falls back to their dataset profile photo.
+    """
+    import os
+    import io
+    from django.conf import settings
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, KeepTogether
+    )
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.utils import ImageReader
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(letter),
+        leftMargin=30,
+        rightMargin=30,
+        topMargin=30,
+        bottomMargin=30
+    )
+
+    styles = getSampleStyleSheet()
+
+    # ── Styles ──
+    title_style = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor('#0F172A'),
+        spaceAfter=2
+    )
+    subtitle_style = ParagraphStyle(
+        'DocSubtitle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=9,
+        leading=12,
+        textColor=colors.HexColor('#64748B'),
+        spaceAfter=14
+    )
+    cell_style = ParagraphStyle(
+        'CellText',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor('#1E293B')
+    )
+    cell_bold_style = ParagraphStyle(
+        'CellBold',
+        parent=cell_style,
+        fontName='Helvetica-Bold'
+    )
+    cell_center_style = ParagraphStyle(
+        'CellCenter',
+        parent=cell_style,
+        alignment=1  # CENTER
+    )
+    cell_center_bold = ParagraphStyle(
+        'CellCenterBold',
+        parent=cell_bold_style,
+        alignment=1
+    )
+    header_style = ParagraphStyle(
+        'HeaderCell',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=9,
+        leading=11,
+        textColor=colors.white,
+        alignment=1  # Centered
+    )
+
+    story = []
+    media_root = getattr(settings, 'MEDIA_ROOT', '')
+
+    # ── Title & Header ──
+    now_str = timezone.localtime(timezone.now()).strftime('%d %b %Y, %I:%M %p')
+    story.append(Paragraph(f"SMARTSIGHT — {title_suffix.upper()}", title_style))
+    story.append(Paragraph(
+        f"Generated on {now_str} &bull; Department Biometric Verification & Access Audit",
+        subtitle_style
+    ))
+
+    # ── Summary Statistics Bar ──
+    total_count = logs.count() if hasattr(logs, 'count') else len(logs)
+    known_count = sum(1 for l in logs if getattr(l, 'status', '') == 'KNOWN')
+    unknown_count = total_count - known_count
+    rate_str = f"{(known_count / total_count * 100):.1f}%" if total_count else "N/A"
+
+    stat_label = ParagraphStyle('StatLabel', parent=cell_style, fontSize=7.5, textColor=colors.HexColor('#64748B'))
+    stat_value = ParagraphStyle('StatValue', parent=cell_bold_style, fontSize=13, leading=16, alignment=1)
+
+    summary_data = [[
+        [Paragraph(f"{total_count}", stat_value), Paragraph("Total Scans", stat_label)],
+        [Paragraph(f"<font color='#15803D'>{known_count}</font>", stat_value), Paragraph("Authorized (Known)", stat_label)],
+        [Paragraph(f"<font color='#B91C1C'>{unknown_count}</font>", stat_value), Paragraph("Unauthorized", stat_label)],
+        [Paragraph(f"<font color='#0D6EFD'>{rate_str}</font>", stat_value), Paragraph("Verification Rate", stat_label)],
+    ]]
+    summary_table = Table(summary_data, colWidths=[185, 185, 185, 185])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F1F5F9')),
+        ('BOX', (0, 0), (-1, -1), 1.2, colors.HexColor('#CBD5E1')),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    story.append(summary_table)
+    story.append(Spacer(1, 16))
+
+    # ── Table Headers ──
+    table_data = [[
+        Paragraph("No.", header_style),
+        Paragraph("Photo", header_style),
+        Paragraph("Person Name", header_style),
+        Paragraph("Department / Role", header_style),
+        Paragraph("Access Status", header_style),
+        Paragraph("Confidence", header_style),
+        Paragraph("Date & Time", header_style),
+    ]]
+
+    # ── Helper: Resolve best available photo ──
+    def _resolve_photo(log):
+        """
+        Returns a RLImage flowable for the best available photo.
+        Priority: 1) log.image_path (captured snapshot)
+                  2) Person's first dataset image (for KNOWN)
+                  3) Dash placeholder
+        """
+        # Try captured snapshot first
+        img_path = getattr(log, 'image_path', None)
+        if img_path:
+            full_path = os.path.join(media_root, img_path) if not os.path.isabs(img_path) else img_path
+            if os.path.exists(full_path):
+                return _make_image(full_path)
+
+        # Fallback: For KNOWN persons, use their first dataset photo
+        if log.status == 'KNOWN' and log.person_name:
+            from app.models import Person, PersonImage
+            person_obj = Person.objects.filter(name__iexact=log.person_name).first()
+            if person_obj:
+                first_img = PersonImage.objects.filter(person=person_obj).first()
+                if first_img and first_img.image:
+                    dataset_path = os.path.join(media_root, str(first_img.image))
+                    if os.path.exists(dataset_path):
+                        return _make_image(dataset_path)
+
+        return Paragraph("—", cell_center_style)
+
+    def _make_image(full_path):
+        """Create a proportionally scaled RLImage from file path."""
+        try:
+            reader = ImageReader(full_path)
+            iw, ih = reader.getSize()
+            aspect = ih / float(iw)
+            # Target: 72px wide, max 80px tall for clear visibility
+            w = 72
+            h = w * aspect
+            if h > 80:
+                h = 80
+                w = h / aspect
+            return RLImage(full_path, width=w, height=h)
+        except Exception:
+            return Paragraph("[Error]", cell_center_style)
+
+    # ── Build table rows ──
+    # Pre-fetch all Person objects to avoid N+1 queries
+    from app.models import Person, PersonImage
+    person_names = set()
+    for log in logs:
+        if log.status == 'KNOWN' and log.person_name:
+            person_names.add(log.person_name.lower())
+
+    person_cache = {}
+    if person_names:
+        for p in Person.objects.filter(name__iregex=r'^(' + '|'.join(person_names) + r')$'):
+            person_cache[p.name.lower()] = p
+        # Pre-fetch first dataset images for all persons
+        person_ids = [p.id for p in person_cache.values()]
+        first_images = {}
+        for pi in PersonImage.objects.filter(person_id__in=person_ids).order_by('person_id', 'id'):
+            if pi.person_id not in first_images:
+                first_images[pi.person_id] = pi
+        # Attach to cache
+        for key, p in person_cache.items():
+            p._cached_first_image = first_images.get(p.id)
+
+    for idx, log in enumerate(logs):
+        # 1. Photo
+        img_flowable = _resolve_photo(log)
+
+        # 2. Department / Role
+        dept_role = "—"
+        person_name = getattr(log, 'person_name', None) or "Unknown / Stranger"
+        if log.status == 'KNOWN' and log.person_name:
+            person_obj = person_cache.get(log.person_name.lower())
+            if person_obj:
+                dept_parts = []
+                if person_obj.department:
+                    dept_parts.append(person_obj.department)
+                if person_obj.class_name:
+                    dept_parts.append(person_obj.class_name)
+                dept_role = " / ".join(dept_parts) if dept_parts else person_obj.get_category_display()
+
+        # 3. Status
+        if log.status == 'KNOWN':
+            status_html = "<font color='#15803D'><b>✓ ALLOWED</b></font>"
+        else:
+            status_html = "<font color='#B91C1C'><b>✗ DENIED</b></font>"
+
+        # 4. Confidence
+        conf_val = getattr(log, 'confidence', 0.0) or 0.0
+        conf_str = f"{conf_val * 100:.1f}%" if conf_val <= 1.0 else f"{conf_val:.1f}%"
+
+        # 5. Timestamp
+        time_str = timezone.localtime(log.timestamp).strftime('%d/%m/%Y\n%I:%M:%S %p') if log.timestamp else "—"
+
+        row = [
+            Paragraph(str(idx + 1), cell_center_style),
+            img_flowable,
+            Paragraph(person_name, cell_bold_style if log.status == 'KNOWN' else cell_style),
+            Paragraph(dept_role, cell_style),
+            Paragraph(status_html, cell_center_style),
+            Paragraph(conf_str, cell_center_style),
+            Paragraph(time_str, cell_style)
+        ]
+        table_data.append(row)
+
+    # ── Table Layout ──
+    #                      No.  Photo  Name   Dept   Status  Conf   DateTime
+    col_widths =          [28,  82,    150,   140,   100,    68,    152]
+    log_table = Table(table_data, colWidths=col_widths, repeatRows=1)
+
+    table_styles = [
+        # Header row
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        # Grid
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+        # Padding — extra for photo rows
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        # Photo column centered
+        ('ALIGN', (1, 1), (1, -1), 'CENTER'),
+        # No. column centered
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+    ]
+
+    # Alternating row colors
+    for r_idx in range(1, len(table_data)):
+        bg = colors.HexColor('#F8FAFC') if r_idx % 2 == 0 else colors.white
+        table_styles.append(('BACKGROUND', (0, r_idx), (-1, r_idx), bg))
+
+    log_table.setStyle(TableStyle(table_styles))
+    story.append(log_table)
+
+    # ── Footer ──
+    story.append(Spacer(1, 14))
+    footer_style = ParagraphStyle('Footer', parent=cell_style, fontSize=7, textColor=colors.HexColor('#94A3B8'), alignment=1)
+    story.append(Paragraph(
+        f"SmartSight Biometric Access Report &bull; {total_count} records &bull; Generated {now_str}",
+        footer_style
+    ))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+

@@ -3,6 +3,14 @@ import { createPortal } from 'react-dom';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
 
+const QUICK_EXPORT_RANGES = [
+  { id: 'daily', label: 'Daily Report', icon: 'bi-calendar-day', color: 'text-success' },
+  { id: 'weekly', label: 'Weekly Report', icon: 'bi-calendar-week', color: 'text-primary' },
+  { id: 'monthly', label: 'Monthly Report', icon: 'bi-calendar-month', color: 'text-warning' },
+  { id: 'yearly', label: 'Yearly Report', icon: 'bi-calendar-event', color: 'text-danger' },
+  { id: 'all', label: 'All Records', icon: 'bi-archive', color: 'text-info' },
+];
+
 export default function ReportsPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportScope, setExportScope] = useState('all'); // 'all', 'known', 'unknown'
@@ -27,6 +35,8 @@ export default function ReportsPage() {
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
 
   const [exportRange, setExportRange] = useState('daily');
+  const [exportFormat, setExportFormat] = useState('pdf'); // 'pdf' or 'excel'
+  const [showPdfDropdown, setShowPdfDropdown] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -41,6 +51,20 @@ export default function ReportsPage() {
   const exportBtnRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        !e.target.closest('#pdfDropdownContainer') &&
+        !e.target.closest('#exportDropdownContainer')
+      ) {
+        setShowPdfDropdown(false);
+        setShowExportDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
@@ -71,12 +95,14 @@ export default function ReportsPage() {
       setShowExportDropdown(false);
       setShowExportModal(false);
 
+      const isPdf = params.export_format === 'pdf';
       const response = await API.get('/reports/export/', {
         params,
         responseType: 'blob',
       });
 
-      let filename = `SmartSight_${params.time_range || 'Export'}_Report.xlsx`;
+      let ext = isPdf ? 'pdf' : 'xlsx';
+      let filename = `SmartSight_${params.time_range || 'Export'}_Report.${ext}`;
       const contentDisposition = response.headers && response.headers['content-disposition'];
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?([^"]+)"?/);
@@ -92,13 +118,14 @@ export default function ReportsPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      const docType = isPdf ? 'PDF Report (with photos)' : 'Excel Report';
       if (window.showToast) {
-        window.showToast('Report downloaded successfully.', 'success', 'SUCCESS');
+        window.showToast(`${docType} downloaded successfully.`, 'success', 'SUCCESS');
       } else if (showToast) {
-        showToast('Report downloaded successfully.', 'success');
+        showToast(`${docType} downloaded successfully.`, 'success');
       }
     } catch (err) {
-      console.error('Error downloading Excel report:', err);
+      console.error('Error downloading report:', err);
       if (window.showToast) {
         window.showToast('Could not download report file. Please verify server connection.', 'error', 'SYSTEM ALERT');
       } else if (showToast) {
@@ -107,13 +134,13 @@ export default function ReportsPage() {
     }
   };
 
-  const handleQuickExport = (range) => {
-    handleBackendExport({ time_range: range });
+  const handleQuickExport = (range, format = 'excel') => {
+    handleBackendExport({ time_range: range, export_format: format });
   };
 
   const handleExportDownload = (e) => {
     e.preventDefault();
-    const params = { time_range: exportRange, status_scope: exportScope };
+    const params = { time_range: exportRange, status_scope: exportScope, export_format: exportFormat };
     if (startDate && endDate) {
       params.start_date = startDate;
       params.end_date = endDate;
@@ -218,8 +245,9 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('#exportDropdownContainer')) {
+      if (!event.target.closest('#exportDropdownContainer') && !event.target.closest('#pdfDropdownContainer')) {
         setShowExportDropdown(false);
+        setShowPdfDropdown(false);
       }
     };
     document.addEventListener('click', handleClickOutside);
@@ -335,69 +363,129 @@ export default function ReportsPage() {
         </div>
 
         <div className="container page-hero-content" style={{ position: 'relative', zIndex: 1050 }}>
-          <div className="row align-items-center">
-            <div className="col-md-8 mb-3 mb-md-0 text-center text-md-start">
+          <div className="row align-items-center gy-3">
+            <div className="col-12 col-lg-6 text-center text-lg-start">
               <h1 className="reports-title mb-2">
                 Recognition <span className="accent">Reports</span>
               </h1>
-              <p className="page-hero-sub text-center text-md-start mb-0">
+              <p className="page-hero-sub text-center text-lg-start mb-0">
                 Dynamic frequent persons dashboard &amp; surveillance analytics.
               </p>
             </div>
-            <div className="col-md-4 text-center text-md-end">
-              <div className="d-inline-block position-relative" id="exportDropdownContainer" style={{ zIndex: 1051 }}>
-                <button
-                  ref={exportBtnRef}
-                  className="btn btn-excel px-4 py-2 rounded-pill d-inline-flex align-items-center justify-content-center gap-2"
-                  type="button"
-                  id="exportDropdown"
-                  onClick={openExportDropdown}
-                  aria-expanded={showExportDropdown}
-                >
-                  <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#ffffff' }}></i>
-                  <span style={{ color: '#ffffff', fontWeight: 700 }}>Export Reports</span>
-                  <i className={`bi bi-chevron-down ms-1 ${showExportDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.8rem', transition: 'transform 0.25s ease', color: '#ffffff' }}></i>
-                </button>
+            <div className="col-12 col-lg-6 text-center text-lg-end d-flex align-items-center justify-content-center justify-content-lg-end gap-2 flex-wrap">
+                {/* Red PDF Export Dropdown Button */}
+                <div className="d-inline-block position-relative" id="pdfDropdownContainer" style={{ zIndex: 1052 }}>
+                  <button
+                    className="btn btn-danger px-3.5 py-2 rounded-pill d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
+                    type="button"
+                    onClick={() => {
+                      setShowPdfDropdown(!showPdfDropdown);
+                      setShowExportDropdown(false);
+                    }}
+                    title="Export PDF Reports"
+                    style={{ background: '#dc3545', border: 'none' }}
+                    aria-expanded={showPdfDropdown}
+                  >
+                    <i className="bi bi-file-earmark-pdf-fill fs-5" style={{ color: '#ffffff' }}></i>
+                    <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.85rem' }}>PDF Reports</span>
+                    <i className={`bi bi-chevron-down ms-1 ${showPdfDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.8rem', transition: 'transform 0.25s ease', color: '#ffffff' }}></i>
+                  </button>
 
-                {showExportDropdown && (
-                  <ul
-                    className="glass-dropdown-menu export-dropdown-menu shadow-lg text-start"
-                    aria-labelledby="exportDropdown">
-                    <li>
-                      <a className="dropdown-item export-item-daily py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('daily'); }}>
-                        <i className="bi bi-calendar-day me-2 text-success"></i> Daily Report
-                      </a>
-                    </li>
-                    <li>
-                      <a className="dropdown-item export-item-weekly py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('weekly'); }}>
-                        <i className="bi bi-calendar-week me-2 text-primary"></i> Weekly Report
-                      </a>
-                    </li>
-                    <li>
-                      <a className="dropdown-item export-item-monthly py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('monthly'); }}>
-                        <i className="bi bi-calendar-month me-2 text-warning"></i> Monthly Report
-                      </a>
-                    </li>
-                    <li>
-                      <a className="dropdown-item export-item-yearly py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('yearly'); }}>
-                        <i className="bi bi-calendar-event me-2 text-danger"></i> Yearly Report
-                      </a>
-                    </li>
-                    <li>
-                      <a className="dropdown-item export-item-all py-2 px-3 rounded-3" href="#" onClick={(e) => { e.preventDefault(); handleQuickExport('all'); }}>
-                        <i className="bi bi-archive me-2 text-info"></i> All Records
-                      </a>
-                    </li>
-                    <li><hr className="dropdown-divider opacity-25 my-1" style={{ borderColor: 'var(--border-color)' }} /></li>
-                    <li>
-                      <a className="dropdown-item export-item-custom py-2 px-3 rounded-3 fw-bold" href="#" onClick={(e) => { e.preventDefault(); setShowExportDropdown(false); setShowExportModal(true); }}>
-                        <i className="bi bi-sliders me-2 text-warning"></i> Custom
-                      </a>
-                    </li>
-                  </ul>
-                )}
-              </div>
+                  {showPdfDropdown && (
+                    <ul className="glass-dropdown-menu export-dropdown-menu shadow-lg text-start" style={{ right: 0, left: 'auto' }}>
+                      {QUICK_EXPORT_RANGES.map(opt => (
+                        <li key={opt.id}>
+                          <button
+                            type="button"
+                            className={`dropdown-item export-item-${opt.id} py-2 px-3 rounded-3 d-flex align-items-center w-100 text-start border-0 bg-transparent`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowPdfDropdown(false);
+                              handleQuickExport(opt.id, 'pdf');
+                            }}
+                          >
+                            <i className={`bi ${opt.icon} me-2 ${opt.color}`}></i>
+                            <span>{opt.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                      <li><hr className="dropdown-divider opacity-25 my-1" style={{ borderColor: 'var(--border-color)' }} /></li>
+                      <li>
+                        <button
+                          type="button"
+                          className="dropdown-item export-item-custom py-2 px-3 rounded-3 fw-bold d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowPdfDropdown(false);
+                            setExportFormat('pdf');
+                            setShowExportModal(true);
+                          }}
+                        >
+                          <i className="bi bi-sliders me-2 text-warning"></i>
+                          <span>Custom...</span>
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+
+                {/* Green Excel Export Dropdown Button */}
+                <div className="d-inline-block position-relative" id="exportDropdownContainer" style={{ zIndex: 1051 }}>
+                  <button
+                    className="btn btn-success px-3.5 py-2 rounded-pill d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
+                    type="button"
+                    onClick={() => {
+                      setShowExportDropdown(!showExportDropdown);
+                      setShowPdfDropdown(false);
+                    }}
+                    title="Export Excel Reports"
+                    style={{ background: '#198754', border: 'none' }}
+                    aria-expanded={showExportDropdown}
+                  >
+                    <i className="bi bi-file-earmark-excel-fill fs-5" style={{ color: '#ffffff' }}></i>
+                    <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.85rem' }}>Excel Reports</span>
+                    <i className={`bi bi-chevron-down ms-1 ${showExportDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.8rem', transition: 'transform 0.25s ease', color: '#ffffff' }}></i>
+                  </button>
+
+                  {showExportDropdown && (
+                    <ul className="glass-dropdown-menu export-dropdown-menu shadow-lg text-start" style={{ right: 0, left: 'auto' }}>
+                      {QUICK_EXPORT_RANGES.map(opt => (
+                        <li key={opt.id}>
+                          <button
+                            type="button"
+                            className={`dropdown-item export-item-${opt.id} py-2 px-3 rounded-3 d-flex align-items-center w-100 text-start border-0 bg-transparent`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowExportDropdown(false);
+                              handleQuickExport(opt.id, 'excel');
+                            }}
+                          >
+                            <i className={`bi ${opt.icon} me-2 ${opt.color}`}></i>
+                            <span>{opt.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                      <li><hr className="dropdown-divider opacity-25 my-1" style={{ borderColor: 'var(--border-color)' }} /></li>
+                      <li>
+                        <button
+                          type="button"
+                          className="dropdown-item export-item-custom py-2 px-3 rounded-3 fw-bold d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowExportDropdown(false);
+                            setExportFormat('excel');
+                            setShowExportModal(true);
+                          }}
+                        >
+                          <i className="bi bi-sliders me-2 text-warning"></i>
+                          <span>Custom...</span>
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -1596,18 +1684,20 @@ export default function ReportsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{
                       width: '40px', height: '40px', borderRadius: '10px',
-                      background: 'rgba(5,150,105,0.12)', border: '1px solid rgba(5,150,105,0.2)',
+                      background: exportFormat === 'pdf' ? 'rgba(239,68,68,0.15)' : 'rgba(5,150,105,0.12)',
+                      border: exportFormat === 'pdf' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(5,150,105,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#059669', fontSize: '1.1rem', flexShrink: 0
+                      color: exportFormat === 'pdf' ? '#ef4444' : '#059669',
+                      fontSize: '1.1rem', flexShrink: 0
                     }}>
-                      <i className="bi bi-file-earmark-spreadsheet-fill"></i>
+                      <i className={`bi ${exportFormat === 'pdf' ? 'bi-file-earmark-pdf-fill' : 'bi-file-earmark-spreadsheet-fill'}`}></i>
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.2, color: 'var(--text-heading, #f0f6fc)' }}>
-                        Export Report
+                        Export {exportFormat === 'pdf' ? 'PDF (With Photos)' : 'Excel Spreadsheet'}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #8b949e)', marginTop: '2px' }}>
-                        Choose filters and download attendance data
+                        Choose filters, format, and download report
                       </div>
                     </div>
                   </div>
@@ -1629,6 +1719,60 @@ export default function ReportsPage() {
                 {/* ── Body ── */}
                 <form onSubmit={handleExportDownload} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto' }}>
                   <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                    {/* Export Format (PDF with photos vs Excel) */}
+                    <div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary, #8b949e)', marginBottom: '10px' }}>
+                        Export Format
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setExportFormat('pdf')}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            border: exportFormat === 'pdf' ? '2px solid #ef4444' : '1.5px solid var(--border-color, rgba(255,255,255,0.1))',
+                            background: exportFormat === 'pdf' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.02)',
+                            color: exportFormat === 'pdf' ? '#ef4444' : 'var(--text-secondary, #8b949e)',
+                            fontSize: '0.84rem',
+                            fontWeight: exportFormat === 'pdf' ? 700 : 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <i className="bi bi-file-earmark-pdf-fill fs-6"></i>
+                          <span>PDF (Photos)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setExportFormat('excel')}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            border: exportFormat === 'excel' ? '2px solid #059669' : '1.5px solid var(--border-color, rgba(255,255,255,0.1))',
+                            background: exportFormat === 'excel' ? 'rgba(5,150,105,0.15)' : 'rgba(255,255,255,0.02)',
+                            color: exportFormat === 'excel' ? '#059669' : 'var(--text-secondary, #8b949e)',
+                            fontSize: '0.84rem',
+                            fontWeight: exportFormat === 'excel' ? 700 : 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <i className="bi bi-file-earmark-spreadsheet-fill fs-6"></i>
+                          <span>Excel (.xlsx)</span>
+                        </button>
+                      </div>
+                    </div>
 
                     {/* Time Range */}
                     <div>

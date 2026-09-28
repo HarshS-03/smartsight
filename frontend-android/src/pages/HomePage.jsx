@@ -56,19 +56,20 @@ export default function HomePage({ setActivePage }) {
               </h1>
 
               <p className="hero-sub mb-4 mb-md-5 mx-auto" data-reveal="true" data-reveal-delay="100">
-                Harnessing YOLO object detection and <span className="text-nowrap">state-of-the-art</span> Computer Vision to automate tracking, detect faces, and ensure smarter monitoring in real-time.
+                Department Biometric Verification &amp; Access Control. Instant face recognition gate with photo-embedded audit reports.
               </p>
 
               <div className="hero-cta-group mb-5 justify-content-center" data-reveal="true" data-reveal-delay="200">
                 <a href="#" onClick={(e) => { e.preventDefault(); setActivePage('detection'); }} className="btn-hero-primary">
-                  <i className="bi bi-play-fill"></i>
-                  Start Detection
+                  <i className="bi bi-camera-fill"></i>
+                  Scan &amp; Verify Person
                 </a>
-                <a href="#" onClick={(e) => { e.preventDefault(); setActivePage('about'); }} className="btn-hero-outline">
-                  Explore Project
-                  <i className="bi bi-arrow-right"></i>
+                <a href="#" onClick={(e) => { e.preventDefault(); setActivePage('reports'); }} className="btn-hero-outline">
+                  <i className="bi bi-file-earmark-pdf-fill"></i>
+                  View Reports &amp; PDF
                 </a>
               </div>
+
 
               <div className="hero-stats justify-content-center" data-reveal="true" data-reveal-delay="300">
                 <div className="stat-item">

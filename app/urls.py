@@ -105,6 +105,7 @@ urlpatterns = [
     path('auth/face/feed/', views.face_login_feed, name='api_face_login_feed'),
     path('auth/face/check/', views.face_login_check, name='api_face_login_check'),
     path('auth/face/verify/', views.face_verify_frame, name='api_face_verify_frame'),
+    path('biometric/verify/', views.biometric_verify_frame, name='api_biometric_verify_frame'),
 
     # Dataset & File Management API Endpoints
     path('dataset/upload/', views.DatasetUploadView.as_view(), name='dataset_upload'),

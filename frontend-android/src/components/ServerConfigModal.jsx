@@ -102,22 +102,29 @@ export default function ServerConfigModal({ show, onClose }) {
       />
       
       <div 
-        className="modal fade show d-block" 
+        className="modal fade show d-flex align-items-center justify-content-center" 
         tabIndex="-1" 
         role="dialog"
         aria-modal="true"
         style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
           zIndex: 10550,
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
-          padding: '12px 0'
+          padding: '16px'
         }} 
         onClick={onClose}
       >
         <div 
-          className="modal-dialog modal-dialog-centered px-3 my-auto" 
+          className="w-100 my-auto" 
           onClick={e => e.stopPropagation()} 
-          style={{ maxWidth: '440px', width: '100%', margin: 'auto' }}
+          style={{ maxWidth: '440px' }}
         >
           <div 
             className="modal-content overflow-auto" 

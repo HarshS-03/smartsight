@@ -287,8 +287,8 @@ export default function App() {
         setUser={setUser}
       />
 
-      <main className="flex-grow-1 overflow-x-hidden">
-        <div key={activePage} className="page-transition-container">
+      <main className="flex-grow-1 overflow-x-hidden d-flex flex-column">
+        <div key={activePage} className="page-transition-container d-flex flex-column flex-grow-1">
           <Routes>
             <Route path="/" element={<HomePage setActivePage={setActivePage} />} />
             <Route path="/home" element={<HomePage setActivePage={setActivePage} />} />

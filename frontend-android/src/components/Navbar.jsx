@@ -700,14 +700,8 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               />
 
               {[
-                { id: 'home', label: 'Home' },
-                { id: 'detection', label: 'Detection' },
-                ...(isStaff ? [
-                  { id: 'cameras', label: 'Cameras' },
-                  { id: 'dataset', label: 'Dataset' },
-                  { id: 'reports', label: 'Reports' },
-                  { id: 'notifications', label: 'Alerts' }
-                ] : []),
+                { id: 'detection', label: 'Scan & Detect' },
+                { id: 'reports', label: 'Reports' },
                 { id: 'about', label: 'About Us' }
               ].map((item) => {
                 const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
@@ -722,32 +716,8 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                       className={`nav-link nav-link-liquid px-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
                       href="#"
                       onClick={(e) => { e.preventDefault(); setActivePage(item.id); closeMobileNav(); }}
-                      style={item.id === 'notifications' && unreadCount > 0 ? { paddingRight: '16px' } : {}}
                     >
                       <span>{item.label}</span>
-                      {item.id === 'notifications' && unreadCount > 0 && (
-                        <span
-                          className="position-absolute badge rounded-circle bg-danger text-white border border-2 border-white"
-                          style={{
-                            top: '-3px',
-                            right: '0px',
-                            width: '20px',
-                            height: '20px',
-                            minWidth: '20px',
-                            padding: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.65rem',
-                            fontWeight: '800',
-                            lineHeight: '1',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                            zIndex: 10
-                          }}
-                        >
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
                     </a>
                   </li>
                 );
@@ -757,15 +727,8 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             {/* Minimal Mobile Navigation Links (< 992px) */}
             <ul className="navbar-nav d-lg-none my-0.5 p-0">
               {[
-                { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
-                { id: 'detection', label: 'Detection', icon: 'bi-eye-fill' },
-                ...(isStaff ? [
-                  { id: 'cameras', label: 'Cameras', icon: 'bi-camera-video-fill' },
-                  { id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' },
-                  { id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' },
-                  { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' },
-                  { id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }
-                ] : []),
+                { id: 'detection', label: 'Scan & Detect', icon: 'bi-qr-code-scan' },
+                { id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' },
                 { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
               ].map(item => (
                 <li key={item.id} className="nav-item">
@@ -780,27 +743,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                   >
                     <i className={`bi ${item.icon} mobile-icon`}></i>
                     <span className="flex-grow-1">{item.label}</span>
-                    {item.id === 'notifications' && unreadCount > 0 && (
-                      <span className="badge rounded-circle bg-danger text-white" style={{
-                        fontSize: '0.65rem',
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        padding: 0,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        lineHeight: '1',
-                        fontWeight: '800',
-                        flexShrink: 0
-                      }}>
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
                   </a>
                 </li>
               ))}
             </ul>
+
 
               {/* Mobile Footer with Theme Toggle (< 992px) */}
               <div className="d-lg-none pt-2 mt-1 border-top border-secondary border-opacity-25">

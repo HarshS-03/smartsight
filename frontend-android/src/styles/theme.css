@@ -148,6 +148,7 @@ body::before {
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 
   /* Backgrounds */
+  --bg-main: #0b0f19;
   --bg-body: #0b0f19;
   --bg-surface: #0f172a;
   --bg-surface-solid: #0f172a;
@@ -193,6 +194,7 @@ body::before {
   --color-primary: #2563eb !important;
   --color-primary-hover: #1d4ed8 !important;
   --color-primary-active: #1e40af !important;
+  --bg-main: #f8fafc;
   --bg-body: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-solid: #ffffff;
@@ -4047,6 +4049,46 @@ p,
   cursor: pointer;
 }
 
+.btn-pdf {
+  background: #dc2626 !important;
+  background-color: #dc2626 !important;
+  background-image: none !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  letter-spacing: .5px;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease !important;
+}
+
+.btn-pdf i,
+.btn-pdf span {
+  color: #ffffff !important;
+}
+
+.btn-pdf:hover {
+  background: #b91c1c !important;
+  background-color: #b91c1c !important;
+  background-image: none !important;
+  opacity: 0.95 !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.btn-pdf:active {
+  background: #991b1b !important;
+  background-color: #991b1b !important;
+  opacity: 0.85 !important;
+  transform: translateY(1px);
+}
+
 .btn-excel i,
 .btn-excel span {
   color: #ffffff !important;
@@ -5080,9 +5122,14 @@ detection-hero-bg,
 
 .modal-dialog {
   max-height: calc(100vh - 2.5rem) !important;
-  margin: 1.25rem auto !important;
+  margin: 1.25rem auto;
   display: flex !important;
   flex-direction: column !important;
+}
+
+.modal-dialog.modal-dialog-centered,
+.modal.d-flex .modal-dialog {
+  margin: auto !important;
 }
 
 .modal-content {
@@ -10077,3 +10124,73 @@ detection-hero-bg,
   background: rgba(185, 28, 28, 0.06) !important;
   color: #991b1b !important;
 }
+
+/* ── Export Dropdown Menus ── */
+.export-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  min-width: 210px !important;
+  z-index: 99999 !important;
+  background: var(--bg-surface-solid, #0f172a) !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 16px !important;
+  padding: 8px !important;
+  margin: 0 !important;
+  list-style: none !important;
+}
+
+[data-bs-theme="light"] .export-dropdown-menu {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12) !important;
+}
+
+.export-dropdown-menu .dropdown-item {
+  color: var(--text-heading, #ffffff) !important;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+
+[data-bs-theme="light"] .export-dropdown-menu .dropdown-item {
+  color: #1e293b !important;
+}
+
+.export-dropdown-menu .export-item-daily:hover,
+.export-dropdown-menu .export-item-daily:focus {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
+}
+
+.export-dropdown-menu .export-item-weekly:hover,
+.export-dropdown-menu .export-item-weekly:focus {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #3b82f6 !important;
+}
+
+.export-dropdown-menu .export-item-monthly:hover,
+.export-dropdown-menu .export-item-monthly:focus {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+}
+
+.export-dropdown-menu .export-item-yearly:hover,
+.export-dropdown-menu .export-item-yearly:focus {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+}
+
+.export-dropdown-menu .export-item-all:hover,
+.export-dropdown-menu .export-item-all:focus {
+  background: rgba(6, 182, 212, 0.15) !important;
+  color: #06b6d4 !important;
+}
+
+.export-dropdown-menu .export-item-custom:hover,
+.export-dropdown-menu .export-item-custom:focus {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+}
+

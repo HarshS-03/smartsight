@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models.functions import TruncDate
 from django.db.models import Count, Min, Max
 from openpyxl import Workbook
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -37,7 +37,12 @@ from app.utils.video_processor import (
     _face_login_verified
 )
 from app.utils.alerts import send_alerts
-from app.utils.reports import _fill_excel_worksheet, _fill_summary_sheet, _fill_camera_analytics_sheet
+from app.utils.reports import (
+    _fill_excel_worksheet,
+    _fill_summary_sheet,
+    _fill_camera_analytics_sheet,
+    generate_reports_pdf
+)
 
 
 # ==============================================================================
@@ -270,9 +275,19 @@ class AssignClassifiedGroupAPIView(APIView):
 # REST FRAMEWORK RECOGNITION LOGS & UNKNOWN CAPTURES
 # ==============================================================================
 
-class RecognitionLogViewSet(viewsets.ReadOnlyModelViewSet):
+class RecognitionLogViewSet(mixins.DestroyModelMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = RecognitionLogSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def perform_destroy(self, instance):
+        if instance.image_path:
+            full_path = os.path.join(settings.MEDIA_ROOT, instance.image_path)
+            if os.path.isfile(full_path):
+                try:
+                    os.remove(full_path)
+                except Exception as e:
+                    print(f"Error deleting log image file: {e}")
+        instance.delete()
 
     def get_queryset(self):
         queryset = RecognitionLog.objects.all().order_by('-timestamp')
@@ -620,6 +635,125 @@ def face_verify_frame(request):
         return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def biometric_verify_frame(request):
+    """
+    Department Biometric Access Verification Endpoint:
+    Receives single frame from mobile camera, detects & recognizes face (ArcFace/YOLO),
+    saves captured snapshot image, creates RecognitionLog, sends push alert if stranger,
+    and returns ALLOWED (with Name, Department, Role) or DENIED (Stranger).
+    """
+    try:
+        img_data = request.data.get('image', '')
+        if not img_data:
+            return Response({'status': 'error', 'message': 'No image frame provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if ',' in img_data:
+            img_data = img_data.split(',')[1]
+
+        img_bytes = base64.b64decode(img_data)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv.imdecode(nparr, cv.IMREAD_COLOR)
+
+        if frame is None:
+            return Response({'status': 'error', 'message': 'Invalid image format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Save capture snapshot to disk
+        captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
+        os.makedirs(captures_dir, exist_ok=True)
+        unique_name = f"scan_{uuid.uuid4().hex[:12]}_{int(datetime.now().timestamp())}.jpg"
+        abs_img_path = os.path.join(captures_dir, unique_name)
+        rel_img_path = f"captures/{unique_name}"
+        cv.imwrite(abs_img_path, frame)
+
+        # 2. Run Face Recognition
+        from app.utils.embedding_engine import detect_and_recognize
+        threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.50)
+        detections = detect_and_recognize(frame, threshold=threshold, max_faces=1)
+
+        if not detections:
+            return Response({
+                'status': 'NO_FACE',
+                'decision': 'RETRY',
+                'message': 'No face detected in camera. Please align face clearly.',
+                'image_url': f"/media/{rel_img_path}",
+                'faces': 0
+            })
+
+        best = detections[0]
+        recog_name = best.get('person_name')
+        similarity = float(best.get('recognition_similarity', 0.0))
+        det_conf = float(best.get('detection_confidence', 0.0))
+
+        if recog_name:
+            # ── ALLOWED / KNOWN PERSON ──
+            person_obj = Person.objects.filter(name__iexact=recog_name).first()
+            dept_name = person_obj.department if person_obj and person_obj.department else "General Department"
+            role_title = person_obj.class_name if (person_obj and person_obj.class_name) else (person_obj.get_category_display() if person_obj else "Authorized Person")
+
+            # Save RecognitionLog
+            log = RecognitionLog.objects.create(
+                person_name=recog_name,
+                camera_name="Mobile Biometric Scanner",
+                confidence=similarity,
+                detection_confidence=det_conf,
+                recognition_similarity=similarity,
+                status='KNOWN',
+                image_path=rel_img_path
+            )
+
+            return Response({
+                'status': 'ALLOWED',
+                'decision': 'GRANTED',
+                'person_name': recog_name,
+                'department': dept_name,
+                'role': role_title,
+                'confidence': round(similarity * 100, 1),
+                'image_url': f"/media/{rel_img_path}",
+                'log_id': log.id,
+                'timestamp': log.timestamp.isoformat()
+            })
+        else:
+            # ── DENIED / UNREGISTERED STRANGER ──
+            log = RecognitionLog.objects.create(
+                person_name=None,
+                camera_name="Mobile Biometric Scanner",
+                confidence=det_conf,
+                detection_confidence=det_conf,
+                recognition_similarity=similarity,
+                status='UNKNOWN',
+                image_path=rel_img_path
+            )
+
+            # Trigger intrusion alert & notification asynchronously
+            try:
+                from app.services.notification_service import dispatch_notification
+                dispatch_notification(
+                    title="Access Denied: Unregistered Person",
+                    message="Unauthorized person attempted entry at mobile biometric scanner.",
+                    image_url=f"/media/{rel_img_path}"
+                )
+            except Exception as notif_err:
+                print("[Biometric Verify] Alert dispatch failed:", notif_err)
+
+            return Response({
+                'status': 'DENIED',
+                'decision': 'REJECTED',
+                'person_name': 'Unregistered Person / Stranger',
+                'department': 'Unauthorized',
+                'role': 'Access Denied',
+                'confidence': round(det_conf * 100, 1),
+                'image_url': f"/media/{rel_img_path}",
+                'log_id': log.id,
+                'timestamp': log.timestamp.isoformat()
+            })
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def face_login_feed(request):
@@ -750,6 +884,16 @@ class ReportsExportView(APIView):
             else:
                 logs = logs.filter(person_name__iexact=person_filter)
 
+        # Format check: Excel (.xlsx) vs PDF (.pdf) with photos
+        export_format = request.GET.get('export_format', 'excel').lower()
+        if export_format == 'pdf':
+            pdf_buffer = generate_reports_pdf(logs, title_suffix=title_suffix)
+            filename = f"SmartSight_{time_range}_Access_Report_{now.strftime('%Y%m%d_%H%M%S')}.pdf"
+            response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+            return response
+
         mapped_records = []
         for log in logs:
             mapped_records.append({
@@ -789,6 +933,7 @@ class ReportsExportView(APIView):
 
         wb.save(response)
         return response
+
 
 
 class ReportsStatsAPIView(APIView):
