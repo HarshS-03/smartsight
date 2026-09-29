@@ -76,6 +76,24 @@ export default function DetectionPage() {
     startCamera(nextMode);
   };
 
+  const [isFlashOn, setIsFlashOn] = useState(false);
+
+  const toggleFlash = async () => {
+    if (!mediaStreamRef.current) return;
+    const track = mediaStreamRef.current.getVideoTracks()[0];
+    if (track) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: !isFlashOn }]
+        });
+        setIsFlashOn(!isFlashOn);
+      } catch (err) {
+        console.error('Failed to toggle flash', err);
+        if (window.showToast) window.showToast('Flashlight not supported on this device/camera.', 'warning', 'NOTICE');
+      }
+    }
+  };
+
   useEffect(() => {
     startCamera(facingMode);
     return () => {
@@ -257,7 +275,7 @@ export default function DetectionPage() {
         </div>
 
         {/* Primary Action Button: Scan & Verify */}
-        <div className="d-flex justify-content-center mb-3">
+        <div className="d-flex justify-content-center mb-2">
           <button
             type="button"
             className="btn btn-primary py-2.5 px-4 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center justify-content-center gap-2"
@@ -283,6 +301,30 @@ export default function DetectionPage() {
                 <span>Scan &amp; Verify Person</span>
               </>
             )}
+          </button>
+        </div>
+
+        {/* Camera Controls */}
+        <div className="d-flex justify-content-center gap-2 mb-3">
+          <button
+            type="button"
+            className={`btn ${isCameraActive ? 'btn-outline-danger' : 'btn-outline-success'} rounded-pill d-inline-flex align-items-center justify-content-center gap-1`}
+            onClick={() => isCameraActive ? stopCamera() : startCamera(facingMode)}
+            style={{ fontSize: '0.85rem', width: '135px' }}
+          >
+            <i className={`bi ${isCameraActive ? 'bi-stop-circle-fill' : 'bi-play-circle-fill'}`}></i>
+            <span>{isCameraActive ? 'Stop Camera' : 'Start Camera'}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`btn ${isFlashOn ? 'btn-warning text-dark' : 'btn-outline-warning'} rounded-pill d-inline-flex align-items-center justify-content-center gap-1`}
+            onClick={toggleFlash}
+            disabled={!isCameraActive || facingMode === 'user'}
+            style={{ fontSize: '0.85rem', width: '135px' }}
+          >
+            <i className={`bi ${isFlashOn ? 'bi-lightning-fill' : 'bi-lightning'}`}></i>
+            <span>Flashlight</span>
           </button>
         </div>
 

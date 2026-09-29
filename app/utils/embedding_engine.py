@@ -26,25 +26,8 @@ def _get_face_detector(model_name=None):
     """Lazy-load YOLO Face detector."""
     global _face_detector_models
     
-    # Resolve the physical model path
-    if model_name in ['yolo26n_face_onnx', 'yolo26n-face.onnx']:
-        model_path = 'app/models/yolo26n-face.onnx'
-    elif model_name in ['yolo26n_face_pt', 'yolo26n-face.pt']:
-        model_path = 'app/models/yolo26n-face.pt'
-    elif model_name in ['yolov8n_face_onnx', 'yolov8n-face.onnx', 'face']:
-        model_path = 'app/models/yolov8n-face.onnx'
-    elif model_name in ['yolov8n_face_pt', 'yolov8n-face.pt']:
-        model_path = 'app/models/yolov8n-face.pt'
-    else:
-        model_path = getattr(settings, 'FACE_DETECTION_MODEL', 'app/models/yolo26n-face.onnx')
-        
-    if not os.path.exists(model_path):
-        if os.path.exists('yolo26n-face.onnx'):
-            model_path = 'yolo26n-face.onnx'
-        elif os.path.exists('yolov8n-face.onnx'):
-            model_path = 'yolov8n-face.onnx'
-        else:
-            model_path = 'app/models/nano/weights/best.onnx'
+    # We only have yolo26n-face.pt left
+    model_path = 'app/models/yolo26n-face.pt'
             
     cache_key = model_path
     
@@ -60,26 +43,8 @@ def _get_face_detector(model_name=None):
                 try:
                     _face_detector_models[cache_key] = YOLO(model_path, task='detect', verbose=False)
                 except Exception as load_err:
-                    logger.warning(f"[EmbeddingEngine] Failed to load detector {model_path}: {load_err}. Falling back to stable models...")
-                    fallback_paths = [
-                        model_path.replace('.onnx', '.pt'),
-                        'app/models/yolo26n-face.pt',
-                        'app/models/yolov8n-face.onnx',
-                        'app/models/yolov8n-face.pt',
-                        'app/models/nano/weights/best.onnx',
-                    ]
-                    loaded = False
-                    for fb in fallback_paths:
-                        if os.path.exists(fb):
-                            try:
-                                _face_detector_models[cache_key] = YOLO(fb, task='detect', verbose=False)
-                                logger.info(f"[EmbeddingEngine] Successfully loaded fallback detector: {fb}")
-                                loaded = True
-                                break
-                            except Exception:
-                                continue
-                    if not loaded:
-                        raise load_err
+                    logger.warning(f"[EmbeddingEngine] Failed to load detector {model_path}: {load_err}")
+                    raise load_err
     return _face_detector_models[cache_key]
 
 

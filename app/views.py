@@ -659,18 +659,39 @@ def biometric_verify_frame(request):
         if frame is None:
             return Response({'status': 'error', 'message': 'Invalid image format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Save capture snapshot to disk
-        captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
-        os.makedirs(captures_dir, exist_ok=True)
-        unique_name = f"scan_{uuid.uuid4().hex[:12]}_{int(datetime.now().timestamp())}.jpg"
-        abs_img_path = os.path.join(captures_dir, unique_name)
-        rel_img_path = f"captures/{unique_name}"
-        cv.imwrite(abs_img_path, frame)
-
-        # 2. Run Face Recognition
+        # 1. Run Face Recognition
         from app.utils.embedding_engine import detect_and_recognize
         threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.50)
         detections = detect_and_recognize(frame, threshold=threshold, max_faces=1)
+
+        # 2. Determine name for the file
+        now = datetime.now()
+        date_time_str = now.strftime("%d-%m-%y_%H-%M-%S")
+        recog_name = None
+        similarity = 0.0
+        det_conf = 0.0
+
+        if not detections:
+            prefix = "noface"
+        else:
+            best = detections[0]
+            recog_name = best.get('person_name')
+            similarity = float(best.get('recognition_similarity', 0.0))
+            det_conf = float(best.get('detection_confidence', 0.0))
+            
+            if recog_name:
+                safe_name = "".join([c if c.isalnum() else "_" for c in recog_name])
+                prefix = safe_name
+            else:
+                prefix = "unknown"
+
+        # 3. Save capture snapshot to disk
+        captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
+        os.makedirs(captures_dir, exist_ok=True)
+        unique_name = f"{prefix}_{date_time_str}.jpg"
+        abs_img_path = os.path.join(captures_dir, unique_name)
+        rel_img_path = f"captures/{unique_name}"
+        cv.imwrite(abs_img_path, frame)
 
         if not detections:
             return Response({
@@ -680,11 +701,6 @@ def biometric_verify_frame(request):
                 'image_url': f"/media/{rel_img_path}",
                 'faces': 0
             })
-
-        best = detections[0]
-        recog_name = best.get('person_name')
-        similarity = float(best.get('recognition_similarity', 0.0))
-        det_conf = float(best.get('detection_confidence', 0.0))
 
         if recog_name:
             # ── ALLOWED / KNOWN PERSON ──

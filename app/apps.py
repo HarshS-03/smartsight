@@ -15,28 +15,7 @@ class AppConfig(AppConfig):
             if cmd in ['makemigrations', 'migrate', 'collectstatic', 'createsuperuser', 'shell', 'test', 'check']:
                 return
 
-        # Only run AI pre-warm when explicitly running the development/production server
-        is_runserver = any('runserver' in arg for arg in sys.argv)
-        is_reloader_child = os.environ.get('RUN_MAIN') == 'true'
-        if not is_runserver or not is_reloader_child:
-            return
-
-        # Pre-warm AI Models and Gallery SYNCHRONOUSLY at server boot
-        try:
-            import numpy as np
-            from app.utils.embedding_engine import _get_face_detector, _get_arcface, get_gallery, embed_face_crop
-
-            print("[AI Pre-Warm] Initializing YOLOv8-Face ONNX detector & ArcFace recognizer...")
-            detector = _get_face_detector()
-            dummy_img = np.zeros((480, 640, 3), dtype=np.uint8)
-            detector(dummy_img, conf=0.45, verbose=False, imgsz=640)
-
-            dummy_crop = np.zeros((112, 112, 3), dtype=np.uint8)
-            embed_face_crop(dummy_crop)
-
-            gallery = get_gallery()
-            gallery.ensure_loaded()
-            print(f"[AI Pre-Warm] Ready! YOLO Detection + ArcFace Recognition active. Gallery stats: {gallery.stats()}")
-        except Exception as e:
-            print(f"[AI Pre-Warm] Warning during initialization: {e}")
+        # We skip AI Pre-Warm here so the server boots up instantly.
+        # Models will be lazy-loaded on the first API request instead.
+        pass
 

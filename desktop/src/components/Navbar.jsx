@@ -734,11 +734,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             />
 
             {[
-              { id: 'detection', label: 'Live Entry Monitor' },
-              { id: 'dataset', label: 'Dataset (Faces)' },
-              { id: 'reports', label: 'Reports & PDF' },
+              { id: 'detection', label: 'Scan Results' },
+              { id: 'dataset', label: 'Dataset' },
+              { id: 'reports', label: 'Reports' },
               { id: 'notifications', label: 'Alerts' },
-              { id: 'about', label: 'About Us' }
+              { id: 'about', label: 'About' }
             ].map((item) => {
               const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
               return (
@@ -896,12 +896,12 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               {/* Minimal Mobile Navigation Links */}
               <ul className="navbar-nav my-0.5 p-0">
                 {[
-                  { id: 'detection', label: 'Live Entry Monitor', icon: 'bi-broadcast' },
-                  { id: 'dataset', label: 'Dataset (Faces)', icon: 'bi-database-fill-gear' },
-                  { id: 'reports', label: 'Reports & PDF', icon: 'bi-bar-chart-fill' },
+                  { id: 'detection', label: 'Scan Results', icon: 'bi-broadcast' },
+                  { id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' },
+                  { id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' },
                   { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' },
-                  ...(isStaff ? [{ id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }] : []),
-                  { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
+                  ...(isStaff ? [{ id: 'admin', label: 'Admin', icon: 'bi-speedometer2' }] : []),
+                  { id: 'about', label: 'About', icon: 'bi-info-circle-fill' }
                 ].map(item => (
                   <li key={item.id} className="nav-item">
                     <a
