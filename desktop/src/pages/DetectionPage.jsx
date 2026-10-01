@@ -247,7 +247,7 @@ export default function DetectionPage() {
                 </tr>
               ) : (
                 filteredLogs.map((log, index) => {
-                  const isKnown = log.status === 'KNOWN';
+                  const isAllowed = log.status === 'KNOWN' || log.status === 'APPROVED';
                   const dateStr = log.timestamp ? new Date(log.timestamp).toLocaleString() : '—';
                   const conf = log.confidence ? `${(log.confidence * (log.confidence <= 1 ? 100 : 1)).toFixed(1)}%` : '—';
 
@@ -281,7 +281,7 @@ export default function DetectionPage() {
                           {log.person_name || 'Unregistered Person'}
                         </div>
                         <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
-                          {isKnown ? 'Authorized Department Entry' : 'Intruder / Stranger Attempt'}
+                          {isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt'}
                         </div>
                       </td>
                       <td>
@@ -300,11 +300,11 @@ export default function DetectionPage() {
                       <td>
                         <span
                           className={`badge rounded-pill fw-bold px-2.5 py-1 ${
-                            isKnown ? 'bg-success text-white' : 'bg-danger text-white'
+                            isAllowed ? 'bg-success text-white' : 'bg-danger text-white'
                           }`}
                           style={{ fontSize: '0.72rem' }}
                         >
-                          {isKnown ? '✓ ALLOWED' : '✕ DENIED'}
+                          {isAllowed ? '✓ ALLOWED' : '✕ DENIED'}
                         </span>
                       </td>
                       <td className="font-mono fw-semibold small text-secondary">

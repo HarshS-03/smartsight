@@ -652,7 +652,7 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
                 dept_role = " / ".join(dept_parts) if dept_parts else person_obj.get_category_display()
 
         # 3. Status
-        if log.status == 'KNOWN':
+        if log.status == 'KNOWN' or log.status == 'APPROVED':
             status_html = "<font color='#15803D'><b>✓ ALLOWED</b></font>"
         else:
             status_html = "<font color='#B91C1C'><b>✗ DENIED</b></font>"

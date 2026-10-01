@@ -1182,16 +1182,29 @@ class NotificationActionAPIView(APIView):
                 relative_img = notification.image_url.replace('/media/', '') if notification.image_url else None
 
                 try:
-                    RecognitionLog.objects.create(
-                        person_name=person_name,
-                        camera_name=camera_name,
-                        confidence=confidence,
-                        status='APPROVED',
-                        image_path=relative_img
-                    )
-                    print(f"[Mobile App] Approved and logged: {person_name}")
+                    # Fix: Find the original UNKNOWN log and update it to APPROVED to preserve original timestamp
+                    original_log = RecognitionLog.objects.filter(
+                        image_path=relative_img,
+                        status='UNKNOWN'
+                    ).order_by('-timestamp').first()
+
+                    if original_log:
+                        original_log.status = 'APPROVED'
+                        original_log.person_name = person_name
+                        original_log.camera_name = camera_name
+                        original_log.save()
+                        print(f"[Mobile App] Updated log to APPROVED: {person_name}")
+                    else:
+                        RecognitionLog.objects.create(
+                            person_name=person_name,
+                            camera_name=camera_name,
+                            confidence=confidence,
+                            status='APPROVED',
+                            image_path=relative_img
+                        )
+                        print(f"[Mobile App] Approved and created new log: {person_name}")
                 except Exception as e:
-                    print(f"[Mobile App] Error creating RecognitionLog: {e}")
+                    print(f"[Mobile App] Error updating RecognitionLog: {e}")
 
             notification.status = new_status
             notification.action_source = source
