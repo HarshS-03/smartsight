@@ -526,8 +526,40 @@ export default function NotificationsPage({ setActivePage, user }) {
                       {notif.message}
                     </p>
 
-                    {/* Quick Approval / Dismiss for PENDING Alerts */}
+                    {/* Operator Security Note if submitted */}
+                    {notif.security_note && (
+                      <div className="p-2.5 rounded-3 mb-2" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '3.5px solid #dc2626' }}>
+                        <div className="d-flex align-items-center gap-1.5 text-danger fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.4px' }}>
+                          <i className="bi bi-shield-exclamation"></i>
+                          <span>OPERATOR SECURITY NOTE:</span>
+                        </div>
+                        <div className="text-dynamic small fst-italic" style={{ fontSize: '0.8rem', lineHeight: '1.35' }}>
+                          "{notif.security_note}"
+                        </div>
+                      </div>
+                    )}
 
+                    {/* Quick Approval / Dismiss for PENDING Alerts */}
+                    {notif.status === 'PENDING' && (
+                      <div className="d-flex align-items-center gap-2 mb-2 w-100">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 shadow-sm"
+                          style={{ fontSize: '0.78rem' }}
+                          onClick={() => handleNotificationAction(notif.id, 'approve')}
+                        >
+                          <i className="bi bi-check-circle-fill"></i> Approve Entry
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1"
+                          style={{ fontSize: '0.78rem' }}
+                          onClick={() => handleNotificationAction(notif.id, 'cancel')}
+                        >
+                          <i className="bi bi-x-circle-fill"></i> Deny Entry
+                        </button>
+                      </div>
+                    )}
 
                     <div className="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-white border-opacity-10 w-100">
                       <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">
@@ -629,7 +661,17 @@ export default function NotificationsPage({ setActivePage, user }) {
                       </td>
 
                       <td className="text-secondary small" style={{ whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '0.82rem', lineHeight: '1.4' }}>
-                        {notif.message}
+                        <div>{notif.message}</div>
+                        {notif.security_note && (
+                          <div className="p-2 rounded-2 mt-2" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '3px solid #dc2626' }}>
+                            <div className="d-flex align-items-center gap-1 text-danger fw-bold x-small mb-0.5" style={{ fontSize: '0.7rem' }}>
+                              <i className="bi bi-shield-exclamation"></i> OPERATOR SECURITY NOTE:
+                            </div>
+                            <div className="fst-italic text-dynamic" style={{ fontSize: '0.78rem' }}>
+                              "{notif.security_note}"
+                            </div>
+                          </div>
+                        )}
                       </td>
 
                       {/* Status Badge */}
@@ -664,6 +706,26 @@ export default function NotificationsPage({ setActivePage, user }) {
                       {/* Action Controls */}
                       <td className="text-center">
                         <div className="d-flex align-items-center justify-content-center gap-1.5">
+                          {notif.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleNotificationAction(notif.id, 'approve')}
+                                className="btn btn-sm btn-success rounded-circle p-1.5 hover-scale d-flex align-items-center justify-content-center"
+                                style={{ width: '32px', height: '32px' }}
+                                title="Approve Entry"
+                              >
+                                <i className="bi bi-check-lg" style={{ fontSize: '0.9rem' }}></i>
+                              </button>
+                              <button
+                                onClick={() => handleNotificationAction(notif.id, 'cancel')}
+                                className="btn btn-sm btn-outline-danger rounded-circle p-1.5 hover-scale d-flex align-items-center justify-content-center"
+                                style={{ width: '32px', height: '32px' }}
+                                title="Deny Entry"
+                              >
+                                <i className="bi bi-x-lg" style={{ fontSize: '0.9rem' }}></i>
+                              </button>
+                            </>
+                          )}
 
                           <button
                             onClick={() => promptDeleteNotif(notif)}

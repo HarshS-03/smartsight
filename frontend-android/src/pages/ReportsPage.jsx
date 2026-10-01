@@ -22,6 +22,7 @@ export default function ReportsPage() {
   const [unknownDetections, setUnknownDetections] = useState(0);
 
   const [frequentPersons, setFrequentPersons] = useState([]);
+  const [frequentPersonsFilter, setFrequentPersonsFilter] = useState('ALL');
   const [reports, setReports] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -256,15 +257,42 @@ export default function ReportsPage() {
 
       setReports(mappedReports);
 
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const thisWeekStart = new Date(today);
+      thisWeekStart.setDate(today.getDate() - today.getDay());
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
       const personCounts = {};
       logs.forEach(log => {
-        const name = log.person_name || 'Unknown Person';
+        // If UNKNOWN, treat each detection as a unique occurrence since we don't have facial grouping
+        const isUnknown = log.status === 'UNKNOWN';
+        const name = isUnknown ? `Unknown Person #${log.id || Math.floor(Math.random()*1000)}` : (log.person_name || 'Unknown Person');
+        
         if (!personCounts[name]) {
-          personCounts[name] = { count: 0, last_seen: log.timestamp, status: log.status };
+          personCounts[name] = { total_count: 0, daily_count: 0, weekly_count: 0, monthly_count: 0, last_seen: log.timestamp, status: log.status, image_path: log.image_path, is_unknown: isUnknown };
         }
-        personCounts[name].count += 1;
-        if (new Date(log.timestamp) > new Date(personCounts[name].last_seen)) {
+        
+        const logDate = new Date(log.timestamp);
+        const logDay = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
+
+        personCounts[name].total_count += 1;
+        
+        if (logDay.getTime() === today.getTime()) {
+          personCounts[name].daily_count += 1;
+        }
+        if (logDate >= thisWeekStart) {
+          personCounts[name].weekly_count += 1;
+        }
+        if (logDate >= thisMonthStart) {
+          personCounts[name].monthly_count += 1;
+        }
+
+        if (logDate > new Date(personCounts[name].last_seen)) {
           personCounts[name].last_seen = log.timestamp;
+          if (log.image_path) personCounts[name].image_path = log.image_path;
+        } else if (!personCounts[name].image_path && log.image_path) {
+          personCounts[name].image_path = log.image_path;
         }
       });
 
@@ -279,10 +307,12 @@ export default function ReportsPage() {
         return {
           name,
           status: data.status,
-          total_count: data.count,
-          weekly_count: data.count,
-          monthly_count: data.count,
-          last_seen: `${dateStr}, ${timeStr}`
+          total_count: data.total_count,
+          daily_count: data.daily_count,
+          weekly_count: data.weekly_count,
+          monthly_count: data.monthly_count,
+          last_seen: `${dateStr}, ${timeStr}`,
+          imageUrl: data.image_path ? getImageUrl(data.image_path) : null
         };
       }).sort((a, b) => b.total_count - a.total_count);
 
@@ -560,346 +590,7 @@ export default function ReportsPage() {
       </section>
 
       <div className="container py-4">
-        {/* ── 24-HOUR INTERACTIVE SECURITY TIMELINE SCRUBBER ── */}
-        {(() => {
-          const todayReports = reports.filter(r => r.rawTimestamp && (new Date(r.rawTimestamp).toDateString() === new Date().toDateString()));
-          const todayIntruderCount = todayReports.filter(r => r.status === 'UNKNOWN').length;
-          const todayKnownCount = todayReports.filter(r => r.status === 'KNOWN').length;
-          const now = new Date();
-          const nowMins = now.getHours() * 60 + now.getMinutes();
-          const nowPosPct = Math.min(99, Math.max(1, (nowMins / 1440) * 100));
-          const nowTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-          const visibleReports = todayReports.filter(r => {
-            if (timelineFilter === 'UNKNOWN') return r.status === 'UNKNOWN';
-            if (timelineFilter === 'KNOWN') return r.status === 'KNOWN';
-            return true;
-          });
-
-          // Sort ascending for proximity staggering calculation
-          const sortedList = [...visibleReports].sort((a, b) => a.rawTimestamp - b.rawTimestamp);
-          const staggeredReports = sortedList.map((rep, i) => {
-            const d = new Date(rep.rawTimestamp);
-            const mins = d.getHours() * 60 + d.getMinutes();
-            const posPct = Math.min(98.5, Math.max(1.5, (mins / 1440) * 100));
-            let offsetIdx = 0;
-            for (let j = Math.max(0, i - 3); j < i; j++) {
-              const prevD = new Date(sortedList[j].rawTimestamp);
-              const prevMins = prevD.getHours() * 60 + prevD.getMinutes();
-              const prevPos = (prevMins / 1440) * 100;
-              if (Math.abs(posPct - prevPos) < 2.5) {
-                offsetIdx = (offsetIdx + 1) % 3;
-              }
-            }
-            return { ...rep, posPct, offsetIdx, dateObj: d };
-          });
-
-          return (
-            <div className="card glass-card border-0 p-4 mb-4 rounded-4 shadow-sm position-relative" style={{ background: 'var(--bg-surface-solid)' }}>
-              <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
-                <div className="d-flex align-items-center gap-3">
-                  <div
-                    className="rounded-3 d-flex align-items-center justify-content-center text-primary flex-shrink-0 shadow-sm"
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%)',
-                      border: '1px solid rgba(13, 110, 253, 0.25)',
-                      color: '#2563eb'
-                    }}
-                  >
-                    <i className="bi bi-clock-fill" style={{ fontSize: '1.2rem', lineHeight: 1 }}></i>
-                  </div>
-                  <div>
-                    <h6 className="fw-bold text-dynamic mb-0 d-flex align-items-center gap-2" style={{ fontSize: '1rem', letterSpacing: '-0.2px' }}>
-                      <span>24-Hour Security Timeline Scrubber</span>
-                      <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-bold" style={{ fontSize: '0.68rem', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
-                        Today ({todayReports.length})
-                      </span>
-                    </h6>
-                    <span className="text-secondary small" style={{ fontSize: '0.75rem' }}>
-                      Interactive telemetry timeline for today's detections (00:00 - 23:59)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Filter & Legend Badges with Fixed Gapping */}
-                <div className="d-flex align-items-center gap-2 flex-wrap font-mono">
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${timelineFilter === 'ALL' ? 'shadow-sm' : 'border-0'
-                      }`}
-                    style={{
-                      background: timelineFilter === 'ALL' ? '#2563eb' : 'rgba(13, 110, 253, 0.08)',
-                      color: timelineFilter === 'ALL' ? '#ffffff' : '#2563eb',
-                      border: '1px solid rgba(13, 110, 253, 0.25)',
-                      fontSize: '0.78rem'
-                    }}
-                    onClick={() => setTimelineFilter('ALL')}
-                    title="Show all detections"
-                  >
-                    <span>All ({todayReports.length})</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${timelineFilter === 'UNKNOWN' ? 'shadow-sm' : 'border-0'
-                      }`}
-                    style={{
-                      background: timelineFilter === 'UNKNOWN' ? '#dc3545' : 'rgba(220, 53, 69, 0.08)',
-                      color: timelineFilter === 'UNKNOWN' ? '#ffffff' : '#dc3545',
-                      border: '1px solid rgba(220, 53, 69, 0.25)',
-                      fontSize: '0.78rem'
-                    }}
-                    onClick={() => setTimelineFilter(timelineFilter === 'UNKNOWN' ? 'ALL' : 'UNKNOWN')}
-                    title="Click to filter Intruders"
-                  >
-                    <span className="rounded-circle d-inline-block" style={{ width: '8px', height: '8px', background: timelineFilter === 'UNKNOWN' ? '#ffffff' : '#dc3545', boxShadow: '0 0 6px rgba(220, 53, 69, 0.8)' }}></span>
-                    <span>Intruder</span>
-                    <span className={`badge rounded-pill ${timelineFilter === 'UNKNOWN' ? 'bg-white text-danger' : 'bg-danger text-white'}`} style={{ fontSize: '0.7rem' }}>
-                      {todayIntruderCount}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 transition-all ${timelineFilter === 'KNOWN' ? 'shadow-sm' : 'border-0'
-                      }`}
-                    style={{
-                      background: timelineFilter === 'KNOWN' ? '#198754' : 'rgba(25, 135, 84, 0.08)',
-                      color: timelineFilter === 'KNOWN' ? '#ffffff' : '#198754',
-                      border: '1px solid rgba(25, 135, 84, 0.25)',
-                      fontSize: '0.78rem'
-                    }}
-                    onClick={() => setTimelineFilter(timelineFilter === 'KNOWN' ? 'ALL' : 'KNOWN')}
-                    title="Click to filter Known personnel"
-                  >
-                    <span className="rounded-circle d-inline-block" style={{ width: '8px', height: '8px', background: timelineFilter === 'KNOWN' ? '#ffffff' : '#198754', boxShadow: '0 0 6px rgba(25, 135, 84, 0.8)' }}></span>
-                    <span>Known</span>
-                    <span className={`badge rounded-pill ${timelineFilter === 'KNOWN' ? 'bg-white text-success' : 'bg-success text-white'}`} style={{ fontSize: '0.7rem' }}>
-                      {todayKnownCount}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Scrubber Track Section with Horizontal Smooth Scroll */}
-              <div className="position-relative pt-2 pb-2">
-                <div className="d-flex justify-content-between align-items-center mb-1 text-muted d-sm-none">
-                  <span className="small d-inline-flex align-items-center gap-1 opacity-75" style={{ fontSize: '0.7rem' }}>
-                    <i className="bi bi-arrows-expand"></i> Swipe to scroll full 24h timeline
-                  </span>
-                </div>
-
-                <div
-                  ref={timelineScrollRef}
-                  className="timeline-horizontal-scroll"
-                  style={{
-                    overflowX: 'auto',
-                    overflowY: 'visible',
-                    WebkitOverflowScrolling: 'touch',
-                    paddingTop: '26px',
-                    paddingBottom: '32px',
-                    paddingLeft: '10px',
-                    paddingRight: '10px'
-                  }}
-                >
-                  <div style={{ minWidth: '650px', position: 'relative' }}>
-                    <div
-                      className="w-100 rounded-pill position-relative overflow-visible"
-                      style={{
-                        height: '30px',
-                        background: 'linear-gradient(90deg, rgba(13, 110, 253, 0.04) 0%, rgba(13, 110, 253, 0.09) 50%, rgba(13, 110, 253, 0.04) 100%)',
-                        border: '1.5px solid rgba(13, 110, 253, 0.22)',
-                        boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)'
-                      }}
-                    >
-                      {/* Subtle Grid Divider Lines (every 2 hours) */}
-                      {[0, 8.33, 16.66, 25, 33.33, 41.66, 50, 58.33, 66.66, 75, 83.33, 91.66, 100].map((pct, i) => (
-                        <div
-                          key={i}
-                          className="position-absolute"
-                          style={{
-                            left: `${pct}%`,
-                            top: '0',
-                            bottom: '0',
-                            width: '1px',
-                            background: 'rgba(13, 110, 253, 0.16)',
-                            pointerEvents: 'none'
-                          }}
-                        ></div>
-                      ))}
-
-                      {/* "NOW" Live Current Time Needle */}
-                      <div
-                        className="position-absolute"
-                        style={{
-                          left: `${nowPosPct}%`,
-                          top: '-6px',
-                          bottom: '-6px',
-                          width: '2px',
-                          background: '#0dcaf0',
-                          boxShadow: '0 0 10px #0dcaf0',
-                          zIndex: 8,
-                          pointerEvents: 'none',
-                          transform: 'translateX(-50%)'
-                        }}
-                      >
-                        <span
-                          className="position-absolute badge rounded-pill bg-info text-dark fw-bold px-2 py-0.5 shadow-sm"
-                          style={{
-                            top: '-22px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            fontSize: '0.64rem',
-                            letterSpacing: '0.3px',
-                            whiteSpace: 'nowrap',
-                            boxShadow: '0 2px 8px rgba(13, 202, 240, 0.4)'
-                          }}
-                        >
-                          NOW {nowTimeStr}
-                        </span>
-                      </div>
-
-                      {/* Detection Markers */}
-                      {staggeredReports.length > 0 ? (
-                        staggeredReports.map((rep, idx) => {
-                          const isUnknown = rep.status === 'UNKNOWN';
-                          const topOffset = rep.offsetIdx === 1 ? '-4px' : (rep.offsetIdx === 2 ? '12px' : '3px');
-
-                          return (
-                            <div
-                              key={rep.id || idx}
-                              className="position-absolute rounded-circle cursor-pointer transition-all"
-                              style={{
-                                left: `${rep.posPct}%`,
-                                top: topOffset,
-                                width: '24px',
-                                height: '24px',
-                                background: isUnknown
-                                  ? 'linear-gradient(135deg, #ef4444, #dc3545)'
-                                  : 'linear-gradient(135deg, #10b981, #198754)',
-                                border: '2px solid #ffffff',
-                                boxShadow: isUnknown
-                                  ? '0 0 10px rgba(220, 53, 69, 0.9), 0 2px 4px rgba(0,0,0,0.2)'
-                                  : '0 0 10px rgba(25, 135, 84, 0.9), 0 2px 4px rgba(0,0,0,0.2)',
-                                zIndex: isUnknown ? 6 : 4,
-                                transform: 'translateX(-50%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ffffff',
-                                fontSize: '0.66rem'
-                              }}
-                              onMouseEnter={() => setHoveredScrubberEvent(rep)}
-                              onMouseLeave={() => setHoveredScrubberEvent(null)}
-                              onClick={() => {
-                                if (rep.imageUrl) setSelectedImage(rep.imageUrl);
-                              }}
-                            >
-                              <i className={`bi ${isUnknown ? 'bi-shield-fill-exclamation' : 'bi-check-lg'}`}></i>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="w-100 h-100 d-flex align-items-center justify-content-center">
-                          <span className="small text-secondary fw-semibold" style={{ fontSize: '0.78rem' }}>
-                            No detections recorded for today yet.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 24-Hour Time Marks */}
-                    <div className="position-absolute w-100 d-flex justify-content-between px-1" style={{ top: '38px', fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'monospace' }}>
-                      <span>00:00</span>
-                      <span>02:00</span>
-                      <span>04:00</span>
-                      <span>06:00</span>
-                      <span>08:00</span>
-                      <span>10:00</span>
-                      <span>12:00</span>
-                      <span>14:00</span>
-                      <span>16:00</span>
-                      <span>18:00</span>
-                      <span>20:00</span>
-                      <span>22:00</span>
-                      <span>23:59</span>
-                    </div>
-
-                    {/* Floating Interactive Hover Tooltip */}
-                    {hoveredScrubberEvent && (
-                      <div
-                        className="position-absolute card border shadow-lg p-2.5 rounded-3 animate-fade-in"
-                        style={{
-                          left: `${Math.min(85, Math.max(15, hoveredScrubberEvent.posPct))}%`,
-                          top: '-100px',
-                          transform: 'translateX(-50%)',
-                          zIndex: 20,
-                          minWidth: '220px',
-                          background: 'var(--bg-surface-solid, #ffffff)',
-                          borderColor: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220, 53, 69, 0.4)' : 'rgba(25, 135, 84, 0.4)',
-                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
-                        }}
-                      >
-                        <div className="d-flex align-items-center gap-2.5">
-                          {hoveredScrubberEvent.imageUrl ? (
-                            <img
-                              src={hoveredScrubberEvent.imageUrl}
-                              alt="Capture"
-                              className="rounded-2 flex-shrink-0"
-                              style={{ width: '42px', height: '42px', objectFit: 'cover', border: '1px solid rgba(0,0,0,0.1)' }}
-                            />
-                          ) : (
-                            <div
-                              className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                              style={{
-                                width: '42px',
-                                height: '42px',
-                                background: hoveredScrubberEvent.status === 'UNKNOWN' ? 'rgba(220,53,69,0.1)' : 'rgba(25,135,84,0.1)',
-                                color: hoveredScrubberEvent.status === 'UNKNOWN' ? '#dc3545' : '#198754'
-                              }}
-                            >
-                              <i className={`bi ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bi-shield-exclamation fs-5' : 'bi-person-check fs-5'}`}></i>
-                            </div>
-                          )}
-                          <div className="flex-grow-1 min-w-0">
-                            <div className="d-flex align-items-center justify-content-between gap-1 mb-0.5">
-                              <strong className="text-truncate fw-bold text-dynamic" style={{ fontSize: '0.82rem' }}>
-                                {hoveredScrubberEvent.person_name || 'Unknown Person'}
-                              </strong>
-                              <span
-                                className={`badge rounded-pill ${hoveredScrubberEvent.status === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-success text-white'}`}
-                                style={{ fontSize: '0.62rem' }}
-                              >
-                                {hoveredScrubberEvent.status}
-                              </span>
-                            </div>
-                            <div className="text-secondary small d-flex align-items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
-                              <i className="bi bi-clock"></i>
-                              <span>{hoveredScrubberEvent.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                            </div>
-                            <div className="text-secondary small text-truncate" style={{ fontSize: '0.68rem' }}>
-                              <i className="bi bi-camera me-1"></i>
-                              <span>{hoveredScrubberEvent.camera_name}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {hoveredScrubberEvent.imageUrl && (
-                          <div className="mt-1.5 pt-1.5 border-top border-secondary border-opacity-10 text-center">
-                            <span className="text-primary fw-semibold" style={{ fontSize: '0.68rem' }}>
-                              Click to inspect snapshot <i className="bi bi-box-arrow-up-right ms-0.5"></i>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Quick Stats Cards Section */}
         <div className="row g-3 mb-4">
@@ -962,77 +653,141 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Frequent Persons Grid Section */}
+        {/* Frequent Persons Section */}
         <div className="row mb-4" data-reveal="true" data-reveal-delay="100">
           <div className="col-12">
-            <div className="p-4 glass-card">
-              <h4 className="text-dynamic fw-bold mb-4 d-flex align-items-center gap-2">
-                <i className="bi bi-people-fill text-primary"></i>
-                <span>Most Frequent Persons</span>
-              </h4>
+            <div className="p-3 glass-card rounded-4">
+              <h6 className="text-dynamic fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: '1rem' }}>
+                <i className="bi bi-bar-chart-steps text-primary"></i>
+                <span>Frequency</span>
+                {frequentPersons.length > 0 && (
+                  <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-bold ms-auto" style={{ fontSize: '0.68rem' }}>
+                    {frequentPersons.length}
+                  </span>
+                )}
+              </h6>
 
-              <div className="row g-3">
-                {frequentPersons.length > 0 ? frequentPersons.map((person, index) => (
-                  <div className="col-lg-4 col-md-6" key={index} data-reveal="true" data-reveal-delay={`${index * 10}`}>
-                    <div className="p-4 rounded-4 glass-card frequent-card h-100 d-flex flex-column justify-content-between"
-                      style={{ '--card-border-color': person.status === 'KNOWN' ? '#198754' : '#dc3545' }}>
+              <div className="d-flex align-items-center gap-2 mb-3 bg-inner-card p-1 rounded-pill w-100" style={{ maxWidth: '100%', overflowX: 'auto' }}>
+                {['ALL', 'KNOWN', 'UNKNOWN'].map(filter => (
+                  <button
+                    key={filter}
+                    className={`btn btn-sm rounded-pill flex-grow-1 fw-semibold transition-all border-0 ${frequentPersonsFilter === filter ? (filter === 'KNOWN' ? 'bg-success text-white' : filter === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-primary text-white shadow-sm') : 'text-secondary'}`}
+                    style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem' }}
+                    onClick={() => setFrequentPersonsFilter(filter)}
+                  >
+                    {filter === 'ALL' ? 'All' : filter === 'KNOWN' ? 'Known' : 'Unknown'}
+                  </button>
+                ))}
+              </div>
 
-                      <div>
-                        <div className="d-flex align-items-center justify-content-between mb-3">
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                              style={{ width: '45px', height: '45px', background: 'color-mix(in srgb, var(--card-border-color) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--card-border-color) 30%, transparent)' }}>
-                              {person.status === 'KNOWN' ? (
-                                <i className="bi bi-person-check-fill fs-4" style={{ color: 'var(--card-border-color)', lineHeight: 0 }}></i>
-                              ) : (
-                                <i className="bi bi-person-fill-exclamation fs-4" style={{ color: 'var(--card-border-color)', lineHeight: 0 }}></i>
-                              )}
-                            </div>
-                            <div>
-                              <h5 className="text-dynamic fw-bold mb-0" style={{ fontSize: '1.1rem' }}>{person.name}</h5>
-                              <span className={`small fw-bold ${person.status === 'KNOWN' ? 'text-success' : 'text-danger'} text-uppercase`}
-                                style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                {person.status}
-                              </span>
-                            </div>
+              <div 
+                className="custom-scrollbar pe-1" 
+                style={{ maxHeight: '380px', overflowY: 'auto' }}
+              >
+                <div className="d-flex flex-column gap-3">
+                  {frequentPersons.length > 0 ? (
+                    (() => {
+                      const visiblePersons = frequentPersons.filter(p => frequentPersonsFilter === 'ALL' || p.status === frequentPersonsFilter);
+                      if (visiblePersons.length === 0) {
+                        return (
+                          <div className="text-center py-4 text-secondary">
+                            <span className="fw-semibold small">No {frequentPersonsFilter.toLowerCase()} persons found.</span>
                           </div>
-                          <span className="badge rounded-pill px-3 py-1.5 fw-bold text-uppercase"
-                            style={{ fontSize: '0.75rem', background: 'rgba(13, 110, 253, 0.15)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
-                            Total: {person.total_count}
+                        );
+                      }
+                      return visiblePersons.map((person, index) => (
+                        <div
+                          key={index}
+                          className="d-flex align-items-center gap-3 p-3 rounded-4 shadow-sm cursor-pointer hover-bg-subtle"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: `1px solid ${person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.25)' : 'rgba(220, 53, 69, 0.25)'}`,
+                            borderLeft: `4px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}`,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onClick={() => {
+                            if (person.imageUrl) setSelectedImage(person.imageUrl);
+                          }}
+                        >
+                          {/* Avatar / Icon */}
+                          {person.imageUrl ? (
+                            <div className="position-relative flex-shrink-0" style={{ width: '46px', height: '46px' }}>
+                              <img 
+                                src={person.imageUrl} 
+                                alt={person.name} 
+                                className="rounded-circle w-100 h-100 object-fit-cover shadow-sm"
+                                style={{ border: `1.5px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}` }}
+                              />
+                              <span 
+                                className="position-absolute bottom-0 end-0 rounded-circle border border-white"
+                                style={{
+                                  width: '12px', height: '12px',
+                                  background: person.status === 'KNOWN' ? '#198754' : '#dc3545',
+                                  transform: 'translate(25%, 25%)'
+                                }}
+                              ></span>
+                            </div>
+                          ) : (
+                            <div
+                              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                              style={{
+                                width: '46px',
+                                height: '46px',
+                                background: person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.15)' : 'rgba(220, 53, 69, 0.15)',
+                              }}
+                            >
+                              <i
+                                className={`bi ${person.status === 'KNOWN' ? 'bi-person-check-fill' : 'bi-person-fill-exclamation'}`}
+                                style={{ color: person.status === 'KNOWN' ? '#198754' : '#dc3545', fontSize: '1.25rem' }}
+                              ></i>
+                            </div>
+                          )}
+
+                      {/* Info */}
+                      <div className="flex-grow-1 min-w-0">
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <strong className="text-dynamic text-truncate" style={{ fontSize: '1rem' }}>{person.name}</strong>
+                          <span
+                            className={`badge rounded-pill fw-bold ${person.status === 'KNOWN' ? 'bg-success' : 'bg-danger'} text-white`}
+                            style={{ fontSize: '0.65rem', padding: '0.35em 0.65em' }}
+                          >
+                            {person.status}
                           </span>
                         </div>
-
-                        <div className="row g-2 mb-3">
-                          <div className="col-6">
-                            <div className="p-3 bg-inner-card rounded-3 text-center">
-                              <span className="small text-secondary fw-bold text-uppercase d-block mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>This Week</span>
-                              <span className="fs-4 text-dynamic fw-bold">{person.weekly_count}</span>
-                            </div>
-                          </div>
-                          <div className="col-6">
-                            <div className="p-3 bg-inner-card rounded-3 text-center">
-                              <span className="small text-secondary fw-bold text-uppercase d-block mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>This Month</span>
-                              <span className="fs-4 text-dynamic fw-bold">{person.monthly_count}</span>
-                            </div>
-                          </div>
+                        
+                        <div className="d-flex flex-wrap align-items-center gap-3 text-secondary mb-1" style={{ fontSize: '0.8rem' }}>
+                          <span className="d-inline-flex align-items-center gap-1" title="Today">
+                            <i className="bi bi-calendar-event text-muted"></i>
+                            <span>Today:</span>
+                            <strong className="text-dynamic">{person.daily_count}</strong>
+                          </span>
+                          <span className="d-inline-flex align-items-center gap-1" title="This Week">
+                            <i className="bi bi-calendar-week text-muted"></i>
+                            <span>Week:</span>
+                            <strong className="text-dynamic">{person.weekly_count}</strong>
+                          </span>
+                          <span className="d-inline-flex align-items-center gap-1" title="This Month">
+                            <i className="bi bi-calendar-month text-muted"></i>
+                            <span>Month:</span>
+                            <strong className="text-dynamic">{person.monthly_count}</strong>
+                          </span>
+                        </div>
+                        
+                        <div className="text-secondary opacity-75" style={{ fontSize: '0.75rem' }}>
+                          <i className="bi bi-clock-history me-1 text-primary"></i>
+                          <span>Last Seen:</span> <strong className="text-dynamic font-mono">{person.last_seen}</strong>
                         </div>
                       </div>
-
-                      <div className="border-top border-white border-opacity-5 pt-3 mt-auto">
-                        <span className="small text-secondary d-flex align-items-center gap-2" style={{ fontSize: '0.825rem' }}>
-                          <i className="bi bi-eye text-primary fs-6"></i>
-                          <span>Last Seen:</span>
-                          <strong className="text-dynamic font-mono">{person.last_seen}</strong>
-                        </span>
-                      </div>
                     </div>
-                  </div>
-                )) : (
-                  <div className="col-12 text-center py-4 text-secondary">
-                    <i className="bi bi-person-x display-5 text-muted mb-2 d-block"></i>
-                    <span className="fw-semibold">No active personnel logs registered yet to calculate frequencies.</span>
+                  ));
+                })()
+              ) : (
+                <div className="text-center py-4 text-secondary">
+                    <i className="bi bi-person-x display-6 text-muted mb-2 d-block"></i>
+                    <span className="fw-semibold small">No active personnel logs registered yet.</span>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </div>

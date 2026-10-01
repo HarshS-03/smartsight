@@ -114,6 +114,7 @@ class Notification(models.Model):
     alert_person_name = models.CharField(max_length=100, null=True, blank=True)
     alert_camera_name = models.CharField(max_length=100, null=True, blank=True)
     alert_confidence = models.FloatField(null=True, blank=True)
+    security_note = models.TextField(null=True, blank=True, help_text="Security note from operator about suspicious activity")
 
     class Meta:
         ordering = ['-created_at']

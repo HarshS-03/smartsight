@@ -93,25 +93,32 @@ def _fill_summary_sheet(ws, reports, title_suffix):
     # Spacer
     ws.row_dimensions[8].height = 10
 
-    # ── Top Detected Persons ──
-    person_counts = Counter()
-    person_status = {}
+    # ── Frequency Analysis (Top Detected Persons) ──
+    # Count frequency per person within the already-filtered report set
+    person_counts = {}
     for r in reports:
-        name = r.get('person_name') or 'Unknown'
-        person_counts[name] += 1
-        person_status[name] = r.get('status', 'UNKNOWN')
+        is_unknown = r.get('status') == 'UNKNOWN'
+        name = f"Unknown Person #{r.get('id', 'N/A')}" if is_unknown else (r.get('person_name') or 'Unknown')
+        
+        if name not in person_counts:
+            person_counts[name] = {
+                'name': name,
+                'status': r.get('status', 'UNKNOWN'),
+                'frequency': 0
+            }
+        person_counts[name]['frequency'] += 1
 
-    top_persons = person_counts.most_common(10)
+    sorted_persons = sorted(person_counts.values(), key=lambda x: x['frequency'], reverse=True)[:10]
 
-    if top_persons:
-        ws.merge_cells('A9:F9')
-        ws['A9'] = "TOP DETECTED PERSONS"
+    if sorted_persons:
+        ws.merge_cells('A9:D9')
+        ws['A9'] = "FREQUENCY ANALYSIS"
         ws['A9'].font = Font(name='Inter', size=12, bold=True, color='FFFFFF')
         ws['A9'].fill = PatternFill(start_color=DARK_HEADER, end_color=DARK_HEADER, fill_type='solid')
         ws['A9'].alignment = Alignment(horizontal='center', vertical='center')
         ws.row_dimensions[9].height = 32
 
-        tp_headers = ['#', 'Person Name', 'Detections', 'Status', '', '']
+        tp_headers = ['#', 'Person Name', 'Status', 'Frequency']
         for ci, h in enumerate(tp_headers, 1):
             cell = ws.cell(row=10, column=ci, value=h)
             cell.font = Font(name='Inter', size=10, bold=True, color='FFFFFF')
@@ -120,46 +127,44 @@ def _fill_summary_sheet(ws, reports, title_suffix):
             cell.border = THIN_BORDER
         ws.row_dimensions[10].height = 24
 
-        for idx, (name, count) in enumerate(top_persons):
+        for idx, p_data in enumerate(sorted_persons):
             row = 11 + idx
-            st = person_status.get(name, 'UNKNOWN')
+            st = p_data['status']
             status_text = "Known" if st == "KNOWN" else "Unknown"
             status_color = KNOWN_GREEN if st == "KNOWN" else UNKNOWN_RED
 
             ws.cell(row=row, column=1, value=idx + 1)
-            ws.cell(row=row, column=2, value=name)
-            ws.cell(row=row, column=3, value=count)
-            ws.cell(row=row, column=4, value=status_text)
-            ws.cell(row=row, column=4).font = Font(name='Inter', size=10, bold=True, color=status_color)
+            ws.cell(row=row, column=2, value=p_data['name'])
+            ws.cell(row=row, column=3, value=status_text)
+            ws.cell(row=row, column=3).font = Font(name='Inter', size=10, bold=True, color=status_color)
+            ws.cell(row=row, column=4, value=p_data['frequency'])
 
             fill = ROW_EVEN if idx % 2 == 0 else ROW_ODD
-            for c in range(1, 7):
+            for c in range(1, 5):
                 cell = ws.cell(row=row, column=c)
                 cell.fill = PatternFill(start_color=fill, end_color=fill, fill_type='solid')
                 cell.border = THIN_BORDER
-                if c != 4:
+                if c != 3:
                     cell.font = Font(name='Inter', size=10)
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             ws.row_dimensions[row].height = 22
 
     # ── Footer ──
-    footer_row = max(21, 11 + len(top_persons) + 2)
-    ws.merge_cells(start_row=footer_row, start_column=1, end_row=footer_row, end_column=6)
+    footer_row = max(21, 11 + len(sorted_persons) + 2)
+    ws.merge_cells(start_row=footer_row, start_column=1, end_row=footer_row, end_column=4)
     ws.cell(row=footer_row, column=1, value="Powered by Smart Sight AI  •  Automated Surveillance Intelligence")
     ws.cell(row=footer_row, column=1).font = Font(name='Inter', size=9, italic=True, color='94A3B8')
     ws.cell(row=footer_row, column=1).alignment = Alignment(horizontal='center', vertical='center')
     ws.cell(row=footer_row, column=1).fill = PatternFill(start_color=FOOTER_BG, end_color=FOOTER_BG, fill_type='solid')
-    for c in range(1, 7):
+    for c in range(1, 5):
         ws.cell(row=footer_row, column=c).fill = PatternFill(start_color=FOOTER_BG, end_color=FOOTER_BG, fill_type='solid')
     ws.row_dimensions[footer_row].height = 30
 
     # Column widths
     ws.column_dimensions['A'].width = 5
-    ws.column_dimensions['B'].width = 25
-    ws.column_dimensions['C'].width = 18
-    ws.column_dimensions['D'].width = 18
-    ws.column_dimensions['E'].width = 12
-    ws.column_dimensions['F'].width = 12
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
 
 
 def _fill_excel_worksheet(ws, reports, title_text):
@@ -186,7 +191,7 @@ def _fill_excel_worksheet(ws, reports, title_text):
     ws.row_dimensions[2].height = 26
 
     # ── Headers ──
-    headers = ["#", "Date", "Camera", "Person Name", "Classification", "Entry Time", "Exit Time", "Confidence"]
+    headers = ["#", "Date", "Camera", "Person Name", "Classification", "Frequency", "Entry Time", "Exit Time"]
     ws.append(headers)
     ws.row_dimensions[3].height = 28
 
@@ -218,8 +223,9 @@ def _fill_excel_worksheet(ws, reports, title_text):
         entry_str = entry_local.strftime('%I:%M:%S %p')
         exit_str  = exit_local.strftime('%I:%M:%S %p')
         max_conf = f"{rep['max_confidence'] * 100:.1f}%" if rep.get('max_confidence') and rep['max_confidence'] <= 1.0 else f"{rep.get('max_confidence', 0):.1f}%"
+        freq_val = rep.get('frequency', 1)
 
-        ws.append([idx + 1, date_str, camera_disp, name, status_disp, entry_str, exit_str, max_conf])
+        ws.append([idx + 1, date_str, camera_disp, name, status_disp, freq_val, entry_str, exit_str])
         ws.row_dimensions[row_idx].height = 22
 
         row_fill = PatternFill(start_color=ROW_EVEN if row_idx % 2 == 0 else ROW_ODD, fill_type="solid")
@@ -263,7 +269,7 @@ def _fill_excel_worksheet(ws, reports, title_text):
         ws.row_dimensions[row_idx].height = 28
 
     # ── Auto-fit Column Widths ──
-    min_widths = {'A': 5, 'B': 14, 'C': 16, 'D': 22, 'E': 16, 'F': 16, 'G': 16, 'H': 14}
+    min_widths = {'A': 5, 'B': 14, 'C': 16, 'D': 22, 'E': 16, 'F': 14, 'G': 16, 'H': 16}
     for col in ws.columns:
         col_letter = None
         for cell in col:
@@ -477,7 +483,7 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
     unknown_count = total_count - known_count
     rate_str = f"{(known_count / total_count * 100):.1f}%" if total_count else "N/A"
 
-    stat_label = ParagraphStyle('StatLabel', parent=cell_style, fontSize=7.5, textColor=colors.HexColor('#64748B'))
+    stat_label = ParagraphStyle('StatLabel', parent=cell_style, fontSize=7.5, textColor=colors.HexColor('#64748B'), alignment=1)
     stat_value = ParagraphStyle('StatValue', parent=cell_bold_style, fontSize=13, leading=16, alignment=1)
 
     summary_data = [[
@@ -501,6 +507,56 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
     story.append(summary_table)
     story.append(Spacer(1, 16))
 
+    # ── Frequency Analysis Table ──
+    # Count frequency per person within the already-filtered log set
+    person_counts = {}
+    for log in logs:
+        is_unknown = getattr(log, 'status', '') == 'UNKNOWN'
+        name = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
+        
+        if name not in person_counts:
+            person_counts[name] = {
+                'name': name,
+                'status': getattr(log, 'status', 'UNKNOWN'),
+                'frequency': 0
+            }
+        person_counts[name]['frequency'] += 1
+
+    sorted_persons = sorted(person_counts.values(), key=lambda x: x['frequency'], reverse=True)[:10]
+
+    if sorted_persons:
+        story.append(Paragraph("FREQUENCY ANALYSIS (TOP 10)", subtitle_style))
+        freq_data = [[
+            Paragraph("No.", header_style),
+            Paragraph("Person Name", header_style),
+            Paragraph("Status", header_style),
+            Paragraph("Frequency", header_style),
+        ]]
+        
+        for idx, p_data in enumerate(sorted_persons, 1):
+            st = p_data['status']
+            status_color = "'#15803D'" if st == 'KNOWN' else "'#B91C1C'"
+            freq_data.append([
+                Paragraph(str(idx), cell_center_style),
+                Paragraph(p_data['name'], cell_bold_style),
+                Paragraph(f"<font color={status_color}>{'Known' if st == 'KNOWN' else 'Unknown'}</font>", cell_center_bold),
+                Paragraph(str(p_data['frequency']), cell_center_style),
+            ])
+            
+        freq_table = Table(freq_data, colWidths=[40, 320, 120, 120])
+        freq_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8FAFC')]),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(freq_table)
+        story.append(Spacer(1, 16))
+
     # ── Table Headers ──
     table_data = [[
         Paragraph("No.", header_style),
@@ -508,7 +564,7 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
         Paragraph("Person Name", header_style),
         Paragraph("Department / Role", header_style),
         Paragraph("Access Status", header_style),
-        Paragraph("Confidence", header_style),
+        Paragraph("Freq.", header_style),
         Paragraph("Date & Time", header_style),
     ]]
 
@@ -601,12 +657,16 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
         else:
             status_html = "<font color='#B91C1C'><b>✗ DENIED</b></font>"
 
-        # 4. Confidence
-        conf_val = getattr(log, 'confidence', 0.0) or 0.0
-        conf_str = f"{conf_val * 100:.1f}%" if conf_val <= 1.0 else f"{conf_val:.1f}%"
+        # 4. Frequency
+        is_unknown = getattr(log, 'status', '') == 'UNKNOWN'
+        name_key = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
+        freq_count = person_counts.get(name_key, {}).get('frequency', 1)
 
         # 5. Timestamp
-        time_str = timezone.localtime(log.timestamp).strftime('%d/%m/%Y\n%I:%M:%S %p') if log.timestamp else "—"
+        time_str = "—"
+        if log.timestamp:
+            dt = timezone.localtime(log.timestamp)
+            time_str = dt.strftime('%d/%m/%Y  %I:%M:%S %p')
 
         row = [
             Paragraph(str(idx + 1), cell_center_style),
@@ -614,14 +674,14 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
             Paragraph(person_name, cell_bold_style if log.status == 'KNOWN' else cell_style),
             Paragraph(dept_role, cell_style),
             Paragraph(status_html, cell_center_style),
-            Paragraph(conf_str, cell_center_style),
-            Paragraph(time_str, cell_style)
+            Paragraph(str(freq_count), cell_center_style),
+            Paragraph(time_str, cell_center_style)
         ]
         table_data.append(row)
 
     # ── Table Layout ──
-    #                      No.  Photo  Name   Dept   Status  Conf   DateTime
-    col_widths =          [28,  82,    150,   140,   100,    68,    152]
+    #                      No.  Photo  Name   Dept   Status  Freq   DateTime
+    col_widths =          [28,  82,    150,   140,   100,    50,    170]
     log_table = Table(table_data, colWidths=col_widths, repeatRows=1)
 
     table_styles = [

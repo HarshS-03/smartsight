@@ -115,6 +115,7 @@ urlpatterns = [
 
     # Recognition Log & Export API Endpoints
     path('logs/unknown/<int:log_id>/dismiss/', views.DismissUnknownLogView.as_view(), name='dismiss_unknown_log'),
+    path('logs/<int:log_id>/security-note/', views.SecurityNoteAPIView.as_view(), name='security_note'),
     path('reports/export/', views.ReportsExportView.as_view(), name='reports_export'),
     path('reports/stats/', views.ReportsStatsAPIView.as_view(), name='reports_stats'),
 

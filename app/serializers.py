@@ -76,6 +76,6 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'message', 'image_url', 'status', 'action_source',
             'processed_at', 'is_read', 'created_at', 'telegram_message_id',
-            'alert_person_name', 'alert_camera_name', 'alert_confidence'
+            'alert_person_name', 'alert_camera_name', 'alert_confidence', 'security_note'
         ]
 

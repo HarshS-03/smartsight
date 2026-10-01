@@ -742,32 +742,131 @@ def biometric_verify_frame(request):
                 image_path=rel_img_path
             )
 
-            # Trigger intrusion alert & notification asynchronously
-            try:
-                from app.services.notification_service import dispatch_notification
-                dispatch_notification(
-                    title="Access Denied: Unregistered Person",
-                    message="Unauthorized person attempted entry at mobile biometric scanner.",
-                    image_url=f"/media/{rel_img_path}"
-                )
-            except Exception as notif_err:
-                print("[Biometric Verify] Alert dispatch failed:", notif_err)
+            # Check if this unknown person has been seen frequently (3+ times today)
+            # Count UNKNOWN detections from today
+            from datetime import timedelta
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            unknown_today_count = RecognitionLog.objects.filter(
+                status='UNKNOWN',
+                timestamp__gte=today_start
+            ).count()
 
-            return Response({
-                'status': 'DENIED',
-                'decision': 'REJECTED',
-                'person_name': 'Unregistered Person / Stranger',
-                'department': 'Unauthorized',
-                'role': 'Access Denied',
-                'confidence': round(det_conf * 100, 1),
-                'image_url': f"/media/{rel_img_path}",
-                'log_id': log.id,
-                'timestamp': log.timestamp.isoformat()
-            })
+            needs_admin_review = unknown_today_count >= 3
+
+            if needs_admin_review:
+                # Escalate to admin approval instead of auto-denial
+                try:
+                    notification = Notification.objects.create(
+                        title="⚠️ Frequent Unknown Person — Admin Review Required",
+                        message=f"An unregistered person has been detected {unknown_today_count} times today at Mobile Biometric Scanner. This exceeds the security threshold (3+ detections). Admin approval or action is required.",
+                        image_url=f"/media/{rel_img_path}",
+                        status='PENDING',
+                        alert_person_name="Unknown / Unregistered",
+                        alert_camera_name="Mobile Biometric Scanner",
+                        alert_confidence=det_conf,
+                    )
+                except Exception as notif_err:
+                    print("[Biometric Verify] Admin escalation notification failed:", notif_err)
+
+                return Response({
+                    'status': 'PENDING_REVIEW',
+                    'decision': 'ESCALATED',
+                    'person_name': 'Unregistered Person / Stranger',
+                    'department': 'Pending Admin Review',
+                    'role': f'Detected {unknown_today_count} times today — Escalated to Admin',
+                    'confidence': round(det_conf * 100, 1),
+                    'image_url': f"/media/{rel_img_path}",
+                    'log_id': log.id,
+                    'timestamp': log.timestamp.isoformat(),
+                    'escalated': True,
+                    'unknown_count_today': unknown_today_count,
+                })
+            else:
+                # Normal denial for less than 3 detections
+                try:
+                    from app.services.notification_service import dispatch_notification
+                    dispatch_notification(
+                        title="Access Denied: Unregistered Person",
+                        message="Unauthorized person attempted entry at mobile biometric scanner.",
+                        image_url=f"/media/{rel_img_path}"
+                    )
+                except Exception as notif_err:
+                    print("[Biometric Verify] Alert dispatch failed:", notif_err)
+
+                return Response({
+                    'status': 'DENIED',
+                    'decision': 'REJECTED',
+                    'person_name': 'Unregistered Person / Stranger',
+                    'department': 'Unauthorized',
+                    'role': 'Access Denied',
+                    'confidence': round(det_conf * 100, 1),
+                    'image_url': f"/media/{rel_img_path}",
+                    'log_id': log.id,
+                    'timestamp': log.timestamp.isoformat()
+                })
 
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+class SecurityNoteAPIView(APIView):
+    """Submit a security note for a suspicious detection (up to 100 words)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, log_id):
+        try:
+            log = RecognitionLog.objects.get(pk=log_id)
+        except RecognitionLog.DoesNotExist:
+            return Response({'error': 'Detection log not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        note = request.data.get('note', '').strip()
+        if not note:
+            return Response({'error': 'Note cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Limit to 100 words
+        words = note.split()
+        if len(words) > 100:
+            note = ' '.join(words[:100])
+
+        # Find existing PENDING notification for this image, or create a new one
+        img_filename = os.path.basename(log.image_path) if log.image_path else None
+        existing_notif = None
+        if img_filename:
+            existing_notif = Notification.objects.filter(
+                image_url__icontains=img_filename,
+                status='PENDING'
+            ).first()
+
+        if existing_notif:
+            existing_notif.security_note = note
+            if not existing_notif.alert_person_name:
+                existing_notif.alert_person_name = log.person_name or "Unknown / Unregistered"
+            if not existing_notif.alert_camera_name:
+                existing_notif.alert_camera_name = log.camera_name or "Mobile Biometric Scanner"
+            if existing_notif.alert_confidence is None:
+                existing_notif.alert_confidence = log.confidence
+            existing_notif.save()
+        else:
+            rel_path = log.image_path.replace('\\', '/') if log.image_path else ""
+            image_url = f"/media/{rel_path}" if rel_path else None
+            Notification.objects.create(
+                title="🔍 Security Alert — Suspicious Person Reported",
+                message="An operator has flagged an unregistered person detected at Mobile Biometric Scanner and submitted a security note for admin review.",
+                image_url=image_url,
+                status='PENDING',
+                alert_person_name=log.person_name or "Unknown / Unregistered",
+                alert_camera_name=log.camera_name or "Mobile Biometric Scanner",
+                alert_confidence=log.confidence,
+                security_note=note,
+            )
+
+        return Response({
+            'status': 'note_submitted',
+            'message': 'Security note submitted for admin review.',
+            'log_id': log_id,
+            'note': note
+        })
 
 
 @api_view(['GET'])
@@ -910,16 +1009,26 @@ class ReportsExportView(APIView):
             response['Access-Control-Expose-Headers'] = 'Content-Disposition'
             return response
 
+        person_freq = {}
+        for log in logs:
+            is_unknown = log.status == 'UNKNOWN'
+            name_key = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
+            person_freq[name_key] = person_freq.get(name_key, 0) + 1
+
         mapped_records = []
         for log in logs:
+            is_unknown = log.status == 'UNKNOWN'
+            name_key = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
+            
             mapped_records.append({
+                'id': log.id,
                 'date': log.timestamp.date() if log.timestamp else '',
                 'camera_name': log.camera_name if log.camera_name else 'Default Camera',
                 'person_name': log.person_name if log.person_name else ('Unknown Target' if log.status == 'UNKNOWN' else 'Unknown'),
                 'status': log.status,
                 'entry_time': log.timestamp,
                 'exit_time': log.timestamp,
-                'frequency': 1,
+                'frequency': person_freq.get(name_key, 1),
                 'max_confidence': float(log.confidence) if log.confidence else 0.0
             })
 
