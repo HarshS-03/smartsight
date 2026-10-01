@@ -41,7 +41,9 @@ def _get_face_detector(model_name=None):
                     pass
                 from ultralytics import YOLO
                 try:
-                    _face_detector_models[cache_key] = YOLO(model_path, task='detect', verbose=False)
+                    yolo = YOLO(model_path, task='detect', verbose=False)
+                    yolo.model.fuse = lambda *args, **kwargs: yolo.model
+                    _face_detector_models[cache_key] = yolo
                 except Exception as load_err:
                     logger.warning(f"[EmbeddingEngine] Failed to load detector {model_path}: {load_err}")
                     raise load_err

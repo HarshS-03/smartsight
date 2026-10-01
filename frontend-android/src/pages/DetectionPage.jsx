@@ -320,20 +320,20 @@ export default function DetectionPage() {
               letterSpacing: '0.3px',
               background: isUnknownPending
                 ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
+                : !isCameraActive
+                ? 'linear-gradient(135deg, #64748b 0%, #475569 100%)' // Gray out when camera is off
                 : isScanning
-                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
-                : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              boxShadow: isUnknownPending
+                ? 'linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%)'
+                : 'linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)',
+              boxShadow: isUnknownPending || !isCameraActive
                 ? '0 4px 12px rgba(0, 0, 0, 0.25)'
-                : isScanning
-                ? '0 4px 18px rgba(14, 165, 233, 0.5)'
-                : '0 4px 18px rgba(37, 99, 235, 0.45)',
-              border: isUnknownPending
-                ? '1.5px solid rgba(239, 68, 68, 0.5)'
-                : '1px solid rgba(255, 255, 255, 0.2)',
+                : '0 4px 18px rgba(13, 110, 253, 0.45)',
+              border: isUnknownPending || !isCameraActive
+                ? '1px solid rgba(255, 255, 255, 0.15)'
+                : '1px solid rgba(255, 255, 255, 0.25)',
               color: '#ffffff',
               textShadow: '0 1px 2px rgba(0,0,0,0.25)',
-              opacity: (!isCameraActive && !isScanning && !isUnknownPending) ? 0.75 : 1,
+              opacity: 1, // Full opacity so it doesn't blend with light mode background
               cursor: isUnknownPending ? 'not-allowed' : (!isCameraActive ? 'not-allowed' : 'pointer'),
               transition: 'all 0.25s ease',
             }}
