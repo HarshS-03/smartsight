@@ -702,6 +702,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               {[
                 { id: 'detection', label: 'Scan & Detect' },
                 { id: 'reports', label: 'Reports' },
+                ...(isStaff ? [{ id: 'notifications', label: 'Alerts' }] : []),
                 { id: 'about', label: 'About Us' }
               ].map((item) => {
                 const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
@@ -729,6 +730,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               {[
                 { id: 'detection', label: 'Scan & Detect', icon: 'bi-qr-code-scan' },
                 { id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' },
+                ...(isStaff ? [{ id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }] : []),
                 { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
               ].map(item => (
                 <li key={item.id} className="nav-item">

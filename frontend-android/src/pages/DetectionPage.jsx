@@ -84,6 +84,54 @@ export default function DetectionPage() {
     };
   }, []);
 
+  // Poll for admin approval status
+  useEffect(() => {
+    const pendingScans = recentScans.filter(s => s.status === 'PENDING_REVIEW' && s.notification_id);
+    if (pendingScans.length === 0) return;
+
+    const intervalId = setInterval(async () => {
+      let updated = false;
+      const nextScans = await Promise.all(recentScans.map(async (scan) => {
+        if (scan.status === 'PENDING_REVIEW' && scan.notification_id) {
+          try {
+            const res = await API.get(`/notifications/${scan.notification_id}/action/`);
+            if (res.data && res.data.status) {
+              if (res.data.status === 'APPROVED') {
+                updated = true;
+                if (window.showToast) {
+                  window.showToast(`Admin Approved: ${scan.person_name}`, 'success', 'APPROVED');
+                }
+                return { ...scan, status: 'ALLOWED', role: 'Verified safe visitor by Admin' };
+              } else if (res.data.status === 'CANCELLED') {
+                updated = true;
+                if (window.showToast) {
+                  window.showToast(`Admin Rejected: ${scan.person_name}`, 'error', 'REJECTED');
+                }
+                return { ...scan, status: 'DENIED', role: 'Clearance denied' };
+              }
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+          }
+        }
+        return scan;
+      }));
+
+      if (updated) {
+        setRecentScans(nextScans);
+        setLastVerification(prev => {
+           if (prev && prev.status === 'PENDING_REVIEW' && prev.notification_id) {
+              const updatedScan = nextScans.find(s => s.notification_id === prev.notification_id);
+              if (updatedScan && updatedScan.status !== 'PENDING_REVIEW') return updatedScan;
+           }
+           return prev;
+        });
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [recentScans]);
+
   const [securityNote, setSecurityNote] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [noteSubmitted, setNoteSubmitted] = useState(false);
@@ -169,7 +217,7 @@ export default function DetectionPage() {
         }
       } else if (result.status === 'PENDING_REVIEW') {
         if (window.showToast) {
-          window.showToast(`⚠️ ESCALATED: Unknown person detected ${result.unknown_count_today}+ times — Sent to Admin`, 'warning', 'REVIEW');
+          window.showToast(`⚠️ ESCALATED: Unknown person detected — Sent to Admin`, 'warning', 'REVIEW');
         }
       } else if (result.status === 'DENIED') {
         if (window.showToast) {
@@ -603,19 +651,19 @@ export default function DetectionPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="p-2.5 rounded-3 d-flex align-items-center justify-content-between" style={{ background: 'rgba(22, 163, 74, 0.12)', border: '1px solid rgba(22, 163, 74, 0.3)' }}>
-                    <div className="d-flex align-items-center gap-2">
-                      <i className="bi bi-check-circle-fill text-success fs-5"></i>
-                      <div>
-                        <span className="fw-bold small d-block" style={{ color: '#166534', fontSize: '0.82rem' }}>
-                          Security Note Submitted for Admin Review
+                  <div className="p-3 rounded-3 d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3" style={{ background: 'rgba(22, 163, 74, 0.12)', border: '1px solid rgba(22, 163, 74, 0.3)' }}>
+                    <div className="d-flex align-items-start align-items-sm-center gap-2.5 min-w-0">
+                      <i className="bi bi-check-circle-fill text-success fs-5 mt-1 mt-sm-0 flex-shrink-0"></i>
+                      <div className="min-w-0">
+                        <span className="fw-bold small d-block text-truncate" style={{ color: '#166534', fontSize: '0.82rem', marginBottom: '2px' }}>
+                          Security Note Submitted
                         </span>
-                        <span className="text-secondary small fst-italic" style={{ fontSize: '0.75rem' }}>
+                        <span className="text-secondary small fst-italic d-block text-truncate" style={{ fontSize: '0.75rem', opacity: 0.9 }}>
                           "{securityNote}"
                         </span>
                       </div>
                     </div>
-                    <span className="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style={{ fontSize: '0.7rem' }}>
+                    <span className="badge bg-success text-white rounded-pill px-2.5 py-1.5 fw-bold flex-shrink-0 align-self-end align-self-sm-center" style={{ fontSize: '0.72rem', letterSpacing: '0.3px', boxShadow: '0 2px 4px rgba(22, 163, 74, 0.2)' }}>
                       <i className="bi bi-unlock-fill me-1"></i> Scanner Ready
                     </span>
                   </div>

@@ -512,29 +512,31 @@ export default function NotificationsPage({ setActivePage, user }) {
 
                   {/* Notification Info */}
                   <div className="flex-grow-1 min-w-0">
-                    <div className="d-flex align-items-center justify-content-between gap-2 mb-1.5 w-100">
-                      <span className="fw-bold text-dynamic" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>
+                    <div className="mb-2 w-100">
+                      <div className="fw-bold text-dynamic mb-1.5" style={{ fontSize: '0.9rem', lineHeight: '1.35', wordBreak: 'break-word' }}>
                         {notif.title}
-                      </span>
-
+                      </div>
                       <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
                         {notif.status}
                       </span>
                     </div>
 
-                    <p className="text-secondary small mb-2" style={{ fontSize: '0.82rem', lineHeight: '1.45' }}>
+                    <div className="text-secondary mb-2.5" style={{ fontSize: '0.82rem', lineHeight: '1.5' }}>
                       {notif.message}
-                    </p>
+                    </div>
 
                     {/* Operator Security Note if submitted */}
                     {notif.security_note && (
-                      <div className="p-2.5 rounded-3 mb-2" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '3.5px solid #dc2626' }}>
-                        <div className="d-flex align-items-center gap-1.5 text-danger fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.4px' }}>
-                          <i className="bi bi-shield-exclamation"></i>
-                          <span>OPERATOR SECURITY NOTE:</span>
-                        </div>
-                        <div className="text-dynamic small fst-italic" style={{ fontSize: '0.8rem', lineHeight: '1.35' }}>
-                          "{notif.security_note}"
+                      <div className="d-flex mb-2.5" style={{ background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0 8px 8px 0' }}>
+                        <div style={{ width: '4px', background: '#dc2626', flexShrink: 0 }}></div>
+                        <div className="px-3 py-2 flex-grow-1">
+                          <div className="d-flex align-items-center gap-2 text-danger fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.4px' }}>
+                            <i className="bi bi-shield-exclamation" style={{ fontSize: '0.85rem' }}></i>
+                            <span>OPERATOR SECURITY NOTE:</span>
+                          </div>
+                          <div className="text-dynamic fst-italic" style={{ fontSize: '0.82rem', lineHeight: '1.4' }}>
+                            "{notif.security_note}"
+                          </div>
                         </div>
                       </div>
                     )}
@@ -565,7 +567,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">
                         {notif.action_source === 'APP' ? (
                           <span className="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.68rem' }}>
-                            <i className="bi bi-phone-fill"></i> Web / Mobile
+                            <i className="bi bi-phone-fill"></i> Mobile App
                           </span>
                         ) : notif.action_source === 'TELEGRAM' ? (
                           <span className="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', border: '1px solid rgba(14, 165, 233, 0.3)', fontSize: '0.68rem' }}>
@@ -606,15 +608,15 @@ export default function NotificationsPage({ setActivePage, user }) {
         {/* Desktop View Table (>= 768px) */}
         <div className="glass-card overflow-hidden d-none d-md-block">
           <div className="table-responsive">
-            <table className="table custom-table notif-table table-hover align-middle mb-0" style={{ width: '100%' }}>
+            <table className="table custom-table notif-table table-hover align-middle mb-0" style={{ width: '100%', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
                   <th scope="col" style={{ width: '65px' }} className="text-center">Image</th>
-                  <th scope="col" style={{ width: '24%' }}>Alert Title</th>
-                  <th scope="col" style={{ width: '28%' }}>Message Detail</th>
-                  <th scope="col" style={{ width: '12%' }} className="text-center">Status</th>
-                  <th scope="col" style={{ width: '15%' }} className="text-center">Action Source</th>
-                  <th scope="col" style={{ width: '13%' }} className="text-center">Timestamp</th>
+                  <th scope="col" style={{ width: '22%' }}>Alert Title</th>
+                  <th scope="col" style={{ width: '35%' }}>Message Detail</th>
+                  <th scope="col" style={{ width: '11%' }} className="text-center">Status</th>
+                  <th scope="col" style={{ width: '14%' }} className="text-center">Source</th>
+                  <th scope="col" style={{ width: '14%' }} className="text-center">Timestamp</th>
                   <th scope="col" style={{ width: '80px' }} className="text-center">Action</th>
                 </tr>
               </thead>
@@ -663,7 +665,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       <td className="text-secondary small" style={{ whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '0.82rem', lineHeight: '1.4' }}>
                         <div>{notif.message}</div>
                         {notif.security_note && (
-                          <div className="p-2 rounded-2 mt-2" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '3px solid #dc2626' }}>
+                          <div className="p-2 mt-2" style={{ background: 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid #dc2626', borderRadius: '0 8px 8px 0' }}>
                             <div className="d-flex align-items-center gap-1 text-danger fw-bold x-small mb-0.5" style={{ fontSize: '0.7rem' }}>
                               <i className="bi bi-shield-exclamation"></i> OPERATOR SECURITY NOTE:
                             </div>
@@ -685,7 +687,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       <td className="text-center">
                         {notif.action_source === 'APP' ? (
                           <span className="badge rounded-pill px-2.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.72rem' }}>
-                            <i className="bi bi-phone-fill"></i> Web / Mobile
+                            <i className="bi bi-phone-fill"></i> Mobile App
                           </span>
                         ) : notif.action_source === 'TELEGRAM' ? (
                           <span className="badge rounded-pill px-2.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', border: '1px solid rgba(14, 165, 233, 0.3)', fontSize: '0.72rem' }}>

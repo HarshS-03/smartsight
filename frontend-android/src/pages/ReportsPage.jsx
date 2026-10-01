@@ -1270,15 +1270,17 @@ export default function ReportsPage() {
                         </td>
                         <td>
                           <div className="d-flex align-items-center gap-2.5">
-                            <div className={`rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${rep.status === 'KNOWN' ? 'bg-primary bg-opacity-10 text-primary' : 'bg-danger bg-opacity-10 text-danger'}`}
-                              style={{ width: '36px', height: '36px', border: rep.status === 'KNOWN' ? '1px solid rgba(13, 110, 253, 0.25)' : '1px solid rgba(220, 53, 69, 0.25)' }}>
+                            <div className={`rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${rep.status === 'KNOWN' ? 'bg-primary bg-opacity-10 text-primary' : rep.status === 'APPROVED' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}`}
+                              style={{ width: '36px', height: '36px', border: rep.status === 'KNOWN' ? '1px solid rgba(13, 110, 253, 0.25)' : rep.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(220, 53, 69, 0.25)' }}>
                               {rep.status === 'KNOWN' ? (
                                 <i className="bi bi-person-fill fs-6"></i>
+                              ) : rep.status === 'APPROVED' ? (
+                                <i className="bi bi-person-check-fill fs-6"></i>
                               ) : (
                                 <i className="bi bi-person-fill-exclamation fs-6"></i>
                               )}
                             </div>
-                            <span className={`fw-bold text-truncate ${rep.status === 'KNOWN' ? 'text-dynamic' : 'text-danger'}`} style={{ maxWidth: '150px' }}>
+                            <span className={`fw-bold text-truncate ${rep.status === 'KNOWN' ? 'text-dynamic' : rep.status === 'APPROVED' ? 'text-success' : 'text-danger'}`} style={{ maxWidth: '150px' }}>
                               {rep.person_name || "Unknown Person"}
                             </span>
                           </div>
@@ -1286,6 +1288,8 @@ export default function ReportsPage() {
                         <td className="text-center">
                           {rep.status === 'KNOWN' ? (
                             <span className="badge badge-known">Known</span>
+                          ) : rep.status === 'APPROVED' ? (
+                            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>Approved</span>
                           ) : (
                             <span className="badge badge-unknown">Unknown</span>
                           )}

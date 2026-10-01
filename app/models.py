@@ -74,6 +74,7 @@ class RecognitionLog(models.Model):
     STATUS_CHOICES = [
         ('KNOWN', 'Known'),
         ('UNKNOWN', 'Unknown'),
+        ('APPROVED', 'Approved'),
     ]
     person_name = models.CharField(max_length=100, null=True, blank=True)
     camera_name = models.CharField(max_length=100, default='Default Camera')

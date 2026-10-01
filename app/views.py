@@ -751,14 +751,14 @@ def biometric_verify_frame(request):
                 timestamp__gte=today_start
             ).count()
 
-            needs_admin_review = unknown_today_count >= 3
+            needs_admin_review = True
 
             if needs_admin_review:
                 # Escalate to admin approval instead of auto-denial
                 try:
                     notification = Notification.objects.create(
-                        title="⚠️ Frequent Unknown Person — Admin Review Required",
-                        message=f"An unregistered person has been detected {unknown_today_count} times today at Mobile Biometric Scanner. This exceeds the security threshold (3+ detections). Admin approval or action is required.",
+                        title="⚠️ Unknown Person Detected — Admin Review Required",
+                        message="An unregistered person has been detected at Mobile Scanner.",
                         image_url=f"/media/{rel_img_path}",
                         status='PENDING',
                         alert_person_name="Unknown / Unregistered",
@@ -773,10 +773,11 @@ def biometric_verify_frame(request):
                     'decision': 'ESCALATED',
                     'person_name': 'Unregistered Person / Stranger',
                     'department': 'Pending Admin Review',
-                    'role': f'Detected {unknown_today_count} times today — Escalated to Admin',
+                    'role': 'Security Alert — Escalated to Admin',
                     'confidence': round(det_conf * 100, 1),
                     'image_url': f"/media/{rel_img_path}",
                     'log_id': log.id,
+                    'notification_id': notification.id if 'notification' in locals() else None,
                     'timestamp': log.timestamp.isoformat(),
                     'escalated': True,
                     'unknown_count_today': unknown_today_count,
@@ -1109,6 +1110,13 @@ class NotificationListAPIView(APIView):
 class NotificationActionAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request, pk):
+        try:
+            notification = Notification.objects.get(pk=pk)
+            return Response({'status': notification.status})
+        except Notification.DoesNotExist:
+            return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+
     def delete(self, request, pk):
         try:
             notification = Notification.objects.get(pk=pk)
@@ -1178,7 +1186,7 @@ class NotificationActionAPIView(APIView):
                         person_name=person_name,
                         camera_name=camera_name,
                         confidence=confidence,
-                        status='UNKNOWN',
+                        status='APPROVED',
                         image_path=relative_img
                     )
                     print(f"[Mobile App] Approved and logged: {person_name}")
