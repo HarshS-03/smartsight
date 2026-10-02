@@ -79,6 +79,21 @@ export default function DetectionPage() {
     }
   };
 
+  const handleDenyScan = async (id) => {
+    try {
+      await API.patch(`/logs/${id}/`, { status: 'DENIED' });
+      setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: 'DENIED' } : l)));
+      if (window.showToast) {
+        window.showToast('Scan log marked as denied.', 'warning', 'ACCESS DENIED');
+      }
+    } catch (err) {
+      console.error('Failed to deny log:', err);
+      if (window.showToast) {
+        window.showToast('Could not deny record. Check server connection.', 'error', 'UPDATE FAILED');
+      }
+    }
+  };
+
   useEffect(() => {
     fetchRecentScans();
     if (!autoRefresh) return;
@@ -87,13 +102,27 @@ export default function DetectionPage() {
   }, [autoRefresh]);
 
   const filteredLogs = logs.filter((l) => {
-    if (filter === 'KNOWN') return l.status === 'KNOWN';
+    if (filter === 'KNOWN') return l.status === 'KNOWN' || l.status === 'APPROVED';
     if (filter === 'UNKNOWN') return l.status === 'UNKNOWN';
+    if (filter === 'DENIED') return l.status === 'DENIED';
     return true;
   });
 
   return (
     <div className="container-fluid py-4 px-xl-5" style={{ minHeight: '88vh' }}>
+      <style>{`
+        .btn-premium { transition: all 0.2s ease-in-out; border-width: 1px; border-style: solid; }
+        .btn-premium:hover { transform: translateY(-1px); }
+        .btn-premium-view { background: rgba(59, 130, 246, 0.08); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
+        .btn-premium-view:hover { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.35); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); color: #93c5fd; }
+        .btn-premium-approve { background: rgba(34, 197, 94, 0.08); color: #4ade80; border-color: rgba(34, 197, 94, 0.2); }
+        .btn-premium-approve:hover { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.35); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15); color: #86efac; }
+        .btn-premium-deny { background: rgba(239, 68, 68, 0.08); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+        .btn-premium-deny:hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); color: #fca5a5; }
+        .btn-premium-delete { background: rgba(148, 163, 184, 0.08); color: #94a3b8; border-color: rgba(148, 163, 184, 0.2); }
+        .btn-premium-delete:hover { background: rgba(148, 163, 184, 0.15); border-color: rgba(148, 163, 184, 0.35); color: #cbd5e1; box-shadow: 0 4px 12px rgba(148, 163, 184, 0.15); }
+        .badge-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+      `}</style>
       {/* Page Header */}
       <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
@@ -193,8 +222,9 @@ export default function DetectionPage() {
           <div className="d-flex align-items-center gap-2 flex-wrap">
             {[
               { id: 'ALL', label: 'All Mobile Scans', count: logs.length, color: '#2563eb' },
-              { id: 'KNOWN', label: 'Allowed Personnel', count: logs.filter((l) => l.status === 'KNOWN').length, color: '#198754' },
-              { id: 'UNKNOWN', label: 'Denied / Strangers', count: logs.filter((l) => l.status === 'UNKNOWN').length, color: '#dc3545' },
+              { id: 'KNOWN', label: 'Allowed Personnel', count: logs.filter((l) => l.status === 'KNOWN' || l.status === 'APPROVED').length, color: '#198754' },
+              { id: 'UNKNOWN', label: 'Pending Approval', count: logs.filter((l) => l.status === 'UNKNOWN').length, color: '#f59e0b' },
+              { id: 'DENIED', label: 'Denied / Strangers', count: logs.filter((l) => l.status === 'DENIED').length, color: '#dc3545' },
             ].map((tab) => {
               const isActive = filter === tab.id;
               return (
@@ -315,11 +345,11 @@ export default function DetectionPage() {
                       <td>
                         <span
                           className={`badge rounded-pill fw-bold px-2.5 py-1 ${
-                            isAllowed ? 'bg-success text-white' : 'bg-danger text-white'
+                            log.status === 'UNKNOWN' ? 'badge-pending' : (isAllowed ? 'bg-success text-white' : 'bg-danger text-white')
                           }`}
                           style={{ fontSize: '0.72rem' }}
                         >
-                          {isAllowed ? '✓ ALLOWED' : '✕ DENIED'}
+                          {log.status === 'UNKNOWN' ? '⏳ PENDING' : (isAllowed ? '✓ ALLOWED' : '✕ DENIED')}
                         </span>
                       </td>
                       <td className="font-mono fw-semibold small text-secondary">
@@ -328,38 +358,49 @@ export default function DetectionPage() {
                       <td className="text-secondary small font-mono">
                         {dateStr}
                       </td>
-                      <td className="text-end pe-4">
-                        <div className="d-inline-flex align-items-center gap-2 justify-content-end">
+                      <td className="text-end pe-4" style={{ whiteSpace: 'nowrap' }}>
+                        <div className="d-inline-flex align-items-center gap-1 justify-content-end">
                           {log.image_path && (
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-xs"
+                              className="btn btn-sm btn-premium btn-premium-view rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
                               onClick={() => setSelectedScan(log)}
                               title="Inspect high-res photo"
-                              style={{ fontSize: '0.76rem' }}
+                              style={{ fontSize: '0.74rem' }}
                             >
                               <i className="bi bi-eye"></i> <span>View</span>
                             </button>
                           )}
-                          {!isAllowed && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-xs"
-                              onClick={() => handleApproveScan(log.id)}
-                              title="Approve access"
-                              style={{ fontSize: '0.76rem' }}
-                            >
-                              <i className="bi bi-check-circle"></i> <span>Approve</span>
-                            </button>
+                          {log.status === 'UNKNOWN' && (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-premium btn-premium-approve rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
+                                onClick={() => handleApproveScan(log.id)}
+                                title="Approve access"
+                                style={{ fontSize: '0.74rem' }}
+                              >
+                                <i className="bi bi-check-circle"></i> <span>Approve</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-premium btn-premium-deny rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
+                                onClick={() => handleDenyScan(log.id)}
+                                title="Deny access"
+                                style={{ fontSize: '0.74rem' }}
+                              >
+                                <i className="bi bi-x-circle"></i> <span>Deny</span>
+                              </button>
+                            </>
                           )}
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-xs"
+                            className="btn btn-sm btn-premium btn-premium-delete rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
                             onClick={() => setDeleteLog(log)}
                             title="Delete scan entry"
-                            style={{ fontSize: '0.76rem' }}
+                            style={{ fontSize: '0.74rem' }}
                           >
-                            <i className="bi bi-trash"></i> <span>Delete</span>
+                            <i className="bi bi-trash"></i> <span className="d-none d-md-inline">Delete</span>
                           </button>
                         </div>
                       </td>
@@ -506,18 +547,16 @@ export default function DetectionPage() {
                       <div className="position-absolute top-0 start-0 m-3">
                         <span
                           className={`badge rounded-pill fw-bold px-3 py-1.5 shadow-sm ${
-                            selectedScan.status === 'KNOWN'
-                              ? 'bg-success text-white'
-                              : 'bg-danger text-white'
+                            selectedScan.status === 'UNKNOWN' ? 'badge-pending' : (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED' ? 'bg-success text-white' : 'bg-danger text-white')
                           }`}
                           style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}
                         >
                           <i
                             className={`bi ${
-                              selectedScan.status === 'KNOWN' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'
+                              selectedScan.status === 'UNKNOWN' ? 'bi-hourglass-split' : (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED' ? 'bi-check-circle-fill' : 'bi-x-circle-fill')
                             } me-1.5`}
                           ></i>
-                          {selectedScan.status === 'KNOWN' ? 'MATCH VERIFIED' : 'UNREGISTERED STRANGER'}
+                          {selectedScan.status === 'UNKNOWN' ? 'PENDING APPROVAL' : (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED' ? 'MATCH VERIFIED' : 'ACCESS DENIED')}
                         </span>
                       </div>
                     </div>
@@ -588,7 +627,7 @@ export default function DetectionPage() {
                     <div className="d-flex align-items-center justify-content-between gap-2 pt-1">
                       <button
                         type="button"
-                        className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                        className="btn btn-sm btn-premium btn-premium-delete rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
                         onClick={() => {
                           const scanToDelete = selectedScan;
                           setSelectedScan(null);
@@ -596,15 +635,42 @@ export default function DetectionPage() {
                         }}
                       >
                         <i className="bi bi-trash"></i>
-                        <span>Delete Scan</span>
+                        <span className="d-none d-sm-inline">Delete</span>
                       </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-semibold"
-                        onClick={() => setSelectedScan(null)}
-                      >
-                        Close
-                      </button>
+                      
+                      <div className="d-flex gap-2">
+                        {selectedScan.status === 'UNKNOWN' && (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-premium btn-premium-deny rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                              onClick={() => {
+                                handleDenyScan(selectedScan.id);
+                                setSelectedScan(null);
+                              }}
+                            >
+                              <i className="bi bi-x-circle"></i> Deny
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-premium btn-premium-approve rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                              onClick={() => {
+                                handleApproveScan(selectedScan.id);
+                                setSelectedScan(null);
+                              }}
+                            >
+                              <i className="bi bi-check-circle"></i> Approve
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-semibold"
+                          onClick={() => setSelectedScan(null)}
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

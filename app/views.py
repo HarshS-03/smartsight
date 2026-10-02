@@ -18,7 +18,7 @@ from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from .models import User, Person, PersonImage, PersonEmbedding, RecognitionLog, Camera, Notification, DevicePushToken
+from .models import User, Person, PersonImage, RecognitionLog, Camera, Notification, DevicePushToken
 from .serializers import (
     UserSerializer,
     PersonSerializer,
@@ -210,11 +210,7 @@ class DatasetUploadView(APIView):
                         result = compute_embedding(pi.image.path)
                         if result is not None:
                             emb, det_conf, _ = result
-                            PersonEmbedding.objects.create(
-                                person=person,
-                                source_image=pi,
-                                embedding=emb.tolist(),
-                            )
+
                             get_gallery().add_embedding(person.id, person.name, emb)
                             embedding_count += 1
                     except Exception as e:
@@ -294,6 +290,18 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
                     status='PENDING'
                 ).update(
                     status='APPROVED',
+                    action_source='APP',
+                    processed_at=timezone.now(),
+                    is_read=True
+                )
+        elif request.data.get('status') == 'DENIED':
+            log = self.get_object()
+            if log.image_path:
+                Notification.objects.filter(
+                    image_url=f"/media/{log.image_path}",
+                    status='PENDING'
+                ).update(
+                    status='CANCELLED',
                     action_source='APP',
                     processed_at=timezone.now(),
                     is_read=True
@@ -1351,8 +1359,9 @@ class ComputePersonEmbeddingsAPIView(APIView):
 
         recompute = request.data.get('recompute', False)
         if recompute:
-            # Delete existing embeddings and recompute all
-            PersonEmbedding.objects.filter(person=person).delete()
+            # Recompute removes them from the gallery directly
+            from app.utils.embedding_engine import get_gallery
+            get_gallery().remove_person(person.id)
 
         computed, skipped, errors = compute_person_embeddings(person_id)
         return Response({

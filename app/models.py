@@ -59,22 +59,15 @@ class PersonImage(models.Model):
         return f"Image for {self.person.name}"
 
 
-class PersonEmbedding(models.Model):
-    """Stores a 512-d ArcFace embedding vector for a person's face image."""
-    person = models.ForeignKey(Person, related_name='embeddings', on_delete=models.CASCADE)
-    source_image = models.ForeignKey(PersonImage, null=True, blank=True, on_delete=models.SET_NULL)
-    embedding = models.JSONField()  # 512-d float vector stored as JSON list
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Embedding for {self.person.name} (dim={len(self.embedding) if self.embedding else 0})"
 
 
 class RecognitionLog(models.Model):
     STATUS_CHOICES = [
         ('KNOWN', 'Known'),
-        ('UNKNOWN', 'Unknown'),
+        ('UNKNOWN', 'Unknown (Pending)'),
         ('APPROVED', 'Approved'),
+        ('DENIED', 'Denied'),
     ]
     person_name = models.CharField(max_length=100, null=True, blank=True)
     camera_name = models.CharField(max_length=100, default='Default Camera')

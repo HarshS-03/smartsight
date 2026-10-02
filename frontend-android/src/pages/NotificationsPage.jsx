@@ -546,16 +546,16 @@ export default function NotificationsPage({ setActivePage, user }) {
                       <div className="d-flex align-items-center gap-2 mb-2 w-100">
                         <button
                           type="button"
-                          className="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 shadow-sm"
-                          style={{ fontSize: '0.78rem' }}
+                          className="btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1"
+                          style={{ fontSize: '0.78rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)' }}
                           onClick={() => handleNotificationAction(notif.id, 'approve')}
                         >
                           <i className="bi bi-check-circle-fill"></i> Approve Entry
                         </button>
                         <button
                           type="button"
-                          className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1"
-                          style={{ fontSize: '0.78rem' }}
+                          className="btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1"
+                          style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
                           onClick={() => handleNotificationAction(notif.id, 'cancel')}
                         >
                           <i className="bi bi-x-circle-fill"></i> Deny Entry

@@ -526,8 +526,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       {notif.message}
                     </p>
 
-                    {/* Quick Approval / Dismiss for PENDING Alerts */}
-
+                    {/* Quick Approval / Dismiss for PENDING Alerts (Removed per user request) */}
 
                     <div className="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-white border-opacity-10 w-100">
                       <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">

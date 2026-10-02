@@ -126,12 +126,12 @@ class EmbeddingGallery:
             self._matrix = None
             self._meta = []
 
-    def _save_cache(self, count):
+    def _save_cache(self):
         """Save current matrix and metadata to disk."""
         if self._matrix is not None:
             names = np.array([m[0] for m in self._meta])
             pids = np.array([m[1] for m in self._meta])
-            np.savez_compressed(self.cache_file, matrix=self._matrix, names=names, pids=pids, count=count)
+            np.savez_compressed(self.cache_file, matrix=self._matrix, names=names, pids=pids)
 
     def _refresh_person_info(self):
         """Cache person metadata (class_name, department, category) for fast labeling."""
@@ -187,56 +187,28 @@ class EmbeddingGallery:
     # Load / Reload
     # ------------------------------------------------------------------
     def load_gallery(self):
-        """Load from NPZ cache if valid, else from DB."""
-        from app.models import PersonEmbedding
+        """Load from NPZ cache."""
         self._refresh_person_info()
         with self._lock:
-            try:
-                db_count = PersonEmbedding.objects.count()
-            except Exception:
-                db_count = 0
-            
-            # Try to load from cache
             if os.path.exists(self.cache_file):
                 try:
                     data = np.load(self.cache_file, allow_pickle=True)
-                    if data['count'] == db_count:
-                        self._matrix = data['matrix']
-                        self._meta = list(zip(data['names'], data['pids']))
-                        self._gallery.clear()
-                        for (name, pid), emb in zip(self._meta, self._matrix):
-                            self._gallery.setdefault(pid, []).append((emb, name))
-                        self._loaded = True
-                        logger.info(f"[Gallery] Loaded {db_count} embeddings instantly from cache.")
-                        return
+                    self._matrix = data['matrix']
+                    self._meta = list(zip(data['names'], data['pids']))
+                    self._gallery.clear()
+                    for (name, pid), emb in zip(self._meta, self._matrix):
+                        self._gallery.setdefault(pid, []).append((emb, name))
+                    self._loaded = True
+                    logger.info(f"[Gallery] Loaded embeddings instantly from cache.")
+                    return
                 except Exception as e:
-                    logger.warning(f"[Gallery] Failed to load cache: {e}. Rebuilding...")
-
-            # Fallback to DB
-            self._gallery.clear()
-            count = 0
-            for pe in PersonEmbedding.objects.select_related('person').all():
-                pid = pe.person_id
-                name = pe.person.name
-                emb = np.array(pe.embedding, dtype=np.float32)
-                # L2-normalise for cosine similarity via dot product
-                norm = np.linalg.norm(emb)
-                if norm > 0:
-                    emb = emb / norm
-                self._gallery.setdefault(pid, []).append((emb, name))
-                count += 1
-            self._rebuild_matrix()
-            self._save_cache(db_count)
-            self._loaded = True
-            logger.info(f"[Gallery] Loaded {count} embeddings from DB and rebuilt cache.")
+                    logger.warning(f"[Gallery] Failed to load cache: {e}.")
+            
+            logger.error("[Gallery] NPZ file missing or corrupt. Cannot load gallery.")
+            self._loaded = True # Prevent endless loops
 
     def reload(self):
-        """Force full reload from DB."""
-        if os.path.exists(self.cache_file):
-            try:
-                os.remove(self.cache_file)
-            except Exception:
-                pass
+        """Force full reload from cache."""
         self.load_gallery()
 
     def ensure_loaded(self):
@@ -256,34 +228,18 @@ class EmbeddingGallery:
         with self._lock:
             self._gallery.setdefault(person_id, []).append((emb, person_name))
             self._rebuild_matrix()
-            from app.models import PersonEmbedding
-            self._save_cache(PersonEmbedding.objects.count())
+            self._save_cache()
 
     def remove_person(self, person_id: int):
         """Remove all embeddings for a person from in-memory gallery."""
         with self._lock:
             self._gallery.pop(person_id, None)
             self._rebuild_matrix()
-            from app.models import PersonEmbedding
-            self._save_cache(PersonEmbedding.objects.count())
+            self._save_cache()
 
     def remove_embedding_by_source(self, person_id: int, source_image_id: int):
-        """Remove embeddings sourced from a specific PersonImage."""
-        from app.models import PersonEmbedding
-        with self._lock:
-            entries = []
-            for pe in PersonEmbedding.objects.filter(person_id=person_id).select_related('person'):
-                emb = np.array(pe.embedding, dtype=np.float32)
-                norm = np.linalg.norm(emb)
-                if norm > 0:
-                    emb = emb / norm
-                entries.append((emb, pe.person.name))
-            if entries:
-                self._gallery[person_id] = entries
-            else:
-                self._gallery.pop(person_id, None)
-            self._rebuild_matrix()
-            self._save_cache(PersonEmbedding.objects.count())
+        """Deprecated: Cannot selectively remove without JSONField source map."""
+        pass
 
     def update_person_meta(self, person_id: int, new_name: str = None, category: str = None, class_name: str = None, department: str = None):
         """Update a person's name and metadata across in-memory structures and disk cache."""
@@ -294,8 +250,7 @@ class EmbeddingGallery:
                     updated_entries.append((emb, new_name))
                 self._gallery[person_id] = updated_entries
                 self._rebuild_matrix()
-                from app.models import PersonEmbedding
-                self._save_cache(PersonEmbedding.objects.count())
+                self._save_cache()
 
             # Update cached metadata
             if person_id in self._person_info:
@@ -684,7 +639,7 @@ def compute_person_embeddings(person_id: int):
     Returns:
         (computed_count, skipped_count, error_count)
     """
-    from app.models import Person, PersonImage, PersonEmbedding
+    from app.models import Person, PersonImage
 
     try:
         person = Person.objects.get(id=person_id)
@@ -693,26 +648,19 @@ def compute_person_embeddings(person_id: int):
         return 0, 0, 0
 
     gallery = get_gallery()
+    # Clear existing to prevent duplicates during recompute
+    gallery.remove_person(person.id)
+    
     computed = 0
     skipped = 0
     errors = 0
 
     for pi in PersonImage.objects.filter(person=person):
-        # Skip if embedding already exists for this source image
-        if PersonEmbedding.objects.filter(person=person, source_image=pi).exists():
-            skipped += 1
-            continue
-
         try:
             image_path = pi.image.path
             result = compute_embedding(image_path)
             if result is not None:
                 emb, det_conf, _ = result
-                PersonEmbedding.objects.create(
-                    person=person,
-                    source_image=pi,
-                    embedding=emb.tolist(),
-                )
                 gallery.add_embedding(person.id, person.name, emb)
                 computed += 1
             else:
