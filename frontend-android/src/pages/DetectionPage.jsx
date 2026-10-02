@@ -395,7 +395,10 @@ export default function DetectionPage() {
             ) : isUnknownPending ? (
               <>
                 <i className="bi bi-shield-lock-fill fs-5 text-warning"></i>
-                <span>Locked (Note Req.)</span>
+                <div className="d-flex flex-column align-items-start lh-sm" style={{ fontSize: '0.85rem', textAlign: 'left' }}>
+                  <span className="fw-bold">Locked</span>
+                  <span style={{ fontSize: '0.65rem', opacity: 0.85 }}>Note Req.</span>
+                </div>
               </>
             ) : (
               <>
@@ -566,37 +569,40 @@ export default function DetectionPage() {
                     </div>
 
                     {/* Quick Tag Suggestion Chips */}
-                    <div className="d-flex flex-wrap gap-1.5 mb-2">
-                      <span className="text-muted small me-1 align-self-center" style={{ fontSize: '0.7rem' }}>Quick tag:</span>
-                      {[
-                        'Unregistered visitor',
-                        'Suspicious activity',
-                        'No badge / ID card',
-                        'Clearance denied',
-                        'Verified safe visitor',
-                      ].map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          className="btn btn-sm rounded-pill px-2.5 py-0.5 border"
-                          onClick={() => {
-                            setSecurityNote((prev) => {
-                              if (!prev) return tag;
-                              const combined = `${prev}, ${tag}`;
-                              const words = combined.split(/\s+/).filter(Boolean);
-                              return words.length <= 100 ? combined : prev;
-                            });
-                          }}
-                          style={{
-                            fontSize: '0.72rem',
-                            background: 'rgba(255, 255, 255, 0.75)',
-                            borderColor: 'rgba(0, 0, 0, 0.15)',
-                            color: '#1e293b',
-                          }}
-                        >
-                          + {tag}
-                        </button>
-                      ))}
+                    <div className="mb-2">
+                      <div className="text-muted small mb-1" style={{ fontSize: '0.7rem' }}>Quick tags:</div>
+                      <div className="row g-2">
+                        {[
+                          'Unregistered visitor',
+                          'Suspicious activity',
+                          'No badge / ID card',
+                          'Clearance denied',
+                          'Verified safe visitor',
+                        ].map((tag) => (
+                          <div className="col-6" key={tag}>
+                            <button
+                              type="button"
+                              className="btn btn-sm w-100 rounded-pill px-2 py-1 border text-truncate text-start"
+                              onClick={() => {
+                                setSecurityNote((prev) => {
+                                  if (!prev) return tag;
+                                  const combined = `${prev}, ${tag}`;
+                                  const words = combined.split(/\s+/).filter(Boolean);
+                                  return words.length <= 100 ? combined : prev;
+                                });
+                              }}
+                              style={{
+                                fontSize: '0.72rem',
+                                background: 'rgba(255, 255, 255, 0.75)',
+                                borderColor: 'rgba(0, 0, 0, 0.15)',
+                                color: '#1e293b',
+                              }}
+                            >
+                              + {tag}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <textarea

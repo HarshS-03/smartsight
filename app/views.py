@@ -275,9 +275,30 @@ class AssignClassifiedGroupAPIView(APIView):
 # REST FRAMEWORK RECOGNITION LOGS & UNKNOWN CAPTURES
 # ==============================================================================
 
-class RecognitionLogViewSet(mixins.DestroyModelMixin, viewsets.ReadOnlyModelViewSet):
+class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = RecognitionLogSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return Response({'error': 'Only admins can approve or modify scan logs.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        response = super().update(request, *args, **kwargs)
+        
+        # Sync notification status so the mobile app (guard) unlocks automatically
+        if request.data.get('status') == 'APPROVED':
+            log = self.get_object()
+            if log.image_path:
+                Notification.objects.filter(
+                    image_url=f"/media/{log.image_path}",
+                    status='PENDING'
+                ).update(
+                    status='APPROVED',
+                    action_source='APP',
+                    processed_at=timezone.now(),
+                    is_read=True
+                )
+        return response
 
     def perform_destroy(self, instance):
         if instance.image_path:

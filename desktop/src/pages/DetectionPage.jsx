@@ -64,6 +64,21 @@ export default function DetectionPage() {
     }
   };
 
+  const handleApproveScan = async (id) => {
+    try {
+      await API.patch(`/logs/${id}/`, { status: 'APPROVED' });
+      setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: 'APPROVED' } : l)));
+      if (window.showToast) {
+        window.showToast('Scan log approved successfully!', 'success', 'ACCESS GRANTED');
+      }
+    } catch (err) {
+      console.error('Failed to approve log:', err);
+      if (window.showToast) {
+        window.showToast('Could not approve record. Check server connection.', 'error', 'APPROVAL FAILED');
+      }
+    }
+  };
+
   useEffect(() => {
     fetchRecentScans();
     if (!autoRefresh) return;
@@ -324,6 +339,17 @@ export default function DetectionPage() {
                               style={{ fontSize: '0.76rem' }}
                             >
                               <i className="bi bi-eye"></i> <span>View</span>
+                            </button>
+                          )}
+                          {!isAllowed && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-xs"
+                              onClick={() => handleApproveScan(log.id)}
+                              title="Approve access"
+                              style={{ fontSize: '0.76rem' }}
+                            >
+                              <i className="bi bi-check-circle"></i> <span>Approve</span>
                             </button>
                           )}
                           <button
