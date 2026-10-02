@@ -1225,7 +1225,7 @@ export default function DatasetPage() {
                 <h5 className="fw-bold text-dynamic mb-1 d-flex align-items-center gap-2">
                   <i className="bi bi-cpu text-primary"></i> AI Auto-Classification Engine
                 </h5>
-                <p className="text-secondary small mb-0" style={{ maxWidth: '580px' }}>Automatically cluster all unrecognized surveillance captures using DeepFace & DBSCAN Clustering. Group same-person captures to name and register them to your dataset instantly.</p>
+                <p className="text-secondary small mb-0" style={{ maxWidth: '580px' }}>Automatically cluster all unrecognized access control captures using DeepFace & DBSCAN Clustering. Group same-person captures to name and register them to your dataset instantly.</p>
               </div>
               <button type="button" className="btn-ds-primary flex-shrink-0 align-self-center align-self-md-auto" onClick={startAutoClassification}>
                 <i className="bi bi-magic"></i>
@@ -2017,7 +2017,7 @@ export default function DatasetPage() {
                         <div className="ai-scanner-line"></div>
                       </div>
                       <h5 className="text-dynamic fw-bold mb-2">ArcFace Neural Engine Active</h5>
-                      <div className="ai-status-text mb-3">COMPUTING BIOMETRIC EMBEDDINGS<span className="typing-dots"></span></div>
+                      <div className="ai-status-text mb-3">COMPUTING ACCESS CONTROL EMBEDDINGS<span className="typing-dots"></span></div>
                       <p className="text-secondary small mx-auto" style={{ maxWidth: '380px', lineHeight: 1.6 }}>
                         Extracting 512-d facial features and clustering via DBSCAN Clustering. This process separates distinct individuals into highly accurate identification groups.
                       </p>

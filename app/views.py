@@ -639,7 +639,7 @@ def face_verify_frame(request):
 @permission_classes([permissions.IsAuthenticated])
 def biometric_verify_frame(request):
     """
-    Department Biometric Access Verification Endpoint:
+    Department Access Control Verification Endpoint:
     Receives single frame from mobile camera, detects & recognizes face (ArcFace/YOLO),
     saves captured snapshot image, creates RecognitionLog, sends push alert if stranger,
     and returns ALLOWED (with Name, Department, Role) or DENIED (Stranger).
@@ -711,7 +711,7 @@ def biometric_verify_frame(request):
             # Save RecognitionLog
             log = RecognitionLog.objects.create(
                 person_name=recog_name,
-                camera_name="Mobile Biometric Scanner",
+                camera_name="Mobile Access Scanner",
                 confidence=similarity,
                 detection_confidence=det_conf,
                 recognition_similarity=similarity,
@@ -734,7 +734,7 @@ def biometric_verify_frame(request):
             # ── DENIED / UNREGISTERED STRANGER ──
             log = RecognitionLog.objects.create(
                 person_name=None,
-                camera_name="Mobile Biometric Scanner",
+                camera_name="Mobile Access Scanner",
                 confidence=det_conf,
                 detection_confidence=det_conf,
                 recognition_similarity=similarity,
@@ -762,11 +762,11 @@ def biometric_verify_frame(request):
                         image_url=f"/media/{rel_img_path}",
                         status='PENDING',
                         alert_person_name="Unknown / Unregistered",
-                        alert_camera_name="Mobile Biometric Scanner",
+                        alert_camera_name="Mobile Access Scanner",
                         alert_confidence=det_conf,
                     )
                 except Exception as notif_err:
-                    print("[Biometric Verify] Admin escalation notification failed:", notif_err)
+                    print("[Access Control Verify] Admin escalation notification failed:", notif_err)
 
                 return Response({
                     'status': 'PENDING_REVIEW',
@@ -788,11 +788,11 @@ def biometric_verify_frame(request):
                     from app.services.notification_service import dispatch_notification
                     dispatch_notification(
                         title="Access Denied: Unregistered Person",
-                        message="Unauthorized person attempted entry at mobile biometric scanner.",
+                        message="Unauthorized person attempted entry at mobile access scanner.",
                         image_url=f"/media/{rel_img_path}"
                     )
                 except Exception as notif_err:
-                    print("[Biometric Verify] Alert dispatch failed:", notif_err)
+                    print("[Access Control Verify] Alert dispatch failed:", notif_err)
 
                 return Response({
                     'status': 'DENIED',
@@ -844,7 +844,7 @@ class SecurityNoteAPIView(APIView):
             if not existing_notif.alert_person_name:
                 existing_notif.alert_person_name = log.person_name or "Unknown / Unregistered"
             if not existing_notif.alert_camera_name:
-                existing_notif.alert_camera_name = log.camera_name or "Mobile Biometric Scanner"
+                existing_notif.alert_camera_name = log.camera_name or "Mobile Access Scanner"
             if existing_notif.alert_confidence is None:
                 existing_notif.alert_confidence = log.confidence
             existing_notif.save()
@@ -853,11 +853,11 @@ class SecurityNoteAPIView(APIView):
             image_url = f"/media/{rel_path}" if rel_path else None
             Notification.objects.create(
                 title="🔍 Security Alert — Suspicious Person Reported",
-                message="An operator has flagged an unregistered person detected at Mobile Biometric Scanner and submitted a security note for admin review.",
+                message="An operator has flagged an unregistered person detected at Mobile Access Scanner and submitted a security note for admin review.",
                 image_url=image_url,
                 status='PENDING',
                 alert_person_name=log.person_name or "Unknown / Unregistered",
-                alert_camera_name=log.camera_name or "Mobile Biometric Scanner",
+                alert_camera_name=log.camera_name or "Mobile Access Scanner",
                 alert_confidence=log.confidence,
                 security_note=note,
             )

@@ -1097,8 +1097,8 @@ p,
   border-color: #dc2626 !important;
 }
 
-/* ── Detection Surveillance Sidebar Layout & Stat Cards ── */
-/* ── Detection Surveillance Sidebar Layout & Stat Cards ── */
+/* ── Detection Access Control Sidebar Layout & Stat Cards ── */
+/* ── Detection Access Control Sidebar Layout & Stat Cards ── */
 .detection-sidebar {
   display: flex !important;
   flex-direction: column !important;
@@ -7006,7 +7006,7 @@ detection-hero-bg,
   transform: scale(1.01);
 }
 
-/* ── Biometric HUD Styles ─────────────────────────── */
+/* ── Access Control HUD Styles ─────────────────────────── */
 .hud-corner {
   width: 20px;
   height: 20px;

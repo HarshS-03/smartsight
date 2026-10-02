@@ -152,7 +152,7 @@ def _fill_summary_sheet(ws, reports, title_suffix):
     # ── Footer ──
     footer_row = max(21, 11 + len(sorted_persons) + 2)
     ws.merge_cells(start_row=footer_row, start_column=1, end_row=footer_row, end_column=4)
-    ws.cell(row=footer_row, column=1, value="Powered by Smart Sight AI  •  Automated Surveillance Intelligence")
+    ws.cell(row=footer_row, column=1, value="Powered by Smart Sight AI  •  Smart Access Control System")
     ws.cell(row=footer_row, column=1).font = Font(name='Inter', size=9, italic=True, color='94A3B8')
     ws.cell(row=footer_row, column=1).alignment = Alignment(horizontal='center', vertical='center')
     ws.cell(row=footer_row, column=1).fill = PatternFill(start_color=FOOTER_BG, end_color=FOOTER_BG, fill_type='solid')
@@ -384,9 +384,9 @@ def generate_reports_excel(reports, title_suffix="FULL REPORT"):
     return output
 
 
-def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
+def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
     """
-    Generate an executive PDF biometric audit report with actual captured face photos.
+    Generate an executive PDF access control audit report with actual captured face photos.
     Uses ReportLab to build a formatted table with embedded images.
     For KNOWN persons without a snapshot, falls back to their dataset profile photo.
     """
@@ -473,7 +473,7 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
     now_str = timezone.localtime(timezone.now()).strftime('%d %b %Y, %I:%M %p')
     story.append(Paragraph(f"SMARTSIGHT — {title_suffix.upper()}", title_style))
     story.append(Paragraph(
-        f"Generated on {now_str} &bull; Department Biometric Verification & Access Audit",
+        f"Generated on {now_str} &bull; Department Smart Access Control Audit",
         subtitle_style
     ))
 
@@ -717,7 +717,7 @@ def generate_reports_pdf(logs, title_suffix="BIOMETRIC ACCESS REPORT"):
     story.append(Spacer(1, 14))
     footer_style = ParagraphStyle('Footer', parent=cell_style, fontSize=7, textColor=colors.HexColor('#94A3B8'), alignment=1)
     story.append(Paragraph(
-        f"SmartSight Biometric Access Report &bull; {total_count} records &bull; Generated {now_str}",
+        f"SmartSight Access Control Report &bull; {total_count} records &bull; Generated {now_str}",
         footer_style
     ))
 

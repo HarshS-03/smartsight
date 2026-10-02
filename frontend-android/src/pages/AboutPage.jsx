@@ -55,7 +55,7 @@ export default function AboutPage() {
                 </h1>
 
                 <p className="hero-sub mb-5 mx-auto" data-reveal="true" data-reveal-delay="100">
-                  Harnessing YOLO object detection and <span className="text-nowrap">state-of-the-art</span> Computer Vision to automate tracking, detect faces, and ensure smarter monitoring in real-time.
+                  Harnessing YOLO face detection and <span className="text-nowrap">state-of-the-art</span> Computer Vision to automate identity checks, detect faces, and ensure smarter access control in real-time.
                 </p>
 
                 <div className="hero-cta-group mb-5 justify-content-center" data-reveal="true" data-reveal-delay="200">
@@ -82,7 +82,7 @@ export default function AboutPage() {
                   <div className="stat-divider"></div>
                   <div className="stat-item">
                     <div className="num">24/7</div>
-                    <div className="label">Live Monitoring</div>
+                    <div className="label">Access Security</div>
                   </div>
                 </div>
 
@@ -112,7 +112,7 @@ export default function AboutPage() {
                     <span>Intelligent Processing Core</span>
                   </div>
                   <p className="detail-text">
-                    Smart Sight uses a YOLO face detection model paired with ArcFace deep metric learning for identity recognition. YOLO detects and localizes faces in every frame, then ArcFace extracts 512-dimensional embedding vectors and matches them against the trained dataset — delivering real-time, high-accuracy face recognition on live RTSP and local video streams.
+                    Smart Sight uses a YOLO face detection model paired with ArcFace deep metric learning for identity recognition. YOLO detects and localizes faces in checkpoint captures, then ArcFace extracts 512-dimensional embedding vectors and matches them against the trained dataset — delivering instant, high-accuracy face recognition on mobile device scans and entry point captures.
                   </p>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export default function AboutPage() {
                     <span>Robust Security Framework</span>
                   </div>
                   <p className="detail-text">
-                    Security is embedded at every layer. Role-based JWT authentication gates all API endpoints, while Django middleware guards protect dataset storage, detection consoles, and report aggregators. Face-based biometric login adds an additional verification layer — the system runs ArcFace verification on live camera frames to authenticate users without passwords.
+                    Security is embedded at every layer. Role-based JWT authentication gates all API endpoints, while Django middleware guards protect dataset storage, verification consoles, and report aggregators. Face-based Smart Access Control adds an additional verification layer — the system runs ArcFace verification on instant point-of-entry captures to authenticate users securely.
                   </p>
                 </div>
               </div>
@@ -136,7 +136,7 @@ export default function AboutPage() {
                     <span>Dataset & ArcFace Training</span>
                   </div>
                   <p className="detail-text">
-                    Administrators upload person datasets via a streamlined bulk import system — drag-and-drop folder structures containing multiple training images per person. The backend automatically processes uploads, generates ArcFace embeddings for each face, and indexes them into the recognition pipeline. New personnel are integrated instantly without retraining the core model.
+                    Administrators upload authorized personnel datasets via a streamlined bulk import system — drag-and-drop folder structures containing multiple training images per person. The backend automatically processes uploads, generates ArcFace embeddings for each face, and indexes them into the secure access pipeline. New personnel are granted access capabilities instantly without retraining the core model.
                   </p>
                 </div>
               </div>
@@ -148,7 +148,7 @@ export default function AboutPage() {
                     <span>Advanced Reports & Insights</span>
                   </div>
                   <p className="detail-text">
-                    Every detection event is logged with timestamps, confidence scores, and identity classification. The reports dashboard visualizes total detections, known vs. unknown breakdowns, and daily attendance patterns. Data can be filtered by date range or classification category and exported directly to Excel for offline analysis and compliance reporting.
+                    Every access attempt is logged with timestamps, confidence scores, and identity classification. The reports dashboard visualizes total entry events, authorized vs. denied breakdowns, and daily access log patterns. Data can be filtered by date range or classification category and exported directly to Excel for offline analysis and compliance reporting.
                   </p>
                 </div>
               </div>
@@ -409,9 +409,9 @@ export default function AboutPage() {
                   <div className="pillar-icon">
                     <i className="bi bi-eye"></i>
                   </div>
-                  <h3 className="pillar-title">Active Monitoring</h3>
+                  <h3 className="pillar-title">Active Verification</h3>
                   <p className="pillar-desc">
-                    Detects and flags events in real-time, turning passive camera feeds into an active security layer.
+                    Instantly verifies identities at checkpoints, turning cameras into an active access control layer.
                   </p>
                 </div>
               </div>
@@ -437,7 +437,7 @@ export default function AboutPage() {
                   </div>
                   <h3 className="pillar-title">Secure by Design</h3>
                   <p className="pillar-desc">
-                    Role-based access and encrypted sessions keep your surveillance data private and fully protected.
+                    Role-based access and encrypted sessions keep your access control data private and fully protected.
                   </p>
                 </div>
               </div>

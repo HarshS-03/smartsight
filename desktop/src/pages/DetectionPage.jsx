@@ -38,7 +38,7 @@ export default function DetectionPage() {
         });
       }
     } catch (err) {
-      console.error('Error fetching mobile biometric scan logs:', err);
+      console.error('Error fetching mobile access control scan logs:', err);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +91,7 @@ export default function DetectionPage() {
             </span>
           </div>
           <h2 className="fw-bold text-dynamic mb-1" style={{ fontSize: '1.6rem' }}>
-            Department Biometric Entry Console
+            Department Access Control Entry Console
           </h2>
           <p className="text-secondary small mb-0">
             Real-time feed of people verified by mobile terminals. Dataset management is exclusively handled in the Dataset tab.
@@ -240,7 +240,7 @@ export default function DetectionPage() {
                     ) : (
                       <div>
                         <i className="bi bi-inbox fs-2 text-muted mb-2 d-block"></i>
-                        <span>No biometric scans recorded yet. Scan a person using the mobile app.</span>
+                        <span>No access control scans recorded yet. Scan a person using the mobile app.</span>
                       </div>
                     )}
                   </td>
@@ -423,7 +423,7 @@ export default function DetectionPage() {
                       </div>
                       <div>
                         <h5 className="modal-title fw-bold mb-0" style={{ fontSize: '1.15rem', color: 'var(--text-heading)' }}>
-                          Biometric Snapshot
+                          Access Control Snapshot
                         </h5>
                         <span className="small text-secondary" style={{ fontSize: '0.78rem' }}>
                           Log Record #{selectedScan.id} • Terminal Capture
@@ -458,7 +458,7 @@ export default function DetectionPage() {
                       {selectedScan.image_path && !imgError ? (
                         <img
                           src={getImageUrl(selectedScan.image_path)}
-                          alt="Biometric Snapshot"
+                          alt="Access Control Snapshot"
                           className="w-100 h-100"
                           style={{
                             objectFit: 'contain',
@@ -537,7 +537,7 @@ export default function DetectionPage() {
                           </div>
                           <div className="small fw-semibold text-dynamic text-truncate">
                             <i className="bi bi-phone me-1 text-primary"></i>
-                            {selectedScan.camera_name || 'Mobile Biometric Scanner'}
+                            {selectedScan.camera_name || 'Mobile Access Control Scanner'}
                           </div>
                         </div>
                         <div className="col-6">

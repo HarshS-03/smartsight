@@ -56,7 +56,7 @@ export default function HomePage({ setActivePage }) {
               </h1>
 
               <p className="hero-sub mb-4 mb-md-5 mx-auto" data-reveal="true" data-reveal-delay="100">
-                Department Biometric Verification &amp; Access Control. Instant face recognition gate with photo-embedded audit reports.
+                Department Access Control Verification &amp; Access Control. Instant face recognition gate with photo-embedded audit reports.
               </p>
 
               <div className="hero-cta-group mb-5 justify-content-center" data-reveal="true" data-reveal-delay="200">

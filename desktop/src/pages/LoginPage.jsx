@@ -8,7 +8,7 @@ export default function LoginPage({ setActivePage, setUser }) {
   const [error, setError] = useState(null);
 
   const [showFaceModal, setShowFaceModal] = useState(false);
-  const [scanStatus, setScanStatus] = useState('Initializing Biometric HUD...');
+  const [scanStatus, setScanStatus] = useState('Initializing Access Control HUD...');
   const [scanState, setScanState] = useState('scanning'); // scanning, success, error
   const [faceFeedUrl, setFaceFeedUrl] = useState('');
   const [faceCheckInterval, setFaceCheckInterval] = useState(null);
@@ -92,7 +92,7 @@ export default function LoginPage({ setActivePage, setUser }) {
 
     setShowFaceModal(true);
     setScanState('scanning');
-    setScanStatus('Initializing Biometric Camera...');
+    setScanStatus('Initializing Access Control Camera...');
 
     if (faceCheckInterval) clearInterval(faceCheckInterval);
 
@@ -101,7 +101,7 @@ export default function LoginPage({ setActivePage, setUser }) {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
         setUseLocalCam(true);
-        setScanStatus('Align Face for Biometric Scanning...');
+        setScanStatus('Align Face for Access Control Scanning...');
         setTimeout(() => {
           if (videoRef.current) videoRef.current.srcObject = stream;
         }, 300);
@@ -316,7 +316,7 @@ export default function LoginPage({ setActivePage, setUser }) {
         </div>
       </div>
 
-      {/* Biometric Face Scanner Modal */}
+      {/* Access Control Face Scanner Modal */}
       {showFaceModal && (
         <>
           <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
@@ -333,13 +333,13 @@ export default function LoginPage({ setActivePage, setUser }) {
                 <div className="modal-header border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
                   <h5 className="modal-title fw-bold d-flex align-items-center gap-2" style={{ color: 'var(--text-heading)' }}>
                     <i className="bi bi-cpu text-primary animate-pulse"></i>
-                    <span>BIOMETRIC SCANNER</span>
+                    <span>ACCESS CONTROL SCANNER</span>
                   </h5>
                   <button type="button" className="btn-close opacity-50 hover-glow" onClick={stopFaceLogin}></button>
                 </div>
 
                 <div className="modal-body p-4 text-center">
-                  <p className="small mb-4" style={{ color: 'var(--text-secondary)' }}>Smart Sight Admin Biometric Authentication</p>
+                  <p className="small mb-4" style={{ color: 'var(--text-secondary)' }}>Smart Sight Admin Access Control Authentication</p>
 
                   <div className="position-relative mx-auto mb-4 overflow-hidden rounded-4 border"
                     style={{ width: '100%', maxWidth: '300px', aspectRatio: '1/1', background: '#000', borderColor: 'var(--border-color) !important' }}>
@@ -357,7 +357,7 @@ export default function LoginPage({ setActivePage, setUser }) {
                       <img
                         ref={faceFeedRef}
                         src={faceFeedUrl}
-                        alt="Biometric Face Scanner Stream"
+                        alt="Access Control Face Scanner Stream"
                         className="w-100 h-100 object-fit-cover"
                         onError={() => setScanStatus('Backend stream offline. Using device sensor...')}
                       />
@@ -367,8 +367,8 @@ export default function LoginPage({ setActivePage, setUser }) {
                       </div>
                     )}
 
-                    {/* Biometric HUD Overlays */}
-                    <div className="biometric-overlay position-absolute inset-0 d-flex flex-column justify-content-between p-4 pointer-events-none">
+                    {/* Access Control HUD Overlays */}
+                    <div className="access-control-overlay position-absolute inset-0 d-flex flex-column justify-content-between p-4 pointer-events-none">
                       <div className="d-flex justify-content-between">
                         <div className="hud-corner top-left"></div>
                         <div className="hud-corner top-right"></div>
@@ -412,7 +412,7 @@ export default function LoginPage({ setActivePage, setUser }) {
 
                 <div className="modal-footer border-0 p-4 pt-0 justify-content-center">
                   <p className="opacity-50 x-small mb-0" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    Smart Sight Secure Biometric Core v2.0 • Restricted Area
+                    Smart Sight Secure Access Control Core v2.0 • Restricted Area
                   </p>
                 </div>
               </div>

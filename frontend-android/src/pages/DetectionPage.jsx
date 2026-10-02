@@ -165,7 +165,7 @@ export default function DetectionPage() {
     }
   };
 
-  // Single-shot Biometric Verification
+  // Single-shot Access Control Verification
   const handleScanPerson = async () => {
     if (!videoRef.current || !canvasRef.current || isScanning) return;
 
@@ -233,7 +233,7 @@ export default function DetectionPage() {
         setRecentScans((prev) => [result, ...prev.slice(0, 4)]);
       }
     } catch (err) {
-      console.error('Biometric verification failed:', err);
+      console.error('Access Control verification failed:', err);
       if (window.showToast) {
         window.showToast('Verification failed. Server connection error.', 'error', 'ERROR');
       }
@@ -244,7 +244,7 @@ export default function DetectionPage() {
 
   return (
     <div
-      className="biometric-page-wrapper py-3 pb-4 d-flex flex-column justify-content-center align-items-center w-100 flex-grow-1"
+      className="access-control-page-wrapper py-3 pb-4 d-flex flex-column justify-content-center align-items-center w-100 flex-grow-1"
       style={{ minHeight: 'calc(100vh - 130px)', background: 'transparent' }}
     >
       {/* Hidden processing canvas */}
@@ -254,13 +254,13 @@ export default function DetectionPage() {
         {/* Header Banner */}
         <div className="text-center mb-3">
           <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-1.5 fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-            <i className="bi bi-shield-check me-1"></i> DEPARTMENT BIOMETRIC ACCESS GATE
+            <i className="bi bi-shield-check me-1"></i> DEPARTMENT ACCESS CONTROL ACCESS GATE
           </span>
           <h2 className="fw-bold text-dynamic mb-1" style={{ fontSize: '1.45rem' }}>
             Mobile Scan &amp; Verify
           </h2>
           <p className="text-secondary small mb-0">
-            Single-tap instant face biometric verification for entry allowance.
+            Single-tap instant face access control verification for entry allowance.
           </p>
         </div>
 
@@ -314,7 +314,7 @@ export default function DetectionPage() {
               className="badge bg-black bg-opacity-60 text-white rounded-pill px-2.5 py-1"
               style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}
             >
-              {isScanning ? 'ANALYZING BIOMETRICS...' : 'ALIGN FACE HERE'}
+              {isScanning ? 'ANALYZING ACCESS CONTROL...' : 'ALIGN FACE HERE'}
             </span>
           </div>
 

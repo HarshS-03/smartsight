@@ -9,7 +9,6 @@ import AboutPage from './pages/AboutPage';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DetectionPage from './pages/DetectionPage';
-import CamerasPage from './pages/CamerasPage';
 import DatasetPage from './pages/DatasetPage';
 import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -305,10 +304,7 @@ export default function App() {
               path="/detection"
               element={user ? <DetectionPage onOpenCapturesModal={() => setShowCapturesModal(true)} /> : <Navigate to="/login" replace />}
             />
-            <Route
-              path="/cameras"
-              element={user ? <CamerasPage /> : <Navigate to="/login" replace />}
-            />
+
             <Route
               path="/dataset"
               element={user ? <DatasetPage /> : <Navigate to="/login" replace />}

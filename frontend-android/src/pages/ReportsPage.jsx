@@ -242,7 +242,7 @@ export default function ReportsPage() {
           id: log.id,
           date: dateStr,
           rawTimestamp: dateObj.getTime(),
-          camera_name: log.camera_name || "Default Camera",
+          camera_name: (log.camera_name || "Default Camera").replace(/Biometric/gi, "Access"),
           person_name: log.person_name || "Unknown Person",
           name: log.person_name || "Unknown Person",
           status: log.status,
@@ -468,7 +468,7 @@ export default function ReportsPage() {
                 Recognition <span className="accent">Reports</span>
               </h1>
               <p className="page-hero-sub text-center text-lg-start mb-0">
-                Dynamic frequent persons dashboard &amp; surveillance analytics.
+                Dynamic frequent persons dashboard &amp; access control analytics.
               </p>
             </div>
             <div className="col-12 col-lg-6 text-center text-lg-end d-flex align-items-center justify-content-center justify-content-lg-end gap-2 flex-wrap">
