@@ -20,6 +20,7 @@ export default function ReportsPage() {
   const [unknownDetections, setUnknownDetections] = useState(0);
 
   const [frequentPersons, setFrequentPersons] = useState([]);
+  const [frequentPersonsFilter, setFrequentPersonsFilter] = useState('ALL');
   const [reports, setReports] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -187,15 +188,42 @@ export default function ReportsPage() {
 
       setReports(mappedReports);
 
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const thisWeekStart = new Date(today);
+      thisWeekStart.setDate(today.getDate() - today.getDay());
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
       const personCounts = {};
       logs.forEach(log => {
-        const name = log.person_name || 'Unknown Person';
+        // If UNKNOWN, treat each detection as a unique occurrence since we don't have facial grouping
+        const isUnknown = log.status === 'UNKNOWN';
+        const name = isUnknown ? `Unknown Person #${log.id || Math.floor(Math.random()*1000)}` : (log.person_name || 'Unknown Person');
+        
         if (!personCounts[name]) {
-          personCounts[name] = { count: 0, last_seen: log.timestamp, status: log.status };
+          personCounts[name] = { total_count: 0, daily_count: 0, weekly_count: 0, monthly_count: 0, last_seen: log.timestamp, status: log.status, image_path: log.image_path, is_unknown: isUnknown };
         }
-        personCounts[name].count += 1;
-        if (new Date(log.timestamp) > new Date(personCounts[name].last_seen)) {
+        
+        const logDate = new Date(log.timestamp);
+        const logDay = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
+
+        personCounts[name].total_count += 1;
+        
+        if (logDay.getTime() === today.getTime()) {
+          personCounts[name].daily_count += 1;
+        }
+        if (logDate >= thisWeekStart) {
+          personCounts[name].weekly_count += 1;
+        }
+        if (logDate >= thisMonthStart) {
+          personCounts[name].monthly_count += 1;
+        }
+
+        if (logDate > new Date(personCounts[name].last_seen)) {
           personCounts[name].last_seen = log.timestamp;
+          if (log.image_path) personCounts[name].image_path = log.image_path;
+        } else if (!personCounts[name].image_path && log.image_path) {
+          personCounts[name].image_path = log.image_path;
         }
       });
 
@@ -210,10 +238,12 @@ export default function ReportsPage() {
         return {
           name,
           status: data.status,
-          total_count: data.count,
-          weekly_count: data.count,
-          monthly_count: data.count,
-          last_seen: `${dateStr}, ${timeStr}`
+          total_count: data.total_count,
+          daily_count: data.daily_count,
+          weekly_count: data.weekly_count,
+          monthly_count: data.monthly_count,
+          last_seen: `${dateStr}, ${timeStr}`,
+          imageUrl: data.image_path ? getImageUrl(data.image_path) : null
         };
       }).sort((a, b) => b.total_count - a.total_count);
 
@@ -554,77 +584,144 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Frequent Persons Grid Section */}
+        {/* Frequent Persons Section */}
         <div className="row mb-4" data-reveal="true" data-reveal-delay="100">
           <div className="col-12">
-            <div className="p-4 glass-card">
-              <h4 className="text-dynamic fw-bold mb-4 d-flex align-items-center gap-2">
-                <i className="bi bi-people-fill text-primary"></i>
-                <span>Most Frequent Persons</span>
-              </h4>
+            <div className="p-3 glass-card rounded-4">
+              <h6 className="text-dynamic fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: '1rem' }}>
+                <i className="bi bi-bar-chart-steps text-primary"></i>
+                <span>Frequency</span>
+                {frequentPersons.length > 0 && (
+                  <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-bold ms-auto" style={{ fontSize: '0.9rem', padding: '0.4em 0.8em' }}>
+                    {frequentPersons.length}
+                  </span>
+                )}
+              </h6>
 
-              <div className="row g-3">
-                {frequentPersons.length > 0 ? frequentPersons.map((person, index) => (
-                  <div className="col-lg-4 col-md-6" key={index} data-reveal="true" data-reveal-delay={`${index * 10}`}>
-                    <div className="p-4 rounded-4 glass-card frequent-card h-100 d-flex flex-column justify-content-between"
-                      style={{ '--card-border-color': person.status === 'KNOWN' ? '#198754' : '#dc3545' }}>
+              <div className="d-flex justify-content-center w-100 mb-3">
+                <div className="d-inline-flex align-items-center gap-2 bg-inner-card p-1 rounded-pill" style={{ minWidth: '320px', maxWidth: '420px', width: '100%', overflowX: 'auto' }}>
+                  {['ALL', 'KNOWN', 'UNKNOWN'].map(filter => (
+                    <button
+                      key={filter}
+                      className={`btn btn-sm rounded-pill flex-grow-1 fw-semibold transition-all border-0 ${frequentPersonsFilter === filter ? (filter === 'KNOWN' ? 'bg-success text-white' : filter === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-primary text-white shadow-sm') : 'text-secondary'}`}
+                      style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem' }}
+                      onClick={() => setFrequentPersonsFilter(filter)}
+                    >
+                      {filter === 'ALL' ? 'All' : filter === 'KNOWN' ? 'Known' : 'Unknown'}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                      <div>
-                        <div className="d-flex align-items-center justify-content-between mb-3">
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                              style={{ width: '45px', height: '45px', background: 'color-mix(in srgb, var(--card-border-color) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--card-border-color) 30%, transparent)' }}>
-                              {person.status === 'KNOWN' ? (
-                                <i className="bi bi-person-check-fill fs-4" style={{ color: 'var(--card-border-color)', lineHeight: 0 }}></i>
-                              ) : (
-                                <i className="bi bi-person-fill-exclamation fs-4" style={{ color: 'var(--card-border-color)', lineHeight: 0 }}></i>
-                              )}
-                            </div>
-                            <div>
-                              <h5 className="text-dynamic fw-bold mb-0" style={{ fontSize: '1.1rem' }}>{person.name}</h5>
-                              <span className={`small fw-bold ${person.status === 'KNOWN' ? 'text-success' : 'text-danger'} text-uppercase`}
-                                style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                {person.status}
-                              </span>
-                            </div>
+              <div 
+                className="custom-scrollbar pe-1" 
+                style={{ maxHeight: '380px', overflowY: 'auto' }}
+              >
+                <div className="row g-3">
+                  {frequentPersons.length > 0 ? (
+                    (() => {
+                      const visiblePersons = frequentPersons.filter(p => frequentPersonsFilter === 'ALL' || p.status === frequentPersonsFilter);
+                      if (visiblePersons.length === 0) {
+                        return (
+                          <div className="text-center py-4 text-secondary">
+                            <span className="fw-semibold small">No {frequentPersonsFilter.toLowerCase()} persons found.</span>
                           </div>
-                          <span className="badge rounded-pill px-3 py-1.5 fw-bold text-uppercase"
-                            style={{ fontSize: '0.75rem', background: 'rgba(13, 110, 253, 0.15)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)' }}>
-                            Total: {person.total_count}
+                        );
+                      }
+                      return visiblePersons.map((person, index) => (
+                        <div className="col-12 col-md-6 col-lg-4" key={index}>
+                        <div
+                          className="d-flex align-items-center gap-3 p-3 rounded-4 shadow-sm cursor-pointer hover-bg-subtle h-100"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: `1px solid ${person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.25)' : 'rgba(220, 53, 69, 0.25)'}`,
+                            borderLeft: `4px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}`,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onClick={() => {
+                            if (person.imageUrl) setSelectedImage(person.imageUrl);
+                          }}
+                        >
+                          {/* Avatar / Icon */}
+                          {person.imageUrl ? (
+                            <div className="position-relative flex-shrink-0" style={{ width: '46px', height: '46px' }}>
+                              <img 
+                                src={person.imageUrl} 
+                                alt={person.name} 
+                                className="rounded-circle w-100 h-100 object-fit-cover shadow-sm"
+                                style={{ border: `1.5px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}` }}
+                              />
+                              <span 
+                                className="position-absolute bottom-0 end-0 rounded-circle border border-white"
+                                style={{
+                                  width: '12px', height: '12px',
+                                  background: person.status === 'KNOWN' ? '#198754' : '#dc3545',
+                                  transform: 'translate(25%, 25%)'
+                                }}
+                              ></span>
+                            </div>
+                          ) : (
+                            <div
+                              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                              style={{
+                                width: '46px',
+                                height: '46px',
+                                background: person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.15)' : 'rgba(220, 53, 69, 0.15)',
+                              }}
+                            >
+                              <i
+                                className={`bi ${person.status === 'KNOWN' ? 'bi-person-check-fill' : 'bi-person-fill-exclamation'}`}
+                                style={{ color: person.status === 'KNOWN' ? '#198754' : '#dc3545', fontSize: '1.25rem' }}
+                              ></i>
+                            </div>
+                          )}
+
+                      {/* Info */}
+                      <div className="flex-grow-1 min-w-0">
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <strong className="text-dynamic text-truncate" style={{ fontSize: '1rem' }}>{person.name}</strong>
+                          <span
+                            className={`badge rounded-pill fw-bold ${person.status === 'KNOWN' ? 'bg-success' : 'bg-danger'} text-white`}
+                            style={{ fontSize: '0.65rem', padding: '0.35em 0.65em' }}
+                          >
+                            {person.status}
                           </span>
                         </div>
-
-                        <div className="row g-2 mb-3">
-                          <div className="col-6">
-                            <div className="p-3 bg-inner-card rounded-3 text-center">
-                              <span className="small text-secondary fw-bold text-uppercase d-block mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>This Week</span>
-                              <span className="fs-4 text-dynamic fw-bold">{person.weekly_count}</span>
-                            </div>
-                          </div>
-                          <div className="col-6">
-                            <div className="p-3 bg-inner-card rounded-3 text-center">
-                              <span className="small text-secondary fw-bold text-uppercase d-block mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>This Month</span>
-                              <span className="fs-4 text-dynamic fw-bold">{person.monthly_count}</span>
-                            </div>
-                          </div>
+                        
+                        <div className="d-flex flex-wrap align-items-center gap-3 text-secondary mb-1" style={{ fontSize: '0.8rem' }}>
+                          <span className="d-inline-flex align-items-center gap-1" title="Today">
+                            <i className="bi bi-calendar-event text-muted"></i>
+                            <span>Today:</span>
+                            <strong className="text-dynamic">{person.daily_count}</strong>
+                          </span>
+                          <span className="d-inline-flex align-items-center gap-1" title="This Week">
+                            <i className="bi bi-calendar-week text-muted"></i>
+                            <span>Week:</span>
+                            <strong className="text-dynamic">{person.weekly_count}</strong>
+                          </span>
+                          <span className="d-inline-flex align-items-center gap-1" title="This Month">
+                            <i className="bi bi-calendar-month text-muted"></i>
+                            <span>Month:</span>
+                            <strong className="text-dynamic">{person.monthly_count}</strong>
+                          </span>
+                        </div>
+                        
+                        <div className="text-secondary opacity-75" style={{ fontSize: '0.75rem' }}>
+                          <i className="bi bi-clock-history me-1 text-primary"></i>
+                          <span>Last Seen:</span> <strong className="text-dynamic font-mono">{person.last_seen}</strong>
                         </div>
                       </div>
-
-                      <div className="border-top border-white border-opacity-5 pt-3 mt-auto">
-                        <span className="small text-secondary d-flex align-items-center gap-2" style={{ fontSize: '0.825rem' }}>
-                          <i className="bi bi-eye text-primary fs-6"></i>
-                          <span>Last Seen:</span>
-                          <strong className="text-dynamic font-mono">{person.last_seen}</strong>
-                        </span>
-                      </div>
                     </div>
-                  </div>
-                )) : (
-                  <div className="col-12 text-center py-4 text-secondary">
-                    <i className="bi bi-person-x display-5 text-muted mb-2 d-block"></i>
-                    <span className="fw-semibold">No active personnel logs registered yet to calculate frequencies.</span>
+                    </div>
+                  ));
+                })()
+              ) : (
+                <div className="text-center py-4 text-secondary">
+                    <i className="bi bi-person-x display-6 text-muted mb-2 d-block"></i>
+                    <span className="fw-semibold small">No active personnel logs registered yet.</span>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -737,17 +834,17 @@ export default function ReportsPage() {
                           return (
                             <div key={idx} className="d-flex flex-column align-items-center flex-grow-1 justify-content-end px-2" style={{ height: '100%' }}>
                               <div className="d-flex align-items-end gap-1.5 mb-1.5">
-                                {/* Known Bar (Blue) */}
+                                {/* Known Bar (Green) */}
                                 {showKnown && (
                                   <div className="d-flex flex-column align-items-center">
-                                    <span className="small font-mono fw-bold text-primary mb-1" style={{ fontSize: '0.78rem' }}>{item.known}</span>
+                                    <span className="small font-mono fw-bold text-success mb-1" style={{ fontSize: '0.78rem' }}>{item.known}</span>
                                     <div
                                       className="transition-all cursor-pointer hover-glow"
                                       style={{
                                         height: `${knownPx}px`,
                                         width: '20px',
-                                        background: '#2563eb',
-                                        boxShadow: '0 4px 16px rgba(13, 110, 253, 0.45)',
+                                        background: '#10b981',
+                                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.45)',
                                         borderRadius: '6px 6px 3px 3px'
                                       }}
                                       title={`${item.date} Known: ${item.known}`}
@@ -795,12 +892,12 @@ export default function ReportsPage() {
                     <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '180px', height: '180px' }}>
                       <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
                         <circle cx="90" cy="90" r="70" stroke="rgba(255,255,255,0.06)" strokeWidth="20" fill="transparent" />
-                        {/* Known Slice (Blue) */}
+                        {/* Known Slice (Green) */}
                         <circle
                           cx="90"
                           cy="90"
                           r="70"
-                          stroke="#2563eb"
+                          stroke="#10b981"
                           strokeWidth="20"
                           fill="transparent"
                           strokeDasharray={439.8}

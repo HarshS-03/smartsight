@@ -294,7 +294,7 @@ export default function DetectionPage() {
                             fontSize: '0.75rem',
                           }}
                         >
-                          <i className="bi bi-phone me-1 text-primary"></i> {log.camera_name || 'Mobile App Scanner'}
+                          <i className="bi bi-phone me-1 text-primary"></i> {(log.camera_name || 'Mobile App Scanner').replace(/Biometric/gi, "Access")}
                         </span>
                       </td>
                       <td>
@@ -537,7 +537,7 @@ export default function DetectionPage() {
                           </div>
                           <div className="small fw-semibold text-dynamic text-truncate">
                             <i className="bi bi-phone me-1 text-primary"></i>
-                            {selectedScan.camera_name || 'Mobile Access Control Scanner'}
+                            {(selectedScan.camera_name || 'Mobile Access Control Scanner').replace(/Biometric/gi, "Access")}
                           </div>
                         </div>
                         <div className="col-6">
