@@ -900,17 +900,17 @@ export default function ReportsPage() {
                           return (
                             <div key={idx} className="d-flex flex-column align-items-center flex-grow-1 justify-content-end px-2" style={{ height: '100%' }}>
                               <div className="d-flex align-items-end gap-1.5 mb-1.5">
-                                {/* Known Bar (Blue) */}
+                                {/* Known Bar (Green) */}
                                 {showKnown && (
                                   <div className="d-flex flex-column align-items-center">
-                                    <span className="small font-mono fw-bold text-primary mb-1" style={{ fontSize: '0.78rem' }}>{item.known}</span>
+                                    <span className="small font-mono fw-bold text-success mb-1" style={{ fontSize: '0.78rem' }}>{item.known}</span>
                                     <div
                                       className="transition-all cursor-pointer hover-glow"
                                       style={{
                                         height: `${knownPx}px`,
                                         width: '20px',
-                                        background: '#2563eb',
-                                        boxShadow: '0 4px 16px rgba(13, 110, 253, 0.45)',
+                                        background: '#10b981',
+                                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.45)',
                                         borderRadius: '6px 6px 3px 3px'
                                       }}
                                       title={`${item.date} Known: ${item.known}`}
@@ -958,12 +958,12 @@ export default function ReportsPage() {
                     <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '180px', height: '180px' }}>
                       <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
                         <circle cx="90" cy="90" r="70" stroke="rgba(255,255,255,0.06)" strokeWidth="20" fill="transparent" />
-                        {/* Known Slice (Blue) */}
+                        {/* Known Slice (Green) */}
                         <circle
                           cx="90"
                           cy="90"
                           r="70"
-                          stroke="#2563eb"
+                          stroke="#10b981"
                           strokeWidth="20"
                           fill="transparent"
                           strokeDasharray={439.8}
@@ -997,10 +997,10 @@ export default function ReportsPage() {
 
                     <div className="d-flex flex-column gap-2 ms-sm-3">
                       <div className="d-flex align-items-center gap-3 p-3 rounded-3 bg-inner-card" style={{ minWidth: '200px' }}>
-                        <div className="rounded-circle bg-primary" style={{ width: '12px', height: '12px', boxShadow: '0 0 8px #2563eb' }}></div>
+                        <div className="rounded-circle bg-success" style={{ width: '12px', height: '12px', boxShadow: '0 0 8px #10b981' }}></div>
                         <div>
                           <span className="d-block small text-secondary fw-semibold">Known Persons</span>
-                          <strong className="fs-5 text-primary font-mono">{knownCount} <span className="small text-muted">({knownPct}%)</span></strong>
+                          <strong className="fs-5 text-success font-mono">{knownCount} <span className="small text-muted">({knownPct}%)</span></strong>
                         </div>
                       </div>
                       <div className="d-flex align-items-center gap-3 p-3 rounded-3 bg-inner-card" style={{ minWidth: '200px' }}>
