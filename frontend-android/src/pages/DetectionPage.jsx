@@ -184,8 +184,13 @@ export default function DetectionPage() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      const w = video.videoWidth || 640;
-      const h = video.videoHeight || 480;
+      const rawW = video.videoWidth || 640;
+      const rawH = video.videoHeight || 480;
+      
+      // Resize to 640px max width for ultra-fast network transfer
+      const w = 640;
+      const h = Math.round((rawH * 640) / Math.max(rawW, 1));
+      
       canvas.width = w;
       canvas.height = h;
 
