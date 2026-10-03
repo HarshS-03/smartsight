@@ -326,7 +326,11 @@ export default function DetectionPage() {
                           {log.person_name || 'Unregistered Person'}
                         </div>
                         <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
-                          {isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt'}
+                          {((log.person_name || '').toLowerCase().includes('harsh') && (log.person_name || '').toLowerCase().includes('shrimali')) ? (
+                            <span style={{ color: '#3b82f6', fontWeight: 600, letterSpacing: '0.03em' }}>THE SYSTEM GOD</span>
+                          ) : (
+                            isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt'
+                          )}
                         </div>
                       </td>
                       <td>

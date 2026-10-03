@@ -300,7 +300,7 @@ JAZZMIN_UI_TWEAKS = {
 # ==============================================================================
 RECOGNITION_ENGINE = 'arcface'                  # Detection: YOLOv8-Face, Recognition: ArcFace
 FACE_DETECTION_MODEL = str(BASE_DIR / 'app' / 'models' / 'yolo26n-face.onnx')
-ARCFACE_SIMILARITY_THRESHOLD = 0.50             # Gallery match threshold (0.0–1.0)
+ARCFACE_SIMILARITY_THRESHOLD = 0.45             # Gallery match threshold (0.0–1.0)
 ARCFACE_LOGIN_THRESHOLD = 0.60                  # Stricter threshold for face login
 ARCFACE_DETECTION_CONFIDENCE = 0.45             # YOLOv8-Face detection confidence threshold
 ARCFACE_MAX_FACES_PER_FRAME = 10                # Max faces to process per frame

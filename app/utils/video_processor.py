@@ -477,7 +477,7 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
     use_arcface = getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
     if use_arcface:
         from app.utils.embedding_engine import detect_and_recognize
-        arcface_threshold = getattr(django_settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.50)
+        arcface_threshold = getattr(django_settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45)
         arcface_max_faces = getattr(django_settings, 'ARCFACE_MAX_FACES_PER_FRAME', 10)
     
     inference_lock = threading.Lock()

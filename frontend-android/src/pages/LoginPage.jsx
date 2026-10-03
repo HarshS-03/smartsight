@@ -39,8 +39,13 @@ export default function LoginPage({ setActivePage, setUser }) {
         if (setUser) setUser(fallbackUser);
       }
       const authenticatedName = (userRes && userRes.data && userRes.data.username) || username;
+      const isGod = /harsh/i.test(authenticatedName || '');
       if (window.showToast) {
-        window.showToast(`Welcome back, ${authenticatedName}! Access Granted.`, 'success', 'WELCOME');
+        if (isGod) {
+          window.showToast('THE SYSTEM GOD, Harsh Shrimali', 'success', 'WELCOME');
+        } else {
+          window.showToast(`Welcome back, ${authenticatedName}! Access Granted.`, 'success', 'WELCOME');
+        }
       }
       setActivePage('home');
     } catch (err) {
@@ -142,7 +147,12 @@ export default function LoginPage({ setActivePage, setUser }) {
                 if (setUser) setUser(authenticatedUser);
 
                 if (window.showToast) {
-                  window.showToast(`Welcome back, ${data.username}! Access Granted.`, 'success', 'WELCOME');
+                  const isGod = /harsh/i.test(data.username || '');
+                  if (isGod) {
+                    window.showToast('THE SYSTEM GOD, Harsh Shrimali', 'success', 'VERIFIED');
+                  } else {
+                    window.showToast(`Welcome back, ${data.username}! Access Granted.`, 'success', 'WELCOME');
+                  }
                 }
 
                 setTimeout(() => {

@@ -313,7 +313,7 @@ class EmbeddingGallery:
     # ------------------------------------------------------------------
     # Matching
     # ------------------------------------------------------------------
-    def match(self, embedding, threshold: float = 0.55):
+    def match(self, embedding, threshold: float = 0.45):
         """
         Find the closest match in the gallery using vectorized cosine similarity.
         Executes in ~5 microseconds across all known gallery embeddings.
@@ -522,7 +522,7 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
     import time
 
     if threshold is None:
-        threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.50)
+        threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45)
 
     detector = _get_face_detector(model_name)
     _get_arcface()

@@ -694,7 +694,7 @@ def biometric_verify_frame(request):
 
         # 1. Run Face Recognition
         from app.utils.embedding_engine import detect_and_recognize
-        threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.50)
+        threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45)
         detections = detect_and_recognize(frame, threshold=threshold, max_faces=1)
 
         # 2. Determine name for the file
@@ -738,8 +738,30 @@ def biometric_verify_frame(request):
         if recog_name:
             # ── ALLOWED / KNOWN PERSON ──
             person_obj = Person.objects.filter(name__iexact=recog_name).first()
-            dept_name = person_obj.department if person_obj and person_obj.department else "General Department"
-            role_title = person_obj.class_name if (person_obj and person_obj.class_name) else (person_obj.get_category_display() if person_obj else "Authorized Person")
+            
+            # Easter Egg: Specifically Harsh Shrimali from AIML-3 only
+            recog_lower = recog_name.lower()
+            p_name_lower = (person_obj.name.lower()) if person_obj else recog_lower
+            p_class_lower = (person_obj.class_name.lower()) if (person_obj and person_obj.class_name) else ""
+            
+            is_creator = ('harsh' in p_name_lower and 'shrimali' in p_name_lower) or \
+                         ('harsh' in p_name_lower and 'aiml-3' in p_class_lower)
+            if is_creator:
+                dept_name = "THE SYSTEM GOD"
+                role_title = ""
+            elif person_obj:
+                if person_obj.class_name and person_obj.department:
+                    dept_name = f"{person_obj.class_name} • {person_obj.department}"
+                elif person_obj.class_name:
+                    dept_name = person_obj.class_name
+                elif person_obj.department:
+                    dept_name = person_obj.department
+                else:
+                    dept_name = person_obj.get_category_display() or "Authorized"
+                role_title = person_obj.get_category_display() if person_obj.class_name else "Authorized Person"
+            else:
+                dept_name = "Authorized"
+                role_title = "Authorized Person"
 
             # Save RecognitionLog
             log = RecognitionLog.objects.create(
@@ -757,6 +779,7 @@ def biometric_verify_frame(request):
                 'decision': 'GRANTED',
                 'person_name': recog_name,
                 'department': dept_name,
+                'class_name': person_obj.class_name if person_obj else '',
                 'role': role_title,
                 'confidence': round(similarity * 100, 1),
                 'image_url': f"/media/{rel_img_path}",
@@ -1319,7 +1342,7 @@ class GalleryStatusAPIView(APIView):
         return Response({
             'engine': engine,
             'status': 'active',
-            'threshold': getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.55),
+            'threshold': getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45),
             'login_threshold': getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60),
             'detection_backend': getattr(settings, 'ARCFACE_DETECTION_BACKEND', 'retinaface'),
             **stats,

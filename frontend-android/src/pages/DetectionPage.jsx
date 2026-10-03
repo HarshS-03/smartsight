@@ -217,8 +217,18 @@ export default function DetectionPage() {
       setLastVerification(result);
 
       if (result.status === 'ALLOWED') {
+        const pName = (result.person_name || '').toLowerCase();
+        const pClass = (result.class_name || '').toLowerCase();
+        const isGod = (result.department === 'THE SYSTEM GOD') || 
+                      (pName.includes('harsh') && (pName.includes('shrimali') || pClass.includes('aiml-3')));
         if (window.showToast) {
-          window.showToast(`ACCESS GRANTED: ${result.person_name} (${result.department || 'Authorized'})`, 'success', 'VERIFIED');
+          if (isGod) {
+            window.showToast('ACCESS GRANTED\nTHE SYSTEM GOD, Harsh Shrimali', 'success', 'VERIFIED');
+          } else {
+            const infoTag = (result.department || result.class_name || '').trim();
+            const tagStr = infoTag ? ` (${infoTag})` : '';
+            window.showToast(`ACCESS GRANTED\n${result.person_name}${tagStr}`, 'success', 'VERIFIED');
+          }
         }
       } else if (result.status === 'PENDING_REVIEW') {
         if (window.showToast) {
@@ -507,9 +517,9 @@ export default function DetectionPage() {
               )}
 
               <div className="flex-grow-1">
-                <div className="d-flex align-items-center justify-content-between mb-1">
+                <div className="d-flex align-items-center justify-content-between gap-2 mb-1.5 flex-nowrap" style={{ minWidth: 0 }}>
                   <span
-                    className={`badge rounded-pill fw-bold px-2.5 py-1 ${
+                    className={`badge rounded-pill fw-bold text-nowrap flex-shrink-0 ${
                       lastVerification.status === 'ALLOWED'
                         ? 'bg-success text-white'
                         : lastVerification.status === 'PENDING_REVIEW'
@@ -519,12 +529,16 @@ export default function DetectionPage() {
                         : 'bg-secondary text-white'
                     }`}
                     style={{ 
-                      fontSize: '0.7rem',
-                      ...(lastVerification.status === 'PENDING_REVIEW' ? { background: '#d97706' } : {})
+                      fontSize: '0.67rem',
+                      padding: '3px 8px',
+                      whiteSpace: 'nowrap',
+                      lineHeight: '1.2',
+                      ...(lastVerification.status === 'PENDING_REVIEW' ? { background: '#d97706' } : {}),
+                      ...(((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)' } : {})
                     }}
                   >
                     {lastVerification.status === 'ALLOWED'
-                      ? '✓ ACCESS GRANTED'
+                      ? (((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? 'CREATOR ACCESS: GOD' : '✓ ACCESS GRANTED')
                       : lastVerification.status === 'PENDING_REVIEW'
                       ? '⚠ ESCALATED TO ADMIN'
                       : lastVerification.status === 'DENIED'
@@ -532,28 +546,39 @@ export default function DetectionPage() {
                       : 'NOTICE'}
                   </span>
                   {lastVerification.confidence > 0 && (
-                    <span className="small fw-bold text-muted" style={{ fontSize: '0.72rem' }}>
+                    <span className="small fw-semibold text-nowrap flex-shrink-0 ms-auto" style={{ fontSize: '0.72rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
                       {lastVerification.confidence}% Match
                     </span>
                   )}
                 </div>
 
-                <h5 className="fw-bold mb-0" style={{ 
-                  color: lastVerification.status === 'ALLOWED' ? '#14532d' : 
-                         lastVerification.status === 'PENDING_REVIEW' ? '#78350f' :
-                         (lastVerification.status === 'DENIED' ? '#7f1d1d' : '#f8fafc'), 
-                  fontSize: '1.05rem' 
+                <h5 className="fw-bold mb-1" style={{ 
+                  color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#ffffff' :
+                         (lastVerification.status === 'ALLOWED' ? '#4ade80' : 
+                         lastVerification.status === 'PENDING_REVIEW' ? '#f59e0b' :
+                         (lastVerification.status === 'DENIED' ? '#ef4444' : '#f8fafc')), 
+                  fontSize: '1.08rem',
+                  letterSpacing: '0.01em'
                 }}>
                   {lastVerification.person_name || (lastVerification.status === 'DENIED' || lastVerification.status === 'PENDING_REVIEW' ? 'Unregistered Person / Stranger' : 'No Face Found')}
                 </h5>
                 <p className="small mb-0" style={{ 
-                  color: lastVerification.status === 'ALLOWED' ? '#166534' : 
-                         lastVerification.status === 'PENDING_REVIEW' ? '#92400e' :
-                         (lastVerification.status === 'DENIED' ? '#991b1b' : '#cbd5e1'), 
-                  fontSize: '0.8rem' 
+                  color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#3b82f6' :
+                         (lastVerification.status === 'ALLOWED' ? '#86efac' : 
+                         lastVerification.status === 'PENDING_REVIEW' ? '#fbbf24' :
+                         (lastVerification.status === 'DENIED' ? '#fca5a5' : '#cbd5e1')), 
+                  fontSize: '0.82rem',
+                  fontWeight: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? 700 : 500,
+                  letterSpacing: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '0.04em' : 'normal'
                 }}>
-                  {lastVerification.department && `${lastVerification.department} • `}
-                  {lastVerification.role || lastVerification.message}
+                  {(() => {
+                    const dept = (lastVerification.department || '').trim();
+                    const role = (lastVerification.role || '').trim();
+                    if (dept && role && dept.toLowerCase() !== role.toLowerCase()) {
+                      return `${dept} • ${role}`;
+                    }
+                    return dept || role || lastVerification.message || '';
+                  })()}
                 </p>
               </div>
             </div>
