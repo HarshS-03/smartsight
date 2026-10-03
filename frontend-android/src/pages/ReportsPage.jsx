@@ -265,9 +265,9 @@ export default function ReportsPage() {
 
       const personCounts = {};
       logs.forEach(log => {
-        // If UNKNOWN, treat each detection as a unique occurrence since we don't have facial grouping
-        const isUnknown = log.status === 'UNKNOWN';
-        const name = isUnknown ? `Unknown Person #${log.id || Math.floor(Math.random()*1000)}` : (log.person_name || 'Unknown Person');
+        // If UNKNOWN/DENIED/no name/name contains 'unknown', treat each detection as a unique occurrence
+        const isUnknown = log.status === 'UNKNOWN' || log.status === 'DENIED' || !log.person_name || (log.person_name && log.person_name.toLowerCase().includes('unknown'));
+        const name = isUnknown ? `__unknown_${log.id || Math.floor(Math.random()*1000)}` : (log.person_name || 'Unknown Person');
         
         if (!personCounts[name]) {
           personCounts[name] = { total_count: 0, daily_count: 0, weekly_count: 0, monthly_count: 0, last_seen: log.timestamp, status: log.status, image_path: log.image_path, is_unknown: isUnknown };
@@ -305,16 +305,18 @@ export default function ReportsPage() {
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         return {
-          name,
+          name: name.startsWith('__unknown_') ? 'Unknown' : name,
           status: data.status,
+          isUnknown: data.is_unknown,
           total_count: data.total_count,
           daily_count: data.daily_count,
           weekly_count: data.weekly_count,
           monthly_count: data.monthly_count,
           last_seen: `${dateStr}, ${timeStr}`,
+          last_seen_time: dateObj.getTime(),
           imageUrl: data.image_path ? getImageUrl(data.image_path) : null
         };
-      }).sort((a, b) => b.total_count - a.total_count);
+      }).sort((a, b) => b.last_seen_time - a.last_seen_time);
 
       setFrequentPersons(frequent);
     } catch (error) {
@@ -682,12 +684,17 @@ export default function ReportsPage() {
 
               <div 
                 className="custom-scrollbar pe-1" 
-                style={{ maxHeight: '380px', overflowY: 'auto' }}
+                style={{ maxHeight: '380px', overflowY: 'auto', overflowX: 'hidden' }}
               >
                 <div className="d-flex flex-column gap-3">
                   {frequentPersons.length > 0 ? (
                     (() => {
-                      const visiblePersons = frequentPersons.filter(p => frequentPersonsFilter === 'ALL' || p.status === frequentPersonsFilter);
+                      const visiblePersons = frequentPersons.filter(p => {
+                        if (frequentPersonsFilter === 'ALL') return true;
+                        if (frequentPersonsFilter === 'KNOWN') return !p.isUnknown;
+                        if (frequentPersonsFilter === 'UNKNOWN') return p.isUnknown;
+                        return true;
+                      });
                       if (visiblePersons.length === 0) {
                         return (
                           <div className="text-center py-4 text-secondary">

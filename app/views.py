@@ -17,7 +17,7 @@ from openpyxl import Workbook
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from .models import User, Person, PersonImage, RecognitionLog, Camera, Notification, DevicePushToken
 from .serializers import (
     UserSerializer,
@@ -321,6 +321,29 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
                 except Exception as e:
                     print(f"Error deleting log image file: {e}")
         instance.delete()
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        log_ids = request.data.get('log_ids', [])
+        if not log_ids or not isinstance(log_ids, list):
+            return Response({'error': 'No log_ids provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        logs = RecognitionLog.objects.filter(id__in=log_ids)
+        deleted_count = 0
+        from app.models import Notification
+        for log in logs:
+            if log.image_path:
+                Notification.objects.filter(image_url=f"/media/{log.image_path}").delete()
+                full_path = os.path.join(settings.MEDIA_ROOT, log.image_path)
+                if os.path.isfile(full_path):
+                    try:
+                        os.remove(full_path)
+                    except Exception as e:
+                        print(f"Error deleting log image file: {e}")
+            log.delete()
+            deleted_count += 1
+
+        return Response({'status': 'success', 'deleted_count': deleted_count})
 
     def get_queryset(self):
         queryset = RecognitionLog.objects.all().order_by('-timestamp')

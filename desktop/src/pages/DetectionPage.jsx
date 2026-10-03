@@ -13,6 +13,9 @@ export default function DetectionPage() {
   const [imgError, setImgError] = useState(false);
   const [deleteLog, setDeleteLog] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     setImgError(false);
@@ -94,6 +97,28 @@ export default function DetectionPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      setIsBulkDeleting(true);
+      await API.post('/logs/bulk-delete/', { log_ids: selectedIds });
+      setLogs((prev) => prev.filter((l) => !selectedIds.includes(l.id)));
+      if (window.showToast) {
+        window.showToast(`Deleted ${selectedIds.length} scan records successfully.`, 'success', 'BULK DELETED');
+      }
+      setSelectedIds([]);
+      setShowBulkDeleteConfirm(false);
+      fetchRecentScans();
+    } catch (err) {
+      console.error('Failed to bulk delete logs:', err);
+      if (window.showToast) {
+        window.showToast('Could not delete selected records. Please check server.', 'error', 'DELETE FAILED');
+      }
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   useEffect(() => {
     fetchRecentScans();
     if (!autoRefresh) return;
@@ -107,6 +132,23 @@ export default function DetectionPage() {
     if (filter === 'DENIED') return l.status === 'DENIED';
     return true;
   });
+
+  const allSelected = filteredLogs.length > 0 && filteredLogs.every((l) => selectedIds.includes(l.id));
+  const someSelected = selectedIds.length > 0 && !allSelected;
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredLogs.map((l) => l.id).filter(Boolean));
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   return (
     <div className="container-fluid py-4 px-xl-5" style={{ minHeight: '88vh' }}>
@@ -171,10 +213,10 @@ export default function DetectionPage() {
           <div className="card stat-card-blue border-0 p-4 rounded-4 shadow-sm h-100" style={{ background: 'var(--bg-surface-solid)' }}>
             <div className="d-flex align-items-center justify-content-between h-100 gap-3">
               <div style={{ minWidth: 0, flex: 1 }}>
-                <span className="text-secondary small fw-semibold text-uppercase d-block text-truncate" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }} title="Total Scans Today">
-                  Total Scans Today
+                <span className="text-secondary small fw-semibold text-uppercase d-block text-truncate" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }} title="Total Mobile Scans">
+                  Total Mobile Scans
                 </span>
-                <h3 className="fw-bold text-dynamic mt-1 mb-0 font-mono">{stats.total}</h3>
+                <h3 className="fw-bold text-dynamic mt-1 mb-0 font-mono">{logs.length > 0 ? logs.length : stats.total}</h3>
               </div>
               <div className="rounded-3 p-3 bg-primary bg-opacity-10 text-primary flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
                 <i className="bi bi-people-fill fs-4"></i>
@@ -190,7 +232,7 @@ export default function DetectionPage() {
                 <span className="text-success small fw-semibold text-uppercase d-block text-truncate" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }} title="Authorized Entries (Known)">
                   Authorized Entries (Known)
                 </span>
-                <h3 className="fw-bold text-success mt-1 mb-0 font-mono">{stats.known}</h3>
+                <h3 className="fw-bold text-success mt-1 mb-0 font-mono">{logs.length > 0 ? logs.filter((l) => l.status === 'KNOWN' || l.status === 'APPROVED').length : stats.known}</h3>
               </div>
               <div className="rounded-3 p-3 bg-success bg-opacity-10 text-success flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
                 <i className="bi bi-patch-check-fill fs-4"></i>
@@ -206,7 +248,7 @@ export default function DetectionPage() {
                 <span className="text-danger small fw-semibold text-uppercase d-block text-truncate" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }} title="Denied / Strangers">
                   Denied / Strangers
                 </span>
-                <h3 className="fw-bold text-danger mt-1 mb-0 font-mono">{stats.unknown}</h3>
+                <h3 className="fw-bold text-danger mt-1 mb-0 font-mono">{logs.length > 0 ? logs.filter((l) => l.status === 'DENIED' || l.status === 'UNKNOWN').length : stats.unknown}</h3>
               </div>
               <div className="rounded-3 p-3 bg-danger bg-opacity-10 text-danger flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
                 <i className="bi bi-shield-x fs-4"></i>
@@ -256,9 +298,33 @@ export default function DetectionPage() {
             })}
           </div>
 
-          <span className="text-secondary small font-mono">
-            Displaying {filteredLogs.length} Records
-          </span>
+          <div className="d-flex align-items-center gap-3 flex-wrap">
+            {selectedIds.length > 0 && (
+              <div className="d-flex align-items-center gap-2 animate__animated animate__fadeIn">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-danger rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm"
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  disabled={isBulkDeleting}
+                  style={{ fontSize: '0.8rem' }}
+                >
+                  <i className="bi bi-trash-fill"></i>
+                  <span>Delete Selected ({selectedIds.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fw-semibold"
+                  onClick={() => setSelectedIds([])}
+                  style={{ fontSize: '0.76rem' }}
+                >
+                  Clear Selection
+                </button>
+              </div>
+            )}
+            <span className="text-secondary small font-mono">
+              Displaying {filteredLogs.length} Records
+            </span>
+          </div>
         </div>
 
         {/* Live Records Table */}
@@ -266,7 +332,20 @@ export default function DetectionPage() {
           <table className="table custom-table table-hover align-middle mb-0">
             <thead className="small text-uppercase text-secondary" style={{ fontSize: '0.72rem', letterSpacing: '0.5px', background: 'var(--bg-surface-hover, rgba(255,255,255,0.03))' }}>
               <tr>
-                <th className="ps-4" style={{ width: '60px' }}>No.</th>
+                <th className="ps-3" style={{ width: '42px' }}>
+                  <input
+                    type="checkbox"
+                    className="form-check-input mt-0 cursor-pointer"
+                    checked={allSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected;
+                    }}
+                    onChange={handleSelectAll}
+                    title="Select / Deselect All"
+                    style={{ width: '16px', height: '16px' }}
+                  />
+                </th>
+                <th style={{ width: '50px' }}>No.</th>
                 <th style={{ width: '90px' }}>Captured Face</th>
                 <th>Person Name</th>
                 <th>Device / Camera Source</th>
@@ -279,7 +358,7 @@ export default function DetectionPage() {
             <tbody>
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-secondary">
+                  <td colSpan="9" className="text-center py-5 text-secondary">
                     {isLoading ? (
                       <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
                     ) : (
@@ -297,8 +376,22 @@ export default function DetectionPage() {
                   const conf = log.confidence ? `${(log.confidence * (log.confidence <= 1 ? 100 : 1)).toFixed(1)}%` : '—';
 
                   return (
-                    <tr key={log.id || index}>
-                      <td className="ps-4 fw-semibold text-secondary font-mono" style={{ fontSize: '0.8rem' }}>
+                    <tr 
+                      key={log.id || index}
+                      style={{
+                        background: selectedIds.includes(log.id) ? 'rgba(59, 130, 246, 0.08)' : undefined
+                      }}
+                    >
+                      <td className="ps-3">
+                        <input
+                          type="checkbox"
+                          className="form-check-input mt-0 cursor-pointer"
+                          checked={selectedIds.includes(log.id)}
+                          onChange={() => handleToggleSelect(log.id)}
+                          style={{ width: '16px', height: '16px' }}
+                        />
+                      </td>
+                      <td className="fw-semibold text-secondary font-mono" style={{ fontSize: '0.8rem' }}>
                         {index + 1}
                       </td>
                       <td>
@@ -780,6 +873,110 @@ export default function DetectionPage() {
                         <>
                           <i className="bi bi-trash-fill"></i>
                           <span>Delete Record</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+      {/* Bulk Delete Confirmation Modal Portaled */}
+      {showBulkDeleteConfirm &&
+        createPortal(
+          <>
+            <div
+              className="modal-backdrop fade show"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                zIndex: 10600,
+                backgroundColor: 'rgba(11, 15, 25, 0.82)',
+                backdropFilter: 'blur(8px)',
+              }}
+              onClick={() => !isBulkDeleting && setShowBulkDeleteConfirm(false)}
+            />
+            <div
+              className="modal fade show d-flex align-items-center justify-content-center"
+              tabIndex="-1"
+              role="dialog"
+              aria-modal="true"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100vw',
+                height: '100vh',
+                zIndex: 10610,
+                overflowY: 'auto',
+                padding: '20px',
+              }}
+              onClick={() => !isBulkDeleting && setShowBulkDeleteConfirm(false)}
+            >
+              <div
+                className="w-100 my-auto"
+                style={{ maxWidth: '440px' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className="modal-content overflow-hidden p-4"
+                  style={{
+                    borderRadius: '24px',
+                    border: '1px solid var(--modal-border, var(--border-color))',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+                    background: 'var(--modal-bg, var(--bg-surface-solid, #0f172a))',
+                    color: 'var(--text-heading, #ffffff)',
+                  }}
+                >
+                  <div className="d-flex align-items-center gap-3 mb-3">
+                    <div
+                      className="rounded-3 d-flex align-items-center justify-content-center text-danger flex-shrink-0"
+                      style={{ width: '44px', height: '44px', background: 'rgba(220, 53, 69, 0.12)' }}
+                    >
+                      <i className="bi bi-trash3-fill fs-4"></i>
+                    </div>
+                    <div>
+                      <h5 className="fw-bold mb-0" style={{ fontSize: '1.1rem' }}>Delete {selectedIds.length} Selected Records?</h5>
+                      <span className="small text-secondary" style={{ fontSize: '0.76rem' }}>This action cannot be undone</span>
+                    </div>
+                  </div>
+
+                  <p className="small text-secondary mb-4" style={{ lineHeight: '1.45' }}>
+                    Are you sure you want to permanently delete these <strong>{selectedIds.length}</strong> selected access scan logs? All associated snapshots and notification entries will be permanently removed.
+                  </p>
+
+                  <div className="d-flex align-items-center justify-content-end gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-secondary rounded-pill px-3.5 py-1.5"
+                      onClick={() => setShowBulkDeleteConfirm(false)}
+                      disabled={isBulkDeleting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger rounded-pill px-3.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5"
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                    >
+                      {isBulkDeleting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-trash-fill"></i>
+                          <span>Delete ({selectedIds.length})</span>
                         </>
                       )}
                     </button>
