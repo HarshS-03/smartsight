@@ -84,3 +84,24 @@ def refresh_gallery_on_image_delete(sender, instance, **kwargs):
     except Exception as e:
         print(f"[Signal] Error refreshing gallery on image delete: {e}")
 
+
+from django.db.models.signals import post_save
+
+@receiver(post_save, sender=PersonImage)
+def compute_embedding_on_image_save(sender, instance, created, **kwargs):
+    """
+    When a new PersonImage is saved, compute and store its embedding.
+    """
+    if kwargs.get('raw', False):
+        return
+
+    if created:
+        try:
+            from app.utils.embedding_engine import compute_person_embeddings
+            # Run in a background thread to avoid blocking the request
+            import threading
+            threading.Thread(target=compute_person_embeddings, args=(instance.person_id,), daemon=True).start()
+            print(f"[Signal] Triggered embedding computation for person ID: {instance.person_id}")
+        except Exception as e:
+            print(f"[Signal] Error triggering embedding computation: {e}")
+

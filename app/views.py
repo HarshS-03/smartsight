@@ -310,6 +310,10 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
 
     def perform_destroy(self, instance):
         if instance.image_path:
+            # Delete associated notification
+            from app.models import Notification
+            Notification.objects.filter(image_url=f"/media/{instance.image_path}").delete()
+            
             full_path = os.path.join(settings.MEDIA_ROOT, instance.image_path)
             if os.path.isfile(full_path):
                 try:

@@ -358,8 +358,8 @@ export default function DetectionPage() {
                       <td className="text-secondary small font-mono">
                         {dateStr}
                       </td>
-                      <td className="text-end pe-4" style={{ whiteSpace: 'nowrap' }}>
-                        <div className="d-inline-flex align-items-center gap-1 justify-content-end">
+                      <td className="text-end pe-4">
+                        <div className="d-flex align-items-center gap-1.5 justify-content-end flex-wrap">
                           {log.image_path && (
                             <button
                               type="button"
@@ -368,7 +368,7 @@ export default function DetectionPage() {
                               title="Inspect high-res photo"
                               style={{ fontSize: '0.74rem' }}
                             >
-                              <i className="bi bi-eye"></i> <span>View</span>
+                              <i className="bi bi-eye"></i> <span className="d-none d-xl-inline">View</span>
                             </button>
                           )}
                           {log.status === 'UNKNOWN' && (
@@ -380,7 +380,7 @@ export default function DetectionPage() {
                                 title="Approve access"
                                 style={{ fontSize: '0.74rem' }}
                               >
-                                <i className="bi bi-check-circle"></i> <span>Approve</span>
+                                <i className="bi bi-check-circle"></i> <span className="d-none d-xl-inline">Approve</span>
                               </button>
                               <button
                                 type="button"
@@ -389,7 +389,7 @@ export default function DetectionPage() {
                                 title="Deny access"
                                 style={{ fontSize: '0.74rem' }}
                               >
-                                <i className="bi bi-x-circle"></i> <span>Deny</span>
+                                <i className="bi bi-x-circle"></i> <span className="d-none d-xl-inline">Deny</span>
                               </button>
                             </>
                           )}
@@ -400,7 +400,7 @@ export default function DetectionPage() {
                             title="Delete scan entry"
                             style={{ fontSize: '0.74rem' }}
                           >
-                            <i className="bi bi-trash"></i> <span className="d-none d-md-inline">Delete</span>
+                            <i className="bi bi-trash"></i> <span className="d-none d-xl-inline">Delete</span>
                           </button>
                         </div>
                       </td>

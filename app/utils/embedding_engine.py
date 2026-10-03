@@ -15,6 +15,46 @@ os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')
 os.environ.setdefault('AUTOGRAPH_VERBOSITY', '0')
 
 # ---------------------------------------------------------------------------
+# Supabase Cloud Sync
+# ---------------------------------------------------------------------------
+def _sync_npz_to_supabase(filepath):
+    import requests
+    url = os.environ.get('SUPABASE_URL')
+    key = os.environ.get('SUPABASE_KEY')
+    if not url or not key: return
+    try:
+        with open(filepath, 'rb') as f:
+            headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/octet-stream"}
+            requests.post(
+                f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
+                headers=headers, data=f
+            ) # Try POST first (create)
+            
+            f.seek(0) # Reset pointer
+            requests.put(
+                f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
+                headers=headers, data=f
+            ) # Put will Upsert/overwrite
+    except Exception as e:
+        logger.error(f"[Supabase Sync] Upload error: {e}")
+
+def _download_npz_from_supabase(filepath):
+    import requests
+    url = os.environ.get('SUPABASE_URL')
+    key = os.environ.get('SUPABASE_KEY')
+    if not url or not key: return False
+    try:
+        headers = {"Authorization": f"Bearer {key}"}
+        res = requests.get(f"{url}/storage/v1/object/models/gallery_embeddings.npz", headers=headers)
+        if res.status_code == 200:
+            with open(filepath, 'wb') as f:
+                f.write(res.content)
+            return True
+    except Exception as e:
+        logger.error(f"[Supabase Sync] Download error: {e}")
+    return False
+
+# ---------------------------------------------------------------------------
 # Lazy model loading
 # ---------------------------------------------------------------------------
 _models_lock = threading.Lock()
@@ -127,11 +167,16 @@ class EmbeddingGallery:
             self._meta = []
 
     def _save_cache(self):
-        """Save current matrix and metadata to disk."""
+        """Save current matrix and metadata to disk and sync to Supabase."""
         if self._matrix is not None:
             names = np.array([m[0] for m in self._meta])
             pids = np.array([m[1] for m in self._meta])
             np.savez_compressed(self.cache_file, matrix=self._matrix, names=names, pids=pids)
+            
+            # Sync to Supabase in a background thread so we don't block the UI
+            from django.conf import settings
+            if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
+                threading.Thread(target=_sync_npz_to_supabase, args=(self.cache_file,), daemon=True).start()
 
     def _refresh_person_info(self):
         """Cache person metadata (class_name, department, category) for fast labeling."""
@@ -187,9 +232,12 @@ class EmbeddingGallery:
     # Load / Reload
     # ------------------------------------------------------------------
     def load_gallery(self):
-        """Load from NPZ cache."""
+        """Load from NPZ cache (try downloading from Supabase first)."""
         self._refresh_person_info()
         with self._lock:
+            # Try syncing from Supabase before loading
+            _download_npz_from_supabase(self.cache_file)
+
             if os.path.exists(self.cache_file):
                 try:
                     data = np.load(self.cache_file, allow_pickle=True)

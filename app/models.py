@@ -5,6 +5,9 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     code = models.CharField(max_length=100, unique=True, null=True, blank=True)
     
+    class Meta:
+        db_table = 'user'
+
     def __str__(self):
         return self.username
 
@@ -22,6 +25,9 @@ class Camera(models.Model):
     orientation = models.CharField(max_length=20, choices=ORIENTATION_CHOICES, default='normal')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'camera'
 
     def __str__(self):
         return f"{self.name} ({self.source})"
@@ -43,6 +49,9 @@ class Person(models.Model):
     department = models.CharField(max_length=100, blank=True, null=True, help_text="Department / Role for staff")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = 'person'
+
     def __str__(self):
         return f"{self.name} ({self.get_category_display()})"
 
@@ -54,6 +63,9 @@ class PersonImage(models.Model):
     person = models.ForeignKey(Person, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to=person_directory_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'person_image'
 
     def __str__(self):
         return f"Image for {self.person.name}"
@@ -77,6 +89,9 @@ class RecognitionLog(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     image_path = models.CharField(max_length=255, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'recognition_log'
 
     def __str__(self):
         return f"{self.person_name if self.person_name else 'Unknown'} - {self.status} at {self.timestamp}"
@@ -111,6 +126,7 @@ class Notification(models.Model):
     security_note = models.TextField(null=True, blank=True, help_text="Security note from operator about suspicious activity")
 
     class Meta:
+        db_table = 'notification'
         ordering = ['-created_at']
 
     def __str__(self):
@@ -123,6 +139,9 @@ class DevicePushToken(models.Model):
     token = models.CharField(max_length=255, unique=True)
     platform = models.CharField(max_length=20, default='android')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'device_push_token'
 
     def __str__(self):
         return f"{self.platform} Token: {self.token[:20]}..."
