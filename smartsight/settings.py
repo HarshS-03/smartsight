@@ -304,3 +304,5 @@ ARCFACE_SIMILARITY_THRESHOLD = 0.50             # Gallery match threshold (0.0â€
 ARCFACE_LOGIN_THRESHOLD = 0.60                  # Stricter threshold for face login
 ARCFACE_DETECTION_CONFIDENCE = 0.45             # YOLOv8-Face detection confidence threshold
 ARCFACE_MAX_FACES_PER_FRAME = 10                # Max faces to process per frame
+
+SUPABASE_SYNC_ENABLED = True

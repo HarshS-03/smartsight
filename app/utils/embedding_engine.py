@@ -167,17 +167,12 @@ class EmbeddingGallery:
             self._meta = []
 
     def _save_cache(self):
-        """Save current matrix and metadata to disk and sync to Supabase."""
+        """Save current matrix and metadata to disk."""
         if self._matrix is not None:
             names = np.array([m[0] for m in self._meta])
             pids = np.array([m[1] for m in self._meta])
             np.savez_compressed(self.cache_file, matrix=self._matrix, names=names, pids=pids)
             
-            # Sync to Supabase in a background thread so we don't block the UI
-            from django.conf import settings
-            if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
-                threading.Thread(target=_sync_npz_to_supabase, args=(self.cache_file,), daemon=True).start()
-
     def _refresh_person_info(self):
         """Cache person metadata (class_name, department, category) for fast labeling."""
         try:
@@ -235,8 +230,10 @@ class EmbeddingGallery:
         """Load from NPZ cache (try downloading from Supabase first)."""
         self._refresh_person_info()
         with self._lock:
-            # Try syncing from Supabase before loading
-            _download_npz_from_supabase(self.cache_file)
+            # Try syncing from Supabase before loading (if enabled)
+            from django.conf import settings
+            if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
+                _download_npz_from_supabase(self.cache_file)
 
             if os.path.exists(self.cache_file):
                 try:
@@ -723,3 +720,13 @@ def compute_person_embeddings(person_id: int):
         f"{computed} computed, {skipped} skipped, {errors} errors."
     )
     return computed, skipped, errors
+
+
+import atexit
+def _on_server_shutdown():
+    if _gallery_instance is not None and _gallery_instance._loaded:
+        from django.conf import settings
+        if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
+            logger.info('[Gallery] Server shutting down, uploading final embeddings to Supabase...')
+            _sync_npz_to_supabase(_gallery_instance.cache_file)
+atexit.register(_on_server_shutdown)
