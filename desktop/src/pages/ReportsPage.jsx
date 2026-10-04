@@ -753,7 +753,7 @@ export default function ReportsPage() {
         {/* Charts Section */}
         <div className="row mb-4" data-reveal="true">
           <div className="col-12">
-            <div className="p-3 p-sm-4 glass-card">
+            <div className="p-3 p-sm-4 pb-2 pb-sm-3 glass-card">
               {/* Header Row: Title on Left, Mode Switcher on Right (PC/Laptop) */}
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
                 <div>
@@ -833,16 +833,16 @@ export default function ReportsPage() {
               )}
 
               {/* Daily Trends SVG Bar Chart */}
-              <div style={{ minHeight: '380px', position: 'relative', display: activeChart === 'bar' ? 'block' : 'none' }}>
+              <div style={{ position: 'relative', display: activeChart === 'bar' ? 'block' : 'none' }}>
                 {dailyCounts.length > 0 ? (
-                  <div className="w-100 h-100 d-flex flex-column justify-content-between pt-2">
+                  <div className="w-100 pt-1">
 
                     {/* Scrollable Track - Zero scroll on mobile when <= 14 days */}
-                    <div className="w-100 overflow-x-auto custom-scrollbar pb-2">
+                    <div className="w-100 overflow-x-auto custom-scrollbar">
                       <div
-                        className="d-flex align-items-end justify-content-around px-1 px-sm-2 pb-3 border-bottom border-secondary border-opacity-25"
+                        className="d-flex align-items-end justify-content-around px-1 px-sm-2 pb-2 border-bottom border-secondary border-opacity-25"
                         style={{
-                          height: '300px',
+                          height: '260px',
                           minWidth: dailyCounts.length > 14 ? `${dailyCounts.length * 36}px` : '100%',
                           width: '100%'
                         }}
@@ -859,8 +859,8 @@ export default function ReportsPage() {
                             }),
                             1
                           );
-                          const knownPx = item.known > 0 ? Math.max(12, Math.round((item.known / maxVal) * 220)) : 0;
-                          const unknownPx = item.unknown > 0 ? Math.max(12, Math.round((item.unknown / maxVal) * 220)) : 0;
+                          const knownPx = item.known > 0 ? Math.max(12, Math.round((item.known / maxVal) * 190)) : 0;
+                          const unknownPx = item.unknown > 0 ? Math.max(12, Math.round((item.unknown / maxVal) * 190)) : 0;
                           const barWidth = dailyCounts.length > 10 ? '14px' : '20px';
 
                           return (
@@ -1218,11 +1218,7 @@ export default function ReportsPage() {
                           <div
                             className={`card shadow-sm rounded-4 overflow-hidden h-100 log-card-tile ${isKnown ? 'log-card-tile-known' : 'log-card-tile-unknown'}`}
                             style={{
-                              background: 'var(--bg-body, #ffffff)',
-                              cursor: rep.imageUrl ? 'pointer' : 'default'
-                            }}
-                            onClick={() => {
-                              if (rep.imageUrl) setSelectedImage(rep.imageUrl);
+                              background: 'var(--bg-body, #ffffff)'
                             }}
                           >
                             <div className="card-body p-3 d-flex flex-column">
@@ -1234,8 +1230,12 @@ export default function ReportsPage() {
                                       src={rep.imageUrl}
                                       alt="Face"
                                       className="rounded-3 shadow-sm border"
-                                      style={{ width: '52px', height: '52px', objectFit: 'cover' }}
+                                      style={{ width: '52px', height: '52px', objectFit: 'cover', cursor: 'pointer' }}
                                       title="Click to view full photo"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedImage(rep.imageUrl);
+                                      }}
                                     />
                                   ) : (
                                     <div className="rounded-3 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center border" style={{ width: '52px', height: '52px' }}>
