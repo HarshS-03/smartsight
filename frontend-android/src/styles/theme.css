@@ -303,10 +303,7 @@ body::before {
 /* Modern Inputs & Selects */
 .form-control,
 .form-select,
-.input-group-text,
-input[type="date"],
-input[type="text"],
-input[type="search"] {
+.input-group-text {
   background: var(--bg-input, #ffffff) !important;
   border: 1px solid var(--border-color, #e2e8f0) !important;
   border-radius: 12px !important;

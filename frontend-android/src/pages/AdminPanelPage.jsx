@@ -170,13 +170,15 @@ export default function AdminPanelPage() {
 
       <div className="container mt-4 pb-5 position-relative" style={{ zIndex: 1 }}>
         {/* Tabs */}
-        <div className="d-flex mb-4 p-1 rounded-pill shadow-sm mx-auto" style={{ maxWidth: '400px', background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
+        <div className="d-flex mb-4 p-1 rounded-pill shadow-sm mx-auto" style={{ maxWidth: '300px', background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
           {Object.entries(MODELS).map(([key, model]) => (
             <button
               key={key}
-              className={`btn rounded-pill px-4 fw-bold flex-grow-1 border-0 ${activeModelKey === key ? 'shadow text-white' : 'text-secondary'}`}
+              className={`btn rounded-pill fw-bold flex-grow-1 border-0 m-0 ${activeModelKey === key ? 'shadow-sm text-white' : 'text-secondary'}`}
               onClick={() => setActiveModelKey(key)}
               style={{
+                padding: '6px 16px',
+                fontSize: '0.9rem',
                 background: activeModelKey === key ? 'var(--bs-primary)' : 'transparent',
                 transition: 'all 0.3s ease'
               }}
@@ -187,14 +189,13 @@ export default function AdminPanelPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="d-flex justify-content-center mb-3">
-          <div className="input-group shadow-sm rounded-pill" style={{ maxWidth: '300px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
-            <span className="input-group-text bg-transparent border-0 text-secondary ps-3">
-              <i className="bi bi-search"></i>
-            </span>
+        <div className="d-flex justify-content-center mb-4">
+          <div className="d-flex align-items-center shadow-sm rounded-pill px-3" style={{ maxWidth: '400px', width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-color)', height: '46px' }}>
+            <i className="bi bi-search text-secondary"></i>
             <input
               type="text"
-              className="form-control border-0 bg-transparent text-body shadow-none"
+              className="admin-search-input flex-grow-1 text-body ms-2 px-0"
+              style={{ outline: 'none', boxShadow: 'none', border: 'none', background: 'transparent', fontSize: '0.95rem' }}
               placeholder={`Search ${activeModel.title}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

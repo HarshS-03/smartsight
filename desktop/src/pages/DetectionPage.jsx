@@ -16,6 +16,7 @@ export default function DetectionPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   useEffect(() => {
     setImgError(false);
@@ -299,13 +300,23 @@ export default function DetectionPage() {
           </div>
 
           <div className="d-flex align-items-center gap-3 flex-wrap">
-            {selectedIds.length > 0 && (
+            {!isSelectMode ? (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm"
+                onClick={() => setIsSelectMode(true)}
+                style={{ fontSize: '0.8rem' }}
+              >
+                <i className="bi bi-trash"></i>
+                <span>Bulk Delete</span>
+              </button>
+            ) : (
               <div className="d-flex align-items-center gap-2 animate__animated animate__fadeIn">
                 <button
                   type="button"
                   className="btn btn-sm btn-danger rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm"
                   onClick={() => setShowBulkDeleteConfirm(true)}
-                  disabled={isBulkDeleting}
+                  disabled={isBulkDeleting || selectedIds.length === 0}
                   style={{ fontSize: '0.8rem' }}
                 >
                   <i className="bi bi-trash-fill"></i>
@@ -314,10 +325,13 @@ export default function DetectionPage() {
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fw-semibold"
-                  onClick={() => setSelectedIds([])}
+                  onClick={() => {
+                    setSelectedIds([]);
+                    setIsSelectMode(false);
+                  }}
                   style={{ fontSize: '0.76rem' }}
                 >
-                  Clear Selection
+                  Cancel
                 </button>
               </div>
             )}
@@ -332,19 +346,21 @@ export default function DetectionPage() {
           <table className="table custom-table table-hover align-middle mb-0">
             <thead className="small text-uppercase text-secondary" style={{ fontSize: '0.72rem', letterSpacing: '0.5px', background: 'var(--bg-surface-hover, rgba(255,255,255,0.03))' }}>
               <tr>
-                <th className="ps-3" style={{ width: '42px' }}>
-                  <input
-                    type="checkbox"
-                    className="form-check-input mt-0 cursor-pointer"
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected;
-                    }}
-                    onChange={handleSelectAll}
-                    title="Select / Deselect All"
-                    style={{ width: '16px', height: '16px' }}
-                  />
-                </th>
+                {isSelectMode && (
+                  <th className="ps-3" style={{ width: '42px' }}>
+                    <input
+                      type="checkbox"
+                      className="form-check-input mt-0 cursor-pointer"
+                      checked={allSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someSelected;
+                      }}
+                      onChange={handleSelectAll}
+                      title="Select / Deselect All"
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                  </th>
+                )}
                 <th style={{ width: '50px' }}>No.</th>
                 <th style={{ width: '90px' }}>Captured Face</th>
                 <th>Person Name</th>
@@ -358,7 +374,7 @@ export default function DetectionPage() {
             <tbody>
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-5 text-secondary">
+                  <td colSpan={isSelectMode ? "9" : "8"} className="text-center py-5 text-secondary">
                     {isLoading ? (
                       <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
                     ) : (
@@ -382,15 +398,17 @@ export default function DetectionPage() {
                         background: selectedIds.includes(log.id) ? 'rgba(59, 130, 246, 0.08)' : undefined
                       }}
                     >
-                      <td className="ps-3">
-                        <input
-                          type="checkbox"
-                          className="form-check-input mt-0 cursor-pointer"
-                          checked={selectedIds.includes(log.id)}
-                          onChange={() => handleToggleSelect(log.id)}
-                          style={{ width: '16px', height: '16px' }}
-                        />
-                      </td>
+                      {isSelectMode && (
+                        <td className="ps-3">
+                          <input
+                            type="checkbox"
+                            className="form-check-input mt-0 cursor-pointer"
+                            checked={selectedIds.includes(log.id)}
+                            onChange={() => handleToggleSelect(log.id)}
+                            style={{ width: '16px', height: '16px' }}
+                          />
+                        </td>
+                      )}
                       <td className="fw-semibold text-secondary font-mono" style={{ fontSize: '0.8rem' }}>
                         {index + 1}
                       </td>
@@ -399,8 +417,10 @@ export default function DetectionPage() {
                           <img
                             src={getImageUrl(log.image_path)}
                             alt="Scan face"
-                            className="rounded-3 shadow-sm border"
-                            style={{ width: '48px', height: '48px', objectFit: 'cover' }}
+                            className="rounded-3 shadow-sm border cursor-pointer"
+                            style={{ width: '48px', height: '48px', objectFit: 'cover', cursor: 'pointer' }}
+                            onClick={() => setSelectedScan(log)}
+                            title="Click to view full image"
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
@@ -492,7 +512,7 @@ export default function DetectionPage() {
                           )}
                           <button
                             type="button"
-                            className="btn btn-sm btn-premium btn-premium-delete rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
+                            className="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
                             onClick={() => setDeleteLog(log)}
                             title="Delete scan entry"
                             style={{ fontSize: '0.74rem' }}
@@ -724,7 +744,7 @@ export default function DetectionPage() {
                     <div className="d-flex align-items-center justify-content-between gap-2 pt-1">
                       <button
                         type="button"
-                        className="btn btn-sm btn-premium btn-premium-delete rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                        className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
                         onClick={() => {
                           const scanToDelete = selectedScan;
                           setSelectedScan(null);
