@@ -3,12 +3,8 @@
    ══════════════════════════════════════════════════════ */
 
 /* ── Google Fonts (Locally Hosted TTF) ── */
-@font-face { font-family: 'Roboto'; font-weight: 400; src: url('/fonts/Roboto_1.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Roboto'; font-weight: 500; src: url('/fonts/Roboto_2.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Roboto'; font-weight: 700; src: url('/fonts/Roboto_3.ttf') format('truetype'); font-display: swap; }
-
-@font-face { font-family: 'Roboto Condensed'; font-weight: 400; src: url('/fonts/Roboto_Condensed_1.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Roboto Condensed'; font-weight: 700; src: url('/fonts/Roboto_Condensed_2.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('/fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-style: italic; src: url('/fonts/Inter-Italic-VariableFont_opsz,wght.ttf') format('truetype'); font-display: swap; }
 
 /* ── Color Scheme Specification for Native Rendering ── */
 :root,
@@ -92,13 +88,13 @@ body::before {
 
 :root,
 [data-bs-theme="dark"] {
-  --bs-body-font-family: 'Roboto', sans-serif !important;
-  --font-brand: 'Roboto Condensed', sans-serif;
-  --font-heading: 'Roboto Condensed', sans-serif;
-  --font-interface: 'Roboto', sans-serif;
-  --font-body: 'Roboto', sans-serif;
-  --font-telemetry: 'Roboto', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-mono: 'Roboto', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --bs-body-font-family: 'Inter', sans-serif !important;
+  --font-brand: 'Inter', sans-serif;
+  --font-heading: 'Inter', sans-serif;
+  --font-interface: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-telemetry: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Typography Scale */
   --fs-dashboard-title: 2.5rem;
@@ -6456,8 +6452,8 @@ detection-hero-bg,
 .btn-hero-primary,
 .btn-hero-outline {
   width: 100% !important;
-  min-width: 140px;
-  max-width: 100%;
+  max-width: 240px !important;
+  min-width: 220px !important;
   justify-content: center;
   text-align: center;
 }
@@ -6472,8 +6468,9 @@ detection-hero-bg,
 
   .btn-hero-primary,
   .btn-hero-outline {
-    width: 260px;
-    min-width: 260px;
+    width: 100% !important;
+    max-width: 240px !important;
+    min-width: 220px !important;
   }
 }
 
@@ -6790,7 +6787,7 @@ detection-hero-bg,
   .btn-glass-primary,
   .cta-strip .btn-hero-primary {
     width: 100% !important;
-    max-width: 260px !important;
+    max-width: 240px !important;
     min-width: 220px !important;
     display: inline-flex !important;
     padding: 11px 22px !important;
@@ -9121,7 +9118,7 @@ detection-hero-bg,
   font-weight: 800;
   color: #0f172a;
   line-height: 1.1;
-  font-family: var(--font-telemetry, 'Roboto', sans-serif);
+  font-family: var(--font-telemetry, 'Inter', sans-serif);
 }
 
 [data-bs-theme="dark"] .cmd-metric-value {
@@ -10006,7 +10003,7 @@ detection-hero-bg,
   font-weight: 800;
   line-height: 1;
   color: #f8fafc;
-  font-family: var(--font-telemetry, 'Roboto', sans-serif);
+  font-family: var(--font-telemetry, 'Inter', sans-serif);
   letter-spacing: -0.02em;
   transition: color 0.18s ease;
 }

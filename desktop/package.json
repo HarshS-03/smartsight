@@ -16,6 +16,7 @@
     "@capacitor-community/electron": "^5.0.1",
     "@capacitor/cli": "^8.5.0",
     "@capacitor/core": "^8.5.0",
+    "@fontsource/inter": "^5.3.0",
     "axios": "^1.18.1",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
