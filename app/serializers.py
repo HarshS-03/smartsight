@@ -60,6 +60,24 @@ class PersonSerializer(serializers.ModelSerializer):
         model = Person
         fields = ['id', 'name', 'category', 'category_display', 'class_name', 'department', 'created_at', 'images']
 
+    def validate(self, data):
+        # Format name to Title Case and optionally append class/department to guarantee uniqueness
+        name = data.get('name')
+        if name:
+            name = name.title().strip()
+            # If the instance exists (update), use its values if not in data
+            category = data.get('category', getattr(self.instance, 'category', 'STUDENT')).upper()
+            class_name = data.get('class_name', getattr(self.instance, 'class_name', '')).strip()
+            department = data.get('department', getattr(self.instance, 'department', '')).strip()
+
+            if category == 'STUDENT' and class_name and class_name.upper() not in name.upper():
+                name = f"{name} {class_name}"
+            elif category != 'STUDENT' and department and department.upper() not in name.upper():
+                name = f"{name} {department}"
+            
+            data['name'] = name
+        return data
+
 class RecognitionLogSerializer(serializers.ModelSerializer):
     timestamp = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%SZ", read_only=True)
 

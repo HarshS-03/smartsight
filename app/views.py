@@ -188,7 +188,13 @@ class DatasetUploadView(APIView):
         if not person_name:
             return Response({'error': 'Person name is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        person, created = Person.objects.get_or_create(name=person_name.strip())
+        person_name = person_name.title().strip()
+        if category == 'STUDENT' and class_name and class_name.upper() not in person_name.upper():
+            person_name = f"{person_name} {class_name}"
+        elif category != 'STUDENT' and department and department.upper() not in person_name.upper():
+            person_name = f"{person_name} {department}"
+
+        person, created = Person.objects.get_or_create(name=person_name)
         person.category = category
         if category == 'STUDENT' and class_name:
             person.class_name = class_name

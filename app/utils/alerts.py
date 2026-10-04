@@ -544,23 +544,23 @@ def send_alerts(*args, **kwargs):
             )
             print(f"[Alert] Saved Known to DB: {person_name}, confidence={confidence_pct}%, image={relative_path}")
 
-                            # Auto-compute ArcFace embedding for the self-learned image
-                            try:
-                                from django.conf import settings as django_settings
-                                if getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface':
-                                    from app.utils.embedding_engine import compute_embedding, get_gallery
-                                    from app.models import PersonEmbedding as PE
-                                    emb_result = compute_embedding(file_path)
-                                    if emb_result is not None:
-                                        emb, det_conf, _ = emb_result
-                                        PE.objects.create(
-                                            person=person,
-                                            source_image=pi_obj,
-                                            embedding=emb.tolist(),
-                                        )
-                                        get_gallery().add_embedding(person.id, person.name, emb)
-                                        print(f"[Self-Learning Engine] Auto-computed ArcFace embedding for {person.name}")
-                            except Exception as emb_err:
-                                print(f"[Self-Learning Engine] Auto-embedding error: {emb_err}")
+            # Auto-compute ArcFace embedding for the self-learned image
+            try:
+                from django.conf import settings as django_settings
+                if getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface':
+                    from app.utils.embedding_engine import compute_embedding, get_gallery
+                    from app.models import PersonEmbedding as PE
+                    emb_result = compute_embedding(file_path)
+                    if emb_result is not None:
+                        emb, det_conf, _ = emb_result
+                        PE.objects.create(
+                            person=person,
+                            source_image=pi_obj,
+                            embedding=emb.tolist(),
+                        )
+                        get_gallery().add_embedding(person.id, person.name, emb)
+                        print(f"[Self-Learning Engine] Auto-computed ArcFace embedding for {person.name}")
+            except Exception as emb_err:
+                print(f"[Self-Learning Engine] Auto-embedding error: {emb_err}")
         except Exception as e:
             print(f"[Self-Learning Engine] Error saving auto-training image: {e}")
