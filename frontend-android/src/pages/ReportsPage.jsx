@@ -31,7 +31,7 @@ export default function ReportsPage() {
   const [timeframeQuery, setTimeframeQuery] = useState('all');
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showPerPageDropdown, setShowPerPageDropdown] = useState(false);
   const [showCameraDropdown, setShowCameraDropdown] = useState(false);
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
@@ -390,7 +390,12 @@ export default function ReportsPage() {
     }
 
     if (statusQuery && statusQuery !== 'all') {
-      if (rep.status !== statusQuery) return false;
+      if (statusQuery === 'UNKNOWN') {
+        const isUnknown = rep.status === 'UNKNOWN' || rep.status === 'DENIED' || !rep.person_name || (rep.person_name && rep.person_name.toLowerCase().includes('unknown'));
+        if (!isUnknown) return false;
+      } else {
+        if (rep.status !== statusQuery) return false;
+      }
     }
 
     if (timeframeQuery && timeframeQuery !== 'all' && rep.rawTimestamp) {
@@ -449,7 +454,7 @@ export default function ReportsPage() {
 
   const totalDetectionsCount = reports.length;
   const knownCount = useMemo(() => reports.filter(r => r.status === 'KNOWN').length, [reports]);
-  const unknownCount = useMemo(() => reports.filter(r => r.status === 'UNKNOWN').length, [reports]);
+  const unknownCount = useMemo(() => reports.filter(r => r.status === 'UNKNOWN' || r.status === 'DENIED' || !r.person_name || (r.person_name && r.person_name.toLowerCase().includes('unknown'))).length, [reports]);
   const knownPct = totalDetectionsCount > 0 ? Math.round((knownCount / totalDetectionsCount) * 100) : 0;
   const unknownPct = totalDetectionsCount > 0 ? (100 - knownPct) : 0;
 
@@ -669,24 +674,37 @@ export default function ReportsPage() {
                 )}
               </h6>
 
-              <div className="d-flex align-items-center gap-2 mb-3 bg-inner-card p-1 rounded-pill w-100" style={{ maxWidth: '100%', overflowX: 'auto' }}>
-                {['ALL', 'KNOWN', 'UNKNOWN'].map(filter => (
-                  <button
-                    key={filter}
-                    className={`btn btn-sm rounded-pill flex-grow-1 fw-semibold transition-all border-0 ${frequentPersonsFilter === filter ? (filter === 'KNOWN' ? 'bg-success text-white' : filter === 'UNKNOWN' ? 'bg-danger text-white' : 'bg-primary text-white shadow-sm') : 'text-secondary'}`}
-                    style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem' }}
-                    onClick={() => setFrequentPersonsFilter(filter)}
-                  >
-                    {filter === 'ALL' ? 'All' : filter === 'KNOWN' ? 'Known' : 'Unknown'}
-                  </button>
-                ))}
+              <div className="d-flex justify-content-center w-100 mb-3">
+                <div className="d-inline-flex align-items-center gap-1 p-1 rounded-pill shadow-sm" style={{ minWidth: '320px', maxWidth: '420px', width: '100%', overflowX: 'auto', background: 'var(--bg-input, #f8f9fa)', border: '1px solid var(--border-color, rgba(0,0,0,0.08))' }}>
+                  {['ALL', 'KNOWN', 'UNKNOWN'].map(filter => {
+                    const isActive = frequentPersonsFilter === filter;
+                    let bgClass = 'transparent';
+                    let textClass = 'text-secondary';
+                    if (isActive) {
+                      textClass = 'text-white shadow-sm';
+                      if (filter === 'KNOWN') bgClass = '#198754';
+                      else if (filter === 'UNKNOWN') bgClass = '#dc3545';
+                      else bgClass = 'var(--bs-primary)';
+                    }
+                    return (
+                      <button
+                        key={filter}
+                        className={`btn btn-sm rounded-pill flex-grow-1 fw-bold transition-all border-0 ${isActive ? '' : 'hover-bg-subtle'} ${textClass}`}
+                        style={{ fontSize: '0.75rem', padding: '0.5rem 0.5rem', background: isActive ? bgClass : 'transparent', letterSpacing: '0.3px' }}
+                        onClick={() => setFrequentPersonsFilter(filter)}
+                      >
+                        {filter === 'ALL' ? 'All' : filter === 'KNOWN' ? 'Known' : 'Unknown'}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div 
                 className="custom-scrollbar pe-1" 
                 style={{ maxHeight: '380px', overflowY: 'auto', overflowX: 'hidden' }}
               >
-                <div className="d-flex flex-column gap-3">
+                <div className="row g-3 pb-2">
                   {frequentPersons.length > 0 ? (
                     (() => {
                       const visiblePersons = frequentPersons.filter(p => {
@@ -697,97 +715,98 @@ export default function ReportsPage() {
                       });
                       if (visiblePersons.length === 0) {
                         return (
-                          <div className="text-center py-4 text-secondary">
+                          <div className="col-12 text-center py-4 text-secondary">
                             <span className="fw-semibold small">No {frequentPersonsFilter.toLowerCase()} persons found.</span>
                           </div>
                         );
                       }
                       return visiblePersons.map((person, index) => (
-                        <div
-                          key={index}
-                          className="d-flex align-items-center gap-3 p-3 rounded-4 shadow-sm cursor-pointer hover-bg-subtle"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: `1px solid ${person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.25)' : 'rgba(220, 53, 69, 0.25)'}`,
-                            borderLeft: `4px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}`,
-                            transition: 'all 0.2s ease',
-                          }}
-                          onClick={() => {
-                            if (person.imageUrl) setSelectedImage(person.imageUrl);
-                          }}
-                        >
-                          {/* Avatar / Icon */}
-                          {person.imageUrl ? (
-                            <div className="position-relative flex-shrink-0" style={{ width: '46px', height: '46px' }}>
-                              <img 
-                                src={person.imageUrl} 
-                                alt={person.name} 
-                                className="rounded-circle w-100 h-100 object-fit-cover shadow-sm"
-                                style={{ border: `1.5px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}` }}
-                              />
-                              <span 
-                                className="position-absolute bottom-0 end-0 rounded-circle border border-white"
-                                style={{
-                                  width: '12px', height: '12px',
-                                  background: person.status === 'KNOWN' ? '#198754' : '#dc3545',
-                                  transform: 'translate(25%, 25%)'
-                                }}
-                              ></span>
-                            </div>
-                          ) : (
-                            <div
-                              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                              style={{
-                                width: '46px',
-                                height: '46px',
-                                background: person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.15)' : 'rgba(220, 53, 69, 0.15)',
-                              }}
-                            >
-                              <i
-                                className={`bi ${person.status === 'KNOWN' ? 'bi-person-check-fill' : 'bi-person-fill-exclamation'}`}
-                                style={{ color: person.status === 'KNOWN' ? '#198754' : '#dc3545', fontSize: '1.25rem' }}
-                              ></i>
-                            </div>
-                          )}
-
-                      {/* Info */}
-                      <div className="flex-grow-1 min-w-0">
-                        <div className="d-flex align-items-center gap-2 mb-1">
-                          <strong className="text-dynamic text-truncate" style={{ fontSize: '1rem' }}>{person.name}</strong>
-                          <span
-                            className={`badge rounded-pill fw-bold ${person.status === 'KNOWN' ? 'bg-success' : 'bg-danger'} text-white`}
-                            style={{ fontSize: '0.65rem', padding: '0.35em 0.65em' }}
+                        <div key={index} className="col-12 col-md-6 col-lg-4">
+                          <div
+                            className="d-flex align-items-center gap-3 p-3 rounded-4 shadow-sm cursor-pointer hover-bg-subtle h-100"
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              border: `1px solid ${person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.25)' : 'rgba(220, 53, 69, 0.25)'}`,
+                              borderLeft: `4px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}`,
+                              transition: 'all 0.2s ease',
+                            }}
+                            onClick={() => {
+                              if (person.imageUrl) setSelectedImage(person.imageUrl);
+                            }}
                           >
-                            {person.status}
-                          </span>
+                            {/* Avatar / Icon */}
+                            {person.imageUrl ? (
+                              <div className="position-relative flex-shrink-0" style={{ width: '46px', height: '46px' }}>
+                                <img 
+                                  src={person.imageUrl} 
+                                  alt={person.name} 
+                                  className="rounded-circle w-100 h-100 object-fit-cover shadow-sm"
+                                  style={{ border: `1.5px solid ${person.status === 'KNOWN' ? '#198754' : '#dc3545'}` }}
+                                />
+                                <span 
+                                  className="position-absolute bottom-0 end-0 rounded-circle border border-white"
+                                  style={{
+                                    width: '12px', height: '12px',
+                                    background: person.status === 'KNOWN' ? '#198754' : '#dc3545',
+                                    transform: 'translate(25%, 25%)'
+                                  }}
+                                ></span>
+                              </div>
+                            ) : (
+                              <div
+                                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                style={{
+                                  width: '46px',
+                                  height: '46px',
+                                  background: person.status === 'KNOWN' ? 'rgba(25, 135, 84, 0.15)' : 'rgba(220, 53, 69, 0.15)',
+                                }}
+                              >
+                                <i
+                                  className={`bi ${person.status === 'KNOWN' ? 'bi-person-check-fill' : 'bi-person-fill-exclamation'}`}
+                                  style={{ color: person.status === 'KNOWN' ? '#198754' : '#dc3545', fontSize: '1.25rem' }}
+                                ></i>
+                              </div>
+                            )}
+
+                            {/* Info */}
+                            <div className="flex-grow-1 min-w-0">
+                              <div className="d-flex align-items-center gap-2 mb-1">
+                                <strong className="text-dynamic text-truncate" style={{ fontSize: '1rem' }}>{person.name}</strong>
+                                <span
+                                  className={`badge rounded-pill fw-bold ${person.status === 'KNOWN' ? 'bg-success' : 'bg-danger'} text-white`}
+                                  style={{ fontSize: '0.65rem', padding: '0.35em 0.65em' }}
+                                >
+                                  {person.status}
+                                </span>
+                              </div>
+                              
+                              <div className="d-flex flex-wrap align-items-center gap-3 text-secondary mb-1" style={{ fontSize: '0.8rem' }}>
+                                <span className="d-inline-flex align-items-center gap-1" title="Today">
+                                  <i className="bi bi-calendar-event text-muted"></i>
+                                  <span>Today:</span>
+                                  <strong className="text-dynamic">{person.daily_count}</strong>
+                                </span>
+                                <span className="d-inline-flex align-items-center gap-1" title="This Week">
+                                  <i className="bi bi-calendar-week text-muted"></i>
+                                  <span>Week:</span>
+                                  <strong className="text-dynamic">{person.weekly_count}</strong>
+                                </span>
+                                <span className="d-inline-flex align-items-center gap-1" title="This Month">
+                                  <i className="bi bi-calendar-month text-muted"></i>
+                                  <span>Month:</span>
+                                  <strong className="text-dynamic">{person.monthly_count}</strong>
+                                </span>
+                              </div>
+                              
+                              <div className="text-secondary opacity-75" style={{ fontSize: '0.75rem' }}>
+                                <i className="bi bi-clock-history me-1 text-primary"></i>
+                                <span>Last Seen:</span> <strong className="text-dynamic font-mono">{person.last_seen}</strong>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div className="d-flex flex-wrap align-items-center gap-3 text-secondary mb-1" style={{ fontSize: '0.8rem' }}>
-                          <span className="d-inline-flex align-items-center gap-1" title="Today">
-                            <i className="bi bi-calendar-event text-muted"></i>
-                            <span>Today:</span>
-                            <strong className="text-dynamic">{person.daily_count}</strong>
-                          </span>
-                          <span className="d-inline-flex align-items-center gap-1" title="This Week">
-                            <i className="bi bi-calendar-week text-muted"></i>
-                            <span>Week:</span>
-                            <strong className="text-dynamic">{person.weekly_count}</strong>
-                          </span>
-                          <span className="d-inline-flex align-items-center gap-1" title="This Month">
-                            <i className="bi bi-calendar-month text-muted"></i>
-                            <span>Month:</span>
-                            <strong className="text-dynamic">{person.monthly_count}</strong>
-                          </span>
-                        </div>
-                        
-                        <div className="text-secondary opacity-75" style={{ fontSize: '0.75rem' }}>
-                          <i className="bi bi-clock-history me-1 text-primary"></i>
-                          <span>Last Seen:</span> <strong className="text-dynamic font-mono">{person.last_seen}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  ));
-                })()
+                      ));
+                    })()
               ) : (
                 <div className="text-center py-4 text-secondary">
                     <i className="bi bi-person-x display-6 text-muted mb-2 d-block"></i>
@@ -1250,91 +1269,93 @@ export default function ReportsPage() {
               {/* Card Tiles View */}
               <div className="reports-list-container w-100">
                 {currentReports.length > 0 ? (
-                  <div className="d-flex flex-column">
+                  <div className="row g-3 pb-2">
                     {currentReports.map((rep, index) => (
-                      <div key={index} className="card border-0 shadow-sm mb-3 rounded-4 overflow-hidden" style={{ background: 'var(--bg-body, #ffffff)' }}>
-                        <div className="card-body p-3">
-                          {/* Top Header: Avatar + Person Info & Camera Source */}
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="flex-shrink-0">
-                              {rep.imageUrl ? (
-                                <img
-                                  src={rep.imageUrl}
-                                  alt="Face"
-                                  className="rounded-3 shadow-sm border"
-                                  style={{ width: '52px', height: '52px', objectFit: 'cover', cursor: 'pointer' }}
-                                  onClick={() => setSelectedImage(rep.imageUrl)}
-                                  title="Click to view full photo"
-                                />
-                              ) : (
-                                <div className="rounded-3 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center border" style={{ width: '52px', height: '52px' }}>
-                                  <i className="bi bi-person text-secondary fs-3 opacity-75"></i>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex-grow-1 min-w-0">
-                              {/* Row 1: Person Name & Status Badge */}
-                              <div className="d-flex justify-content-between align-items-center mb-1">
-                                <span className="fw-bold text-dynamic lh-sm text-truncate" style={{ fontSize: '0.98rem' }}>
-                                  {rep.person_name === "Unknown Person" ? "Unknown" : (rep.person_name || "Unknown")}
-                                </span>
-                                {rep.status === 'KNOWN' ? (
-                                  <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Known</span>
-                                ) : rep.status === 'APPROVED' ? (
-                                  <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Approved</span>
+                      <div key={index} className="col-12 col-md-6 col-lg-4">
+                        <div className="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style={{ background: 'var(--bg-body, #ffffff)' }}>
+                          <div className="card-body p-3 d-flex flex-column">
+                            {/* Top Header: Avatar + Person Info & Camera Source */}
+                            <div className="d-flex align-items-center gap-3 mb-auto">
+                              <div className="flex-shrink-0">
+                                {rep.imageUrl ? (
+                                  <img
+                                    src={rep.imageUrl}
+                                    alt="Face"
+                                    className="rounded-3 shadow-sm border"
+                                    style={{ width: '52px', height: '52px', objectFit: 'cover', cursor: 'pointer' }}
+                                    onClick={() => setSelectedImage(rep.imageUrl)}
+                                    title="Click to view full photo"
+                                  />
                                 ) : (
-                                  <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Unknown</span>
+                                  <div className="rounded-3 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center border" style={{ width: '52px', height: '52px' }}>
+                                    <i className="bi bi-person text-secondary fs-3 opacity-75"></i>
+                                  </div>
                                 )}
                               </div>
 
-                              {/* Row 2: Date & Camera Source (Edge-to-edge alignment) */}
-                              <div className="d-flex justify-content-between align-items-center text-secondary font-mono" style={{ fontSize: '0.72rem' }}>
-                                <span className="d-inline-flex align-items-center gap-1.5">
-                                  <i className="bi bi-calendar3 opacity-75"></i> {rep.date}
-                                </span>
-                                <span className="d-inline-flex align-items-center gap-1.5 text-truncate" style={{ maxWidth: '120px' }}>
-                                  <i className="bi bi-camera-video opacity-75"></i> {rep.camera_name?.replace('Mobile Access Scanner', 'Mobile')?.trim() || "Mobile"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                              <div className="flex-grow-1 min-w-0">
+                                {/* Row 1: Person Name & Status Badge */}
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                  <span className="fw-bold text-dynamic lh-sm text-truncate" style={{ fontSize: '0.98rem' }}>
+                                    {rep.person_name === "Unknown Person" ? "Unknown" : (rep.person_name || "Unknown")}
+                                  </span>
+                                  {rep.status === 'KNOWN' ? (
+                                    <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Known</span>
+                                  ) : rep.status === 'APPROVED' ? (
+                                    <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Approved</span>
+                                  ) : (
+                                    <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Unknown</span>
+                                  )}
+                                </div>
 
-                          {/* Bottom Row: Perfectly Symmetrical Entry & Exit Metric Tiles */}
-                          <div className="row g-2 mt-2 pt-2 border-top border-light-subtle">
-                            {/* Entry Tile */}
-                            <div className="col-6">
-                              <div
-                                className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
-                                style={{
-                                  background: 'rgba(25, 135, 84, 0.05)',
-                                  border: '1px solid rgba(25, 135, 84, 0.16)'
-                                }}
-                              >
-                                <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                                  Entry
-                                </span>
-                                <span className="text-success font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
-                                  <i className="bi bi-box-arrow-in-right opacity-75"></i> {rep.entry_time}
-                                </span>
+                                {/* Row 2: Date & Camera Source (Edge-to-edge alignment) */}
+                                <div className="d-flex justify-content-between align-items-center text-secondary font-mono" style={{ fontSize: '0.72rem' }}>
+                                  <span className="d-inline-flex align-items-center gap-1.5">
+                                    <i className="bi bi-calendar3 opacity-75"></i> {rep.date}
+                                  </span>
+                                  <span className="d-inline-flex align-items-center gap-1.5 text-truncate" style={{ maxWidth: '120px' }}>
+                                    <i className="bi bi-camera-video opacity-75"></i> {rep.camera_name?.replace('Mobile Access Scanner', 'Mobile')?.trim() || "Mobile"}
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Exit Tile */}
-                            <div className="col-6">
-                              <div
-                                className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
-                                style={{
-                                  background: 'rgba(220, 53, 69, 0.05)',
-                                  border: '1px solid rgba(220, 53, 69, 0.16)'
-                                }}
-                              >
-                                <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                                  Exit
-                                </span>
-                                <span className="text-danger font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
-                                  <i className="bi bi-box-arrow-left opacity-75"></i> {rep.exit_time}
-                                </span>
+                            {/* Bottom Row: Perfectly Symmetrical Entry & Exit Metric Tiles */}
+                            <div className="row g-2 mt-3 pt-3 border-top border-light-subtle">
+                              {/* Entry Tile */}
+                              <div className="col-6">
+                                <div
+                                  className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
+                                  style={{
+                                    background: 'rgba(25, 135, 84, 0.05)',
+                                    border: '1px solid rgba(25, 135, 84, 0.16)'
+                                  }}
+                                >
+                                  <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                                    Entry
+                                  </span>
+                                  <span className="text-success font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
+                                    <i className="bi bi-box-arrow-in-right opacity-75"></i> {rep.entry_time}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Exit Tile */}
+                              <div className="col-6">
+                                <div
+                                  className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
+                                  style={{
+                                    background: 'rgba(220, 53, 69, 0.05)',
+                                    border: '1px solid rgba(220, 53, 69, 0.16)'
+                                  }}
+                                >
+                                  <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                                    Exit
+                                  </span>
+                                  <span className="text-danger font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
+                                    <i className="bi bi-box-arrow-left opacity-75"></i> {rep.exit_time}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1392,7 +1413,7 @@ export default function ReportsPage() {
                                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.18)',
                               }}
                             >
-                              {[5, 10, 20, 50].map((num) => (
+                              {[9, 12, 24, 48].map((num) => (
                                 <button
                                   key={num}
                                   type="button"
