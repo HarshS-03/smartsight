@@ -510,35 +510,39 @@ def send_alerts(*args, **kwargs):
                 except Exception as e:
                     print(f"[Alert] Telegram send error: {e}")
     else:
+        relative_path = None
+        clean_frame_bytes = kwargs.get('clean_frame_bytes')
+        if clean_frame_bytes:
+            names = [n.strip() for n in person_name.split(',')]
+            for name in names:
+                if name and name.lower() != 'unknown':
+                    person = Person.objects.filter(name__iexact=name).first()
+                    if person:
+                        dataset_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', person.name)
+                        os.makedirs(dataset_dir, exist_ok=True)
+                        
+                        filename = f"auto_{timestamp.strftime('%Y%m%d_%H%M%S')}_{int(time.time())}.jpg"
+                        file_path = os.path.join(dataset_dir, filename)
+                        
+                        with open(file_path, 'wb') as f:
+                            f.write(clean_frame_bytes)
+                            
+                        relative_path = f"dataset/{person.name}/{filename}"
+                        try:
+                            pi_obj = PersonImage.objects.create(person=person, image=relative_path)
+                            print(f"[Self-Learning Engine] Automatically saved training sample for {person.name}: {relative_path}")
+                        except Exception as e:
+                            print(f"[Self-Learning Engine] Error: {e}")
+
         try:
             RecognitionLog.objects.create(
                 person_name=person_name,
                 confidence=confidence,
                 status=status_str,
-                image_path=None,
+                image_path=relative_path,
                 camera_name=camera_name,
             )
-            print(f"[Alert] Saved Known to DB: {person_name}, confidence={confidence_pct}%")
-            
-            clean_frame_bytes = kwargs.get('clean_frame_bytes')
-            if clean_frame_bytes:
-                names = [n.strip() for n in person_name.split(',')]
-                for name in names:
-                    if name and name.lower() != 'unknown':
-                        person = Person.objects.filter(name__iexact=name).first()
-                        if person:
-                            dataset_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', person.name)
-                            os.makedirs(dataset_dir, exist_ok=True)
-                            
-                            filename = f"auto_{timestamp.strftime('%Y%m%d_%H%M%S')}_{int(time.time())}.jpg"
-                            file_path = os.path.join(dataset_dir, filename)
-                            
-                            with open(file_path, 'wb') as f:
-                                f.write(clean_frame_bytes)
-                                
-                            relative_path = f"dataset/{person.name}/{filename}"
-                            pi_obj = PersonImage.objects.create(person=person, image=relative_path)
-                            print(f"[Self-Learning Engine] Automatically saved training sample for {person.name}: {relative_path}")
+            print(f"[Alert] Saved Known to DB: {person_name}, confidence={confidence_pct}%, image={relative_path}")
 
                             # Auto-compute ArcFace embedding for the self-learned image
                             try:

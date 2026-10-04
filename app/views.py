@@ -728,33 +728,16 @@ def biometric_verify_frame(request):
         # 2. Determine name for the file
         now = datetime.now()
         date_time_str = now.strftime("%d-%m-%y_%H-%M-%S")
-        recog_name = None
-        similarity = 0.0
-        det_conf = 0.0
 
         if not detections:
-            prefix = "noface"
-        else:
-            best = detections[0]
-            recog_name = best.get('person_name')
-            similarity = float(best.get('recognition_similarity', 0.0))
-            det_conf = float(best.get('detection_confidence', 0.0))
-            
-            if recog_name:
-                safe_name = "".join([c if c.isalnum() else "_" for c in recog_name])
-                prefix = safe_name
-            else:
-                prefix = "unknown"
+            # ── NO FACE DETECTED ──
+            captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
+            os.makedirs(captures_dir, exist_ok=True)
+            unique_name = f"noface_{date_time_str}.jpg"
+            abs_img_path = os.path.join(captures_dir, unique_name)
+            rel_img_path = f"captures/{unique_name}"
+            cv.imwrite(abs_img_path, frame)
 
-        # 3. Save capture snapshot to disk
-        captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
-        os.makedirs(captures_dir, exist_ok=True)
-        unique_name = f"{prefix}_{date_time_str}.jpg"
-        abs_img_path = os.path.join(captures_dir, unique_name)
-        rel_img_path = f"captures/{unique_name}"
-        cv.imwrite(abs_img_path, frame)
-
-        if not detections:
             return Response({
                 'status': 'NO_FACE',
                 'decision': 'RETRY',
@@ -763,9 +746,31 @@ def biometric_verify_frame(request):
                 'faces': 0
             })
 
+        best = detections[0]
+        recog_name = best.get('person_name')
+        similarity = float(best.get('recognition_similarity', 0.0))
+        det_conf = float(best.get('detection_confidence', 0.0))
+
         if recog_name:
             # ── ALLOWED / KNOWN PERSON ──
             person_obj = Person.objects.filter(name__iexact=recog_name).first()
+            folder_name = person_obj.name if person_obj else recog_name
+            safe_name = "".join([c if c.isalnum() else "_" for c in folder_name])
+
+            # Save in dataset/<folder_name>/ (known person saved in their own dataset folder)
+            person_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', folder_name)
+            os.makedirs(person_dir, exist_ok=True)
+            unique_name = f"{safe_name}_{date_time_str}.jpg"
+            abs_img_path = os.path.join(person_dir, unique_name)
+            rel_img_path = f"dataset/{folder_name}/{unique_name}"
+            cv.imwrite(abs_img_path, frame)
+
+            # Auto-save sample to PersonImage for continuous self-learning
+            if person_obj:
+                try:
+                    PersonImage.objects.create(person=person_obj, image=rel_img_path)
+                except Exception as e:
+                    print(f"[Dataset Sync] Note creating PersonImage: {e}")
             
             # Easter Egg: Specifically Harsh Shrimali from AIML-3 only
             recog_lower = recog_name.lower()
@@ -816,6 +821,14 @@ def biometric_verify_frame(request):
             })
         else:
             # ── DENIED / UNREGISTERED STRANGER ──
+            # Save stranger in captures/ for pending review & auto classification
+            captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
+            os.makedirs(captures_dir, exist_ok=True)
+            unique_name = f"unknown_{date_time_str}.jpg"
+            abs_img_path = os.path.join(captures_dir, unique_name)
+            rel_img_path = f"captures/{unique_name}"
+            cv.imwrite(abs_img_path, frame)
+
             log = RecognitionLog.objects.create(
                 person_name=None,
                 camera_name="Mobile Access Scanner",

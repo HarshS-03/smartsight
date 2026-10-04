@@ -58,6 +58,8 @@ def _download_npz_from_supabase(filepath):
 # Lazy model loading
 # ---------------------------------------------------------------------------
 _models_lock = threading.Lock()
+_arcface_infer_lock = threading.Lock()
+_detector_infer_lock = threading.Lock()
 _face_detector_models = {}
 _arcface_model = None
 
@@ -391,29 +393,30 @@ def embed_face_crop(crop_bgr):
         return None
 
     try:
-        model = _get_arcface()
-        # Convert BGR to RGB and resize to (112, 112)
-        crop_rgb = cv.cvtColor(crop_bgr, cv.COLOR_BGR2RGB)
-        crop_resized = cv.resize(crop_rgb, (112, 112), interpolation=cv.INTER_AREA)
-        
-        # ArcFace normalization: (pixel - 127.5) / 128.0
-        img_input = (crop_resized.astype(np.float32) - 127.5) / 128.0
-        img_input = np.expand_dims(img_input, axis=0)
+        with _arcface_infer_lock:
+            model = _get_arcface()
+            # Convert BGR to RGB and resize to (112, 112)
+            crop_rgb = cv.cvtColor(crop_bgr, cv.COLOR_BGR2RGB)
+            crop_resized = cv.resize(crop_rgb, (112, 112), interpolation=cv.INTER_AREA)
+            
+            # ArcFace normalization: (pixel - 127.5) / 128.0
+            img_input = (crop_resized.astype(np.float32) - 127.5) / 128.0
+            img_input = np.expand_dims(img_input, axis=0)
 
-        if hasattr(model, 'predict_on_batch'):
-            raw_emb = model.predict_on_batch(img_input)[0]
-        elif hasattr(model, '__call__') and not isinstance(model, bool):
-            raw_emb = model(img_input, training=False).numpy()[0]
-        else:
-            from deepface import DeepFace
-            res = DeepFace.represent(
-                img_path=crop_bgr,
-                model_name='ArcFace',
-                detector_backend='skip',
-                enforce_detection=False,
-                align=False,
-            )
-            return np.array(res[0]['embedding'], dtype=np.float32) if res else None
+            if hasattr(model, 'predict_on_batch'):
+                raw_emb = model.predict_on_batch(img_input)[0]
+            elif hasattr(model, '__call__') and not isinstance(model, bool):
+                raw_emb = model(img_input, training=False).numpy()[0]
+            else:
+                from deepface import DeepFace
+                res = DeepFace.represent(
+                    img_path=crop_bgr,
+                    model_name='ArcFace',
+                    detector_backend='skip',
+                    enforce_detection=False,
+                    align=False,
+                )
+                return np.array(res[0]['embedding'], dtype=np.float32) if res else None
 
         emb = np.array(raw_emb, dtype=np.float32).flatten()
         norm = np.linalg.norm(emb)
@@ -458,8 +461,9 @@ def compute_embedding(image_or_path, model_name=None):
             img = image_or_path
 
         h, w = img.shape[:2]
-        detector = _get_face_detector(model_name)
-        results = detector(img, conf=0.30, verbose=False)
+        with _detector_infer_lock:
+            detector = _get_face_detector(model_name)
+            results = detector(img, conf=0.30, verbose=False)
 
         if not results or len(results[0].boxes) == 0:
             emb = embed_face_crop(img)
@@ -545,7 +549,8 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
             scale_y = 1.0
 
         det_conf_thresh = getattr(settings, 'ARCFACE_DETECTION_CONFIDENCE', 0.45)
-        results = detector(infer_frame, conf=det_conf_thresh, verbose=False, imgsz=640)
+        with _detector_infer_lock:
+            results = detector(infer_frame, conf=det_conf_thresh, verbose=False, imgsz=640)
         if not results or len(results[0].boxes) == 0:
             with _tracks_lock:
                 _face_tracks.clear()
@@ -719,6 +724,16 @@ def compute_person_embeddings(person_id: int):
         f"[EmbeddingEngine] Person '{person.name}': "
         f"{computed} computed, {skipped} skipped, {errors} errors."
     )
+
+    if computed > 0:
+        from django.conf import settings
+        if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
+            try:
+                _sync_npz_to_supabase(gallery.cache_file)
+                logger.info(f"[EmbeddingEngine] Synced updated embeddings for '{person.name}' to Supabase cloud storage.")
+            except Exception as e:
+                logger.error(f"[EmbeddingEngine] Error syncing embeddings to Supabase: {e}")
+
     return computed, skipped, errors
 
 
