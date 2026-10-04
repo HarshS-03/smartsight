@@ -140,7 +140,12 @@ export default function LoginPage({ setActivePage, setUser }) {
                 if (setUser) setUser(authenticatedUser);
 
                 if (window.showToast) {
-                  window.showToast(`Welcome back, ${data.username}! Access Granted.`, 'success', 'WELCOME');
+                  const isGod = /harsh/i.test(data.username || '');
+                  if (isGod) {
+                    window.showToast('THE SYSTEM GOD, Harsh Shrimali', 'success', 'VERIFIED');
+                  } else {
+                    window.showToast(`Welcome back, ${data.username}! Access Granted.`, 'success', 'WELCOME');
+                  }
                 }
 
                 setTimeout(() => {
@@ -154,7 +159,11 @@ export default function LoginPage({ setActivePage, setUser }) {
             } else if (data.status === 'no_face') {
               setScanStatus('No face detected — align your face');
               successCount = Math.max(0, successCount - 1);
+            } else if (data.status === 'unrecognized' || data.status === 'blocked') {
+              setScanStatus(data.message || 'Face not recognized for login');
+              successCount = Math.max(0, successCount - 1);
             } else {
+              setScanStatus('Scanning face...');
               successCount = Math.max(0, successCount - 1);
             }
           } catch (err) {

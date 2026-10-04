@@ -607,9 +607,29 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           color: var(--text-heading);
           line-height: 1;
         }
+
+        @media (max-width: 1250px) {
+          .user-name-text {
+            display: none !important;
+          }
+          .user-profile-pill {
+            padding: 0.2rem !important;
+          }
+          .nav-link-liquid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            font-size: 0.72rem !important;
+          }
+        }
+
+        .navbar-nav, .navbar-nav li {
+          list-style: none !important;
+          list-style-type: none !important;
+        }
       `}</style>
       <nav className="navbar navbar-expand-lg sticky-top">
-        <div className="container">
+        <div className="container-fluid px-3 px-lg-4 position-relative d-flex align-items-center justify-content-between">
+          {/* 1. Left: Brand Logo */}
           <a
             className="navbar-brand text-dynamic fw-bold m-0"
             href="#"
@@ -619,6 +639,128 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
 
+          {/* 2. Center: Desktop Liquid Navigation Links (>= 992px) */}
+          <ul
+            ref={navContainerRef}
+            className="navbar-nav position-absolute start-50 top-50 translate-middle d-none d-lg-flex align-items-center p-0 m-0"
+            onMouseLeave={() => setHoveredPage(null)}
+            style={{ gap: '6px' }}
+          >
+            {/* Organic Liquid Blob Pill */}
+            <div
+              className="nav-liquid-pill position-absolute rounded-pill"
+              style={{
+                left: pillStyle.left,
+                width: pillStyle.width,
+                height: pillStyle.height,
+                top: pillStyle.top,
+                opacity: pillStyle.opacity,
+                transition: 'left 0.38s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), transform 0.3s ease, opacity 0.2s ease',
+                transform: isMoving ? 'scaleX(1.15) scaleY(0.88)' : 'scaleX(1) scaleY(1)',
+                pointerEvents: 'none'
+              }}
+            />
+
+            {[
+              { id: 'detection', label: 'Scan & Detect' },
+              { id: 'reports', label: 'Reports' },
+              ...(isStaff ? [{ id: 'notifications', label: 'Alerts' }] : []),
+              ...(isStaff ? [{ id: 'admin', label: 'Admin Panel' }] : []),
+              { id: 'about', label: 'About Us' }
+            ].map((item) => {
+              const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
+              return (
+                <li
+                  key={item.id}
+                  ref={el => navItemRefs.current[item.id] = el}
+                  className="nav-item m-0"
+                  onMouseEnter={() => setHoveredPage(item.id)}
+                >
+                  <a
+                    className={`nav-link nav-link-liquid px-2 px-xl-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setActivePage(item.id); closeMobileNav(); }}
+                  >
+                    <span>{item.label}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* 3. Right: Desktop Actions (>= 992px) */}
+          <ul className="navbar-nav list-unstyled d-none d-lg-flex align-items-center gap-2 position-absolute m-0 p-0" style={{ right: '1.5rem', top: '50%', transform: 'translateY(-50%)', listStyle: 'none' }}>
+            <li className="nav-item">
+              <button
+                type="button"
+                className="theme-toggle-btn"
+                onClick={cycleTheme}
+                title={themeMode === 'system' ? `Theme: Auto/System (Currently ${resolvedTheme})` : themeMode === 'dark' ? 'Theme: Dark Mode' : 'Theme: Light Mode'}
+                aria-label="Toggle Theme"
+              >
+                {themeMode === 'system' ? (
+                  <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
+                ) : themeMode === 'dark' ? (
+                  <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
+                ) : (
+                  <i className="bi bi-sun-fill text-warning"></i>
+                )}
+              </button>
+            </li>
+
+            {isAuthenticated ? (
+              <li className="nav-item dropdown position-relative">
+                <a
+                  className={`user-profile-pill ${showUserDropdown ? 'show' : ''}`}
+                  href="#"
+                  id="userDropdown"
+                  role="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowUserDropdown(!showUserDropdown); }}
+                >
+                  <div className="user-avatar-circle">
+                    {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
+                  </div>
+                  <span className="user-name-text d-none d-xl-inline">{displayName}</span>
+                </a>
+                <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', }}>
+                  <li>
+                    <h6 className="dropdown-header small text-uppercase fw-bold text-center mb-2" style={{ color: 'var(--text-secondary)' }}>{user?.username ? `Account: ${user.username}` : 'User Account'}</h6>
+                  </li>
+                  <li>
+                    <hr className="dropdown-divider opacity-25 mx-3" style={{ borderColor: 'var(--border-color)' }} />
+                  </li>
+                  {isStaff && (
+                    <li>
+                      <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setActivePage('admin'); closeMobileNav(); }}>
+                        <i className="bi bi-speedometer2 text-primary"></i>
+                        <span>Admin Panel</span>
+                      </a>
+                    </li>
+                  )}
+                  <li>
+                    <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { handleLogout(e); closeMobileNav(); }}>
+                      <i className="bi bi-box-arrow-right text-danger"></i>
+                      <span>Sign Out</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            ) : (
+              <li className="nav-item ms-lg-2">
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
+                  className="btn mobile-login-btn rounded-pill px-4 py-2 fw-bold text-uppercase d-flex align-items-center gap-2 text-decoration-none shadow-sm transition-all"
+                  style={{ fontSize: '0.8rem', letterSpacing: '0.05em' }}
+                >
+                  <i className="bi bi-box-arrow-in-right fs-6"></i>
+                  <span>Login</span>
+                </button>
+              </li>
+            )}
+          </ul>
+
+          {/* 4. Mobile Header Actions (< 992px) */}
           <div className="d-flex align-items-center gap-2 ms-auto d-lg-none">
             {/* Mobile Notification Bell Button */}
             <button
@@ -675,81 +817,34 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             </button>
           </div>
 
+          {/* 5. Mobile Drawer (< 992px) */}
           <div className={`collapse navbar-collapse ${isNavOpen ? 'show' : ''}`} id="navbarNav">
             <div className="mobile-collapse-inner w-100 position-relative">
-              {/* Main Links (Centered with Organic Liquid Morphing Indicator) */}
-            <ul
-              ref={navContainerRef}
-              className="navbar-nav position-absolute start-50 translate-middle-x d-none d-lg-flex align-items-center p-0 m-0"
-              onMouseLeave={() => setHoveredPage(null)}
-              style={{ gap: '6px' }}
-            >
-              {/* Organic Liquid Blob Pill */}
-              <div
-                className="nav-liquid-pill position-absolute rounded-pill"
-                style={{
-                  left: pillStyle.left,
-                  width: pillStyle.width,
-                  height: pillStyle.height,
-                  top: pillStyle.top,
-                  opacity: pillStyle.opacity,
-                  transition: 'left 0.38s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), transform 0.3s ease, opacity 0.2s ease',
-                  transform: isMoving ? 'scaleX(1.15) scaleY(0.88)' : 'scaleX(1) scaleY(1)',
-                  pointerEvents: 'none'
-                }}
-              />
-
-              {[
-                { id: 'detection', label: 'Scan & Detect' },
-                { id: 'reports', label: 'Reports' },
-                ...(isStaff ? [{ id: 'notifications', label: 'Alerts' }] : []),
-                { id: 'about', label: 'About Us' }
-              ].map((item) => {
-                const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
-                return (
-                  <li
-                    key={item.id}
-                    ref={el => navItemRefs.current[item.id] = el}
-                    className="nav-item m-0"
-                    onMouseEnter={() => setHoveredPage(item.id)}
-                  >
+              {/* Minimal Mobile Navigation Links (< 992px) */}
+              <ul className="navbar-nav d-lg-none my-0.5 p-0">
+                {[
+                  { id: 'detection', label: 'Scan & Detect', icon: 'bi-qr-code-scan' },
+                  { id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' },
+                  ...(isStaff ? [{ id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }] : []),
+                  ...(isStaff ? [{ id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }] : []),
+                  { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
+                ].map(item => (
+                  <li key={item.id} className="nav-item">
                     <a
-                      className={`nav-link nav-link-liquid px-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
+                      className={`mobile-nav-link ${activePage === item.id ? 'active' : ''}`}
                       href="#"
-                      onClick={(e) => { e.preventDefault(); setActivePage(item.id); closeMobileNav(); }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActivePage(item.id);
+                        closeMobileNav();
+                      }}
                     >
-                      <span>{item.label}</span>
+                      <i className={`bi ${item.icon} mobile-icon`}></i>
+                      <span className="flex-grow-1">{item.label}</span>
                     </a>
                   </li>
-                );
-              })}
-            </ul>
-
-            {/* Minimal Mobile Navigation Links (< 992px) */}
-            <ul className="navbar-nav d-lg-none my-0.5 p-0">
-              {[
-                { id: 'detection', label: 'Scan & Detect', icon: 'bi-qr-code-scan' },
-                { id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' },
-                ...(isStaff ? [{ id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }] : []),
-                { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }
-              ].map(item => (
-                <li key={item.id} className="nav-item">
-                  <a
-                    className={`mobile-nav-link ${activePage === item.id ? 'active' : ''}`}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActivePage(item.id);
-                      closeMobileNav();
-                    }}
-                  >
-                    <i className={`bi ${item.icon} mobile-icon`}></i>
-                    <span className="flex-grow-1">{item.label}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-
+                ))}
+              </ul>
 
               {/* Mobile Footer with Theme Toggle (< 992px) */}
               <div className="d-lg-none pt-2 mt-1 border-top border-secondary border-opacity-25">
@@ -785,136 +880,64 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                     )}
                   </button>
                 </div>
-              {isAuthenticated ? (
-                <div className="p-3 rounded-4 d-flex align-items-center justify-content-between" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
-                  <div className="d-flex align-items-center" style={{ gap: '10px', minWidth: 0 }}>
-                    <div className="user-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '0.85rem', flexShrink: 0 }}>
-                      {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
+                {isAuthenticated ? (
+                  <div className="p-3 rounded-4 d-flex align-items-center justify-content-between" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
+                    <div className="d-flex align-items-center" style={{ gap: '10px', minWidth: 0 }}>
+                      <div className="user-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '0.85rem', flexShrink: 0 }}>
+                        {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="fw-bold text-dynamic text-truncate" style={{ fontSize: '0.85rem', lineHeight: '1.2' }}>{displayName}</div>
+                        <div className="text-secondary text-truncate" style={{ fontSize: '0.7rem' }}>{isStaff ? 'Administrator' : 'User Account'}</div>
+                      </div>
                     </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div className="fw-bold text-dynamic text-truncate" style={{ fontSize: '0.85rem', lineHeight: '1.2' }}>{displayName}</div>
-                      <div className="text-secondary text-truncate" style={{ fontSize: '0.7rem' }}>{isStaff ? 'Administrator' : 'User Account'}</div>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center frosted-signout-btn shadow-sm"
+                      onClick={(e) => { handleLogout(e); closeMobileNav(); }}
+                      style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        letterSpacing: '0.02em',
+                        flexShrink: 0,
+                        padding: '8px 16px',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                        border: 'none',
+                        color: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                        lineHeight: '1'
+                      }}
+                    >
+                      <i className="bi bi-box-arrow-right" style={{ fontSize: '0.9rem', lineHeight: '1' }}></i>
+                      <span>Sign Out</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center frosted-signout-btn shadow-sm"
-                    onClick={(e) => { handleLogout(e); closeMobileNav(); }}
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      letterSpacing: '0.02em',
-                      flexShrink: 0,
-                      padding: '8px 16px',
-                      gap: '6px',
-                      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                      border: 'none',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                      lineHeight: '1'
-                    }}
-                  >
-                    <i className="bi bi-box-arrow-right" style={{ fontSize: '0.9rem', lineHeight: '1' }}></i>
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="d-flex justify-content-center pt-1 pb-1">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
-                    className="btn mobile-login-btn rounded-pill d-inline-flex align-items-center justify-content-center shadow-sm"
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '0.92rem',
-                      fontWeight: '600',
-                      letterSpacing: '0.02em',
-                      height: '42px',
-                      padding: '0 28px',
-                      gap: '8px',
-                      lineHeight: '1',
-                      width: 'auto'
-                    }}
-                  >
-                    <i className="bi bi-box-arrow-in-right" style={{ fontSize: '1.05rem' }}></i>
-                    <span>Login</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Right Side Items for Desktop (>= 992px) */}
-            <ul className="navbar-nav ms-auto d-none d-lg-flex align-items-center gap-2">
-              <li className="nav-item">
-                <button
-                  type="button"
-                  className="theme-toggle-btn"
-                  onClick={cycleTheme}
-                  title={themeMode === 'system' ? `Theme: Auto/System (Currently ${resolvedTheme})` : themeMode === 'dark' ? 'Theme: Dark Mode' : 'Theme: Light Mode'}
-                  aria-label="Toggle Theme"
-                >
-                  {themeMode === 'system' ? (
-                    <i className="bi bi-circle-half" style={{ color: '#2563eb' }}></i>
-                  ) : themeMode === 'dark' ? (
-                    <i className="bi bi-moon-stars-fill" style={{ color: '#2563eb' }}></i>
-                  ) : (
-                    <i className="bi bi-sun-fill text-warning"></i>
-                  )}
-                </button>
-              </li>
-
-              {isAuthenticated ? (
-                <li className="nav-item dropdown position-relative">
-                  <a
-                    className={`user-profile-pill ${showUserDropdown ? 'show' : ''}`}
-                    href="#"
-                    id="userDropdown"
-                    role="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowUserDropdown(!showUserDropdown); }}
-                  >
-                    <div className="user-avatar-circle">
-                      {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
-                    </div>
-                    <span className="user-name-text">{displayName}</span>
-                  </a>
-                  <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', }}>
-                    <li>
-                      <h6 className="dropdown-header small text-uppercase fw-bold text-center mb-2" style={{ color: 'var(--text-secondary)' }}>{user?.username ? `Account: ${user.username}` : 'User Account'}</h6>
-                    </li>
-                    <li>
-                      <hr className="dropdown-divider opacity-25 mx-3" style={{ borderColor: 'var(--border-color)' }} />
-                    </li>
-                    {isStaff && (
-                      <li>
-                        <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { e.preventDefault(); setActivePage('admin'); closeMobileNav(); }}>
-                          <i className="bi bi-speedometer2 text-primary"></i>
-                          <span>Admin Panel</span>
-                        </a>
-                      </li>
-                    )}
-                    <li>
-                      <a className="dropdown-item d-flex align-items-center gap-3 py-2 px-3" style={{ color: 'var(--text-body)' }} href="#" onClick={(e) => { handleLogout(e); closeMobileNav(); }}>
-                        <i className="bi bi-box-arrow-right text-danger"></i>
-                        <span>Sign Out</span>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-              ) : (
-                <li className="nav-item ms-lg-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
-                    className="btn mobile-login-btn rounded-pill px-4 py-2 fw-bold text-uppercase d-flex align-items-center gap-2 text-decoration-none shadow-sm transition-all"
-                    style={{ fontSize: '0.8rem', letterSpacing: '0.05em' }}
-                  >
-                    <i className="bi bi-box-arrow-in-right fs-6"></i>
-                    <span>Login</span>
-                  </button>
-                </li>
-              )}
-            </ul>
+                ) : (
+                  <div className="d-flex justify-content-center pt-1 pb-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setActivePage('login'); closeMobileNav(); }}
+                      className="btn mobile-login-btn rounded-pill d-inline-flex align-items-center justify-content-center shadow-sm"
+                      style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.92rem',
+                        fontWeight: '600',
+                        letterSpacing: '0.02em',
+                        height: '42px',
+                        padding: '0 28px',
+                        gap: '8px',
+                        lineHeight: '1',
+                        width: 'auto'
+                      }}
+                    >
+                      <i className="bi bi-box-arrow-in-right" style={{ fontSize: '1.05rem' }}></i>
+                      <span>Login</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

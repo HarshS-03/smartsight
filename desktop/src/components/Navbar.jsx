@@ -609,6 +609,25 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           color: var(--text-heading);
           line-height: 1;
         }
+
+        @media (max-width: 1250px) {
+          .user-name-text {
+            display: none !important;
+          }
+          .user-profile-pill {
+            padding: 0.2rem !important;
+          }
+          .nav-link-liquid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            font-size: 0.72rem !important;
+          }
+        }
+
+        .navbar-nav, .navbar-nav li {
+          list-style: none !important;
+          list-style-type: none !important;
+        }
         /* ── Electron Safe Area & Drag Region ── */
         .is-electron-navbar {
            -webkit-app-region: drag;
@@ -749,7 +768,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                   onMouseEnter={() => setHoveredPage(item.id)}
                 >
                   <a
-                    className={`nav-link nav-link-liquid px-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
+                    className={`nav-link nav-link-liquid px-2 px-xl-3.5 py-1.5 rounded-pill text-uppercase fw-bold d-inline-flex align-items-center gap-1.5 position-relative ${isActive ? 'active-link' : ''}`}
                     href="#"
                     onClick={(e) => { e.preventDefault(); setActivePage(item.id); closeMobileNav(); }}
                     style={{
@@ -788,7 +807,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
           </ul>
 
           {/* 3. Right: Desktop Actions (>= 992px) */}
-          <div className="d-none d-lg-flex align-items-center gap-2 desktop-right-actions">
+          <div className="d-none d-lg-flex align-items-center gap-2 desktop-right-actions position-absolute" style={{ right: '1.5rem', top: '50%', transform: 'translateY(-50%)' }}>
             <button
               type="button"
               className="theme-toggle-btn"
@@ -827,7 +846,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                   <div className="user-avatar-circle">
                     {displayName ? displayName.charAt(0).toUpperCase() : <i className="bi bi-person-fill"></i>}
                   </div>
-                  <span className="user-name-text">{displayName}</span>
+                  <span className="user-name-text d-none d-xl-inline">{displayName}</span>
                 </a>
                 <ul className={`dropdown-menu dropdown-menu-end shadow-lg py-3 mt-2 ${showUserDropdown ? 'show' : ''}`} aria-labelledby="userDropdown" style={{ position: 'absolute', right: 0, minWidth: '200px', zIndex: 1100, background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)', borderRadius: '16px', }}>
                   <li>

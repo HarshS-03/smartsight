@@ -8,23 +8,12 @@ const MODELS = {
     columns: [
       { key: 'id', label: 'ID', type: 'number', readOnly: true },
       { key: 'username', label: 'Username', type: 'text' },
-      { key: 'email', label: 'Email', type: 'email' },
-      { key: 'first_name', label: 'First Name', type: 'text' },
-      { key: 'last_name', label: 'Last Name', type: 'text' },
-      { key: 'is_staff', label: 'Staff (Admin)', type: 'boolean' },
-      { key: 'is_superuser', label: 'Superuser', type: 'boolean' },
+      { key: 'email', label: 'Email', type: 'email', hideOnMobile: true },
+      { key: 'first_name', label: 'First Name', type: 'text', hideOnMobile: true },
+      { key: 'last_name', label: 'Last Name', type: 'text', hideOnMobile: true },
+      { key: 'is_staff', label: 'Staff (Admin)', type: 'boolean', hideOnMobile: true },
+      { key: 'is_superuser', label: 'Superuser', type: 'boolean', hideOnMobile: true },
       { key: 'password', label: 'Password (leave blank to keep)', type: 'password', hiddenInTable: true }
-    ]
-  },
-  cameras: {
-    title: 'Cameras',
-    endpoint: '/cameras/',
-    columns: [
-      { key: 'id', label: 'ID', type: 'number', readOnly: true },
-      { key: 'name', label: 'Camera Name', type: 'text' },
-      { key: 'source', label: 'Source (0, 1, or RTSP)', type: 'text' },
-      { key: 'is_active', label: 'Active', type: 'boolean' },
-      { key: 'created_at', label: 'Created At', type: 'text', readOnly: true }
     ]
   },
   persons: {
@@ -33,7 +22,7 @@ const MODELS = {
     columns: [
       { key: 'id', label: 'ID', type: 'number', readOnly: true },
       { key: 'name', label: 'Name', type: 'text' },
-      { key: 'created_at', label: 'Created At', type: 'text', readOnly: true }
+      { key: 'created_at', label: 'Created At', type: 'text', readOnly: true, hideOnMobile: true }
     ]
   }
 };
@@ -43,6 +32,7 @@ export default function AdminPanelPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -51,23 +41,34 @@ export default function AdminPanelPage() {
 
   const activeModel = MODELS[activeModelKey];
 
-  const fetchData = async () => {
+  const fetchData = async (currentModelKey = activeModelKey, search = searchQuery) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await API.get(activeModel.endpoint);
-      setData(res.data);
+      const endpoint = MODELS[currentModelKey].endpoint;
+      const res = await API.get(endpoint, { params: { search } });
+      // Prevent race condition: only update if the user hasn't switched tabs
+      if (currentModelKey === activeModelKey) {
+        setData(res.data);
+      }
     } catch (err) {
-      console.error(err);
-      setError('Failed to fetch data. Ensure you have admin permissions.');
+      if (currentModelKey === activeModelKey) {
+        console.error(err);
+        setError('Failed to fetch data. Ensure you have admin permissions.');
+      }
     } finally {
-      setLoading(false);
+      if (currentModelKey === activeModelKey) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [activeModelKey]);
+    const timer = setTimeout(() => {
+      fetchData(activeModelKey, searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [activeModelKey, searchQuery]);
 
   const handleOpenModal = (record = null) => {
     if (record) {
@@ -169,25 +170,37 @@ export default function AdminPanelPage() {
 
       <div className="container mt-4 pb-5 position-relative" style={{ zIndex: 1 }}>
         {/* Tabs */}
-        <ul className="nav nav-pills nav-fill mb-4 p-1 rounded-pill shadow-sm" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
+        <div className="d-flex mb-4 p-1 rounded-pill shadow-sm mx-auto" style={{ maxWidth: '400px', background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
           {Object.entries(MODELS).map(([key, model]) => (
-            <li className="nav-item" key={key}>
-              <button
-                className={`btn rounded-pill px-4 fw-bold w-100 ${activeModelKey === key ? 'shadow' : ''}`}
-                onClick={() => setActiveModelKey(key)}
-                style={{
-                  cursor: 'pointer',
-                  border: 'none',
-                  color: activeModelKey === key ? '#ffffff' : 'var(--text-secondary)',
-                  background: activeModelKey === key ? 'var(--bs-primary)' : 'transparent',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {model.title}
-              </button>
-            </li>
+            <button
+              key={key}
+              className={`btn rounded-pill px-4 fw-bold flex-grow-1 border-0 ${activeModelKey === key ? 'shadow text-white' : 'text-secondary'}`}
+              onClick={() => setActiveModelKey(key)}
+              style={{
+                background: activeModelKey === key ? 'var(--bs-primary)' : 'transparent',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {model.title}
+            </button>
           ))}
-        </ul>
+        </div>
+
+        {/* Search Bar */}
+        <div className="d-flex justify-content-center justify-content-md-end mb-3">
+          <div className="input-group shadow-sm rounded-pill" style={{ maxWidth: '300px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
+            <span className="input-group-text bg-transparent border-0 text-secondary ps-3">
+              <i className="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control border-0 bg-transparent text-body shadow-none"
+              placeholder={`Search ${activeModel.title}...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
         {/* Data Table */}
         <div className="card shadow-sm rounded-4 border-0" style={{ background: 'var(--bg-surface-solid)' }}>
@@ -201,37 +214,39 @@ export default function AdminPanelPage() {
             ) : data.length === 0 ? (
               <div className="p-5 text-center text-secondary">No records found.</div>
             ) : (
-              <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0" style={{ color: 'var(--text-body)' }}>
+              <div className="w-100">
+                <table className="table table-hover align-middle mb-0" style={{ color: 'var(--text-body)', tableLayout: 'fixed', width: '100%' }}>
                   <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
                     <tr>
                       {activeModel.columns.filter(c => !c.hiddenInTable).map((col) => (
-                        <th key={col.key} className="border-0 text-secondary fw-semibold py-3 px-4">{col.label}</th>
+                        <th key={col.key} className={`border-0 text-secondary fw-semibold py-3 px-2 px-md-4 text-truncate ${col.hideOnMobile ? 'd-none d-md-table-cell' : ''}`} style={col.key === 'id' ? { width: '60px' } : {}}>{col.label}</th>
                       ))}
-                      <th className="border-0 text-secondary fw-semibold py-3 px-4 text-end">Actions</th>
+                      <th className="border-0 text-secondary fw-semibold py-3 px-2 px-md-4 text-end text-nowrap" style={{ width: '110px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.map((row) => (
                       <tr key={row.id}>
                         {activeModel.columns.filter(c => !c.hiddenInTable).map((col) => (
-                          <td key={col.key} className="border-bottom-0 py-3 px-4" style={{ borderColor: 'var(--border-color) !important' }}>
+                          <td key={col.key} className={`border-bottom-0 py-3 px-2 px-md-4 ${col.hideOnMobile ? 'd-none d-md-table-cell' : ''}`} style={{ borderColor: 'var(--border-color) !important' }}>
                             {col.type === 'boolean' ? (
                               row[col.key] ? <span className="badge bg-success">Yes</span> : <span className="badge bg-secondary">No</span>
                             ) : (
-                              <span className="text-truncate d-inline-block" style={{ maxWidth: '200px' }}>
+                              <span className="text-truncate d-inline-block w-100">
                                 {row[col.key] !== null && row[col.key] !== undefined ? String(row[col.key]) : '-'}
                               </span>
                             )}
                           </td>
                         ))}
-                        <td className="border-bottom-0 py-3 px-4 text-end" style={{ borderColor: 'var(--border-color) !important' }}>
-                          <button onClick={() => handleOpenModal(row)} className="btn btn-sm rounded-circle me-2 d-inline-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }} title="Edit">
-                            <i className="bi bi-pencil-fill" style={{ color: '#3b82f6', fontSize: '0.85rem' }}></i>
-                          </button>
-                          <button onClick={() => handleDelete(row.id)} className="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }} title="Delete">
-                            <i className="bi bi-trash-fill" style={{ color: '#ef4444', fontSize: '0.85rem' }}></i>
-                          </button>
+                        <td className="border-bottom-0 py-3 px-2 px-md-4" style={{ borderColor: 'var(--border-color) !important' }}>
+                          <div className="d-flex align-items-center justify-content-end gap-2 flex-nowrap">
+                            <button onClick={() => handleOpenModal(row)} className="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style={{ width: '32px', height: '32px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }} title="Edit">
+                              <i className="bi bi-pencil-fill" style={{ color: '#3b82f6', fontSize: '0.85rem' }}></i>
+                            </button>
+                            <button onClick={() => handleDelete(row.id)} className="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style={{ width: '32px', height: '32px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }} title="Delete">
+                              <i className="bi bi-trash-fill" style={{ color: '#ef4444', fontSize: '0.85rem' }}></i>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

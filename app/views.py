@@ -129,7 +129,7 @@ class PersonViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Person.objects.all().order_by('name')
+        queryset = Person.objects.all().order_by('id')
         category = self.request.query_params.get('category')
         if category and category.upper() != 'ALL':
             queryset = queryset.filter(category=category.upper())
@@ -643,16 +643,21 @@ def face_verify_frame(request):
                 })
 
         # Check if recognized person is a registered admin user
-        try:
-            user = User.objects.get(username__iexact=recognized_name)
-            is_admin = user.is_staff or user.is_superuser
-        except User.DoesNotExist:
+        user = None
+        for u in User.objects.all():
+            if u.username.lower() == recognized_name.lower() or u.username.lower() in recognized_name.lower().split():
+                user = u
+                break
+        
+        if not user:
             return Response({
                 'status': 'unrecognized',
                 'message': f'Detected "{recognized_name}" but no matching user found',
                 'faces': 1,
                 'confidence': round(best_conf, 3)
             })
+        
+        is_admin = user.is_staff or user.is_superuser
 
         if not is_admin:
             return Response({

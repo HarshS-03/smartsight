@@ -15,7 +15,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import AdminPanelPage from './pages/AdminPanelPage';
 import { initFirebasePush } from './utils/firebasePush';
 
-const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'cameras', 'dataset', 'reports', 'notifications', 'admin'];
+const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'dataset', 'reports', 'notifications', 'admin'];
 
 export default function App() {
   const navigate = useNavigate();
@@ -117,7 +117,6 @@ export default function App() {
       login: 'Login',
       forgot_password: 'Forgot Password',
       detection: 'Detection',
-      cameras: 'Cameras',
       dataset: 'Dataset',
       reports: 'Reports',
       notifications: 'Notification Alerts',

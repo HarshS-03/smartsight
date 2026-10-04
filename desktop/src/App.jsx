@@ -14,7 +14,7 @@ import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import AdminPanelPage from './pages/AdminPanelPage';
 
-const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'cameras', 'dataset', 'reports', 'notifications', 'admin'];
+const VALID_PAGES = ['home', 'about', 'login', 'forgot_password', 'detection', 'dataset', 'reports', 'notifications', 'admin'];
 
 export default function App() {
   const navigate = useNavigate();
