@@ -7202,22 +7202,77 @@ detection-hero-bg,
 }
 
 .custom-dropdown-item {
-  color: var(--text-body);
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--text-heading) !important;
   padding: 9px 14px;
   border-radius: 10px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  text-align: left;
 }
 
-.custom-dropdown-item:hover,
+.custom-dropdown-item:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #2563eb !important;
+}
+
 .custom-dropdown-item.active {
-  background: rgba(13, 110, 253, 0.12);
-  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #2563eb !important;
+  font-weight: 700;
+}
+
+[data-bs-theme="dark"] .custom-dropdown-item {
+  color: var(--text-body, #f1f5f9) !important;
+}
+
+[data-bs-theme="dark"] .custom-dropdown-item:hover {
+  background: rgba(37, 99, 235, 0.16) !important;
+  color: #60a5fa !important;
+}
+
+[data-bs-theme="dark"] .custom-dropdown-item.active {
+  background: rgba(37, 99, 235, 0.25) !important;
+  color: #60a5fa !important;
+}
+
+/* ── Detection Records Log Tiles Status Hover ── */
+.log-card-tile {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.08)) !important;
+}
+
+/* Known Person Tile: Green Hover Effect with Bold Border & Strong Glow */
+.log-card-tile-known:hover {
+  transform: translateY(-3px) !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.25), 0 0 0 1.5px #10b981, 0 0 18px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Unknown Person Tile: Red Hover Effect with Bold Border & Strong Glow */
+.log-card-tile-unknown:hover {
+  transform: translateY(-3px) !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 10px 28px rgba(239, 68, 68, 0.25), 0 0 0 1.5px #ef4444, 0 0 18px rgba(239, 68, 68, 0.4) !important;
+}
+
+[data-bs-theme="dark"] .log-card-tile-known:hover {
+  border-color: #10b981 !important;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), 0 0 0 1.5px #10b981, 0 0 22px rgba(16, 185, 129, 0.5) !important;
+}
+
+[data-bs-theme="dark"] .log-card-tile-unknown:hover {
+  border-color: #ef4444 !important;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4), 0 0 0 1.5px #ef4444, 0 0 22px rgba(239, 68, 68, 0.5) !important;
 }
 
 .notif-table th,

@@ -753,7 +753,7 @@ export default function ReportsPage() {
         {/* Charts Section */}
         <div className="row mb-4" data-reveal="true">
           <div className="col-12">
-            <div className="p-4 glass-card">
+            <div className="p-3 p-sm-4 glass-card">
               {/* Header Row: Title on Left, Mode Switcher on Right (PC/Laptop) */}
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
                 <div>
@@ -771,7 +771,7 @@ export default function ReportsPage() {
 
               {/* Bar Chart Filters Row: Scope Filter on Left, Timeframe Filter on Right (PC/Laptop) */}
               {activeChart === 'bar' && (
-                <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 mb-3 px-1">
+                <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-2.5 mb-3 px-1">
                   <div className="chart-switcher-container">
                     {[
                       { id: 'ALL', label: 'All', color: '#2563eb' },
@@ -786,8 +786,8 @@ export default function ReportsPage() {
                           onClick={() => setChartScope(scopeOpt.id)}
                           className={`switcher-btn ${isSelected ? 'active' : ''} d-inline-flex align-items-center`}
                           style={{
-                            gap: '6px',
-                            padding: '4px 14px',
+                            gap: '5px',
+                            padding: '4px 12px',
                             fontSize: '0.78rem',
                             background: isSelected ? scopeOpt.color : 'transparent',
                             color: isSelected ? '#ffffff' : 'var(--text-heading)',
@@ -809,22 +809,23 @@ export default function ReportsPage() {
                     })}
                   </div>
 
-                  <div className="chart-switcher-container">
+                  <div className="chart-switcher-container" style={{ maxWidth: '100%', overflowX: 'auto' }}>
                     {[
-                      { id: '7D', label: '7 Days' },
-                      { id: '10D', label: '10 Days' },
-                      { id: '14D', label: '14 Days' },
-                      { id: '30D', label: '30 Days' },
-                      { id: 'ALL', label: 'All' }
+                      { id: '7D', label: '7 Days', short: '7D' },
+                      { id: '10D', label: '10 Days', short: '10D' },
+                      { id: '14D', label: '14 Days', short: '14D' },
+                      { id: '30D', label: '30 Days', short: '30D' },
+                      { id: 'ALL', label: 'All', short: 'All' }
                     ].map(tf => (
                       <button
                         key={tf.id}
                         type="button"
                         onClick={() => setChartTimeframe(tf.id)}
                         className={`switcher-btn ${chartTimeframe === tf.id ? 'active' : ''}`}
-                        style={{ padding: '4px 12px', fontSize: '0.78rem' }}
+                        style={{ padding: '4px 9px', fontSize: '0.76rem' }}
                       >
-                        {tf.label}
+                        <span className="d-none d-sm-inline">{tf.label}</span>
+                        <span className="d-sm-none">{tf.short}</span>
                       </button>
                     ))}
                   </div>
@@ -836,9 +837,16 @@ export default function ReportsPage() {
                 {dailyCounts.length > 0 ? (
                   <div className="w-100 h-100 d-flex flex-column justify-content-between pt-2">
 
-                    {/* Scrollable Large Bar Canvas Track */}
+                    {/* Scrollable Track - Zero scroll on mobile when <= 14 days */}
                     <div className="w-100 overflow-x-auto custom-scrollbar pb-2">
-                      <div className="d-flex align-items-end justify-content-around px-2 pb-3 border-bottom border-secondary border-opacity-25" style={{ height: '300px', minWidth: '700px' }}>
+                      <div
+                        className="d-flex align-items-end justify-content-around px-1 px-sm-2 pb-3 border-bottom border-secondary border-opacity-25"
+                        style={{
+                          height: '300px',
+                          minWidth: dailyCounts.length > 14 ? `${dailyCounts.length * 36}px` : '100%',
+                          width: '100%'
+                        }}
+                      >
                         {dailyCounts.map((item, idx) => {
                           const showKnown = (chartScope === 'ALL' || chartScope === 'KNOWN') && item.known > 0;
                           const showUnknown = (chartScope === 'ALL' || chartScope === 'UNKNOWN') && item.unknown > 0;
@@ -853,19 +861,20 @@ export default function ReportsPage() {
                           );
                           const knownPx = item.known > 0 ? Math.max(12, Math.round((item.known / maxVal) * 220)) : 0;
                           const unknownPx = item.unknown > 0 ? Math.max(12, Math.round((item.unknown / maxVal) * 220)) : 0;
+                          const barWidth = dailyCounts.length > 10 ? '14px' : '20px';
 
                           return (
-                            <div key={idx} className="d-flex flex-column align-items-center flex-grow-1 justify-content-end px-2" style={{ height: '100%' }}>
-                              <div className="d-flex align-items-end gap-1.5 mb-1.5">
+                            <div key={idx} className="d-flex flex-column align-items-center flex-grow-1 justify-content-end px-1" style={{ height: '100%' }}>
+                              <div className="d-flex align-items-end gap-1 mb-1.5">
                                 {/* Known Bar (Green) */}
                                 {showKnown && (
                                   <div className="d-flex flex-column align-items-center">
-                                    <span className="small font-mono fw-bold text-success mb-1" style={{ fontSize: '0.78rem' }}>{item.known}</span>
+                                    <span className="small font-mono fw-bold text-success mb-1" style={{ fontSize: '0.74rem' }}>{item.known}</span>
                                     <div
                                       className="transition-all cursor-pointer hover-glow"
                                       style={{
                                         height: `${knownPx}px`,
-                                        width: '20px',
+                                        width: barWidth,
                                         background: '#10b981',
                                         boxShadow: '0 4px 16px rgba(16, 185, 129, 0.45)',
                                         borderRadius: '6px 6px 3px 3px'
@@ -878,12 +887,12 @@ export default function ReportsPage() {
                                 {/* Unknown Bar (Red) */}
                                 {showUnknown && (
                                   <div className="d-flex flex-column align-items-center">
-                                    <span className="small font-mono fw-bold text-danger mb-1" style={{ fontSize: '0.78rem' }}>{item.unknown}</span>
+                                    <span className="small font-mono fw-bold text-danger mb-1" style={{ fontSize: '0.74rem' }}>{item.unknown}</span>
                                     <div
                                       className="transition-all cursor-pointer hover-glow"
                                       style={{
                                         height: `${unknownPx}px`,
-                                        width: '20px',
+                                        width: barWidth,
                                         background: 'linear-gradient(180deg, #f87171 0%, #ef4444 100%)',
                                         boxShadow: '0 4px 16px rgba(239, 68, 68, 0.45)',
                                         borderRadius: '6px 6px 3px 3px'
@@ -894,7 +903,9 @@ export default function ReportsPage() {
                                 )}
                               </div>
 
-                              <span className="small text-secondary font-mono mt-2 fw-semibold text-nowrap" style={{ fontSize: '0.75rem' }}>{item.date}</span>
+                              <span className="small text-secondary font-mono mt-2 fw-semibold text-nowrap" style={{ fontSize: '0.72rem' }}>
+                                {item.date && item.date.length > 5 && item.date.includes('-') ? item.date.slice(5) : item.date}
+                              </span>
                             </div>
                           );
                         })}
@@ -1007,7 +1018,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
+                      style={{ background: 'var(--bg-input, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.1))', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowCameraDropdown(!showCameraDropdown); setShowPersonDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate d-inline-flex align-items-center gap-2">
@@ -1033,7 +1044,7 @@ export default function ReportsPage() {
                             <button
                               key={cam}
                               type="button"
-                              className={`w-100 btn btn-sm text-start rounded-3 px-3 py-2 my-0.5 d-flex align-items-center justify-content-between transition-all ${cameraQuery === cam ? 'bg-primary text-white fw-bold' : 'text-dynamic hover-bg-subtle'
+                              className={`w-100 custom-dropdown-item my-0.5 border-0 bg-transparent ${cameraQuery === cam ? 'active fw-bold' : ''
                                 }`}
                               style={{ fontSize: '0.85rem' }}
                               onClick={() => {
@@ -1061,7 +1072,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
+                      style={{ background: 'var(--bg-input, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.1))', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowPersonDropdown(!showPersonDropdown); setShowCameraDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate d-inline-flex align-items-center gap-2">
@@ -1091,7 +1102,7 @@ export default function ReportsPage() {
                             <button
                               key={opt.value}
                               type="button"
-                              className={`w-100 btn btn-sm text-start rounded-3 px-3 py-2 my-0.5 d-flex align-items-center justify-content-between transition-all ${statusQuery === opt.value ? 'bg-primary text-white fw-bold' : 'text-dynamic hover-bg-subtle'
+                              className={`w-100 custom-dropdown-item my-0.5 border-0 bg-transparent ${statusQuery === opt.value ? 'active fw-bold' : ''
                                 }`}
                               style={{ fontSize: '0.85rem' }}
                               onClick={() => {
@@ -1119,7 +1130,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', fontSize: '0.85rem', height: '42px' }}
+                      style={{ background: 'var(--bg-input, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.1))', fontSize: '0.85rem', height: '42px' }}
                       onClick={() => { setShowTimeframeDropdown(!showTimeframeDropdown); setShowCameraDropdown(false); setShowPersonDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate d-inline-flex align-items-center gap-2">
@@ -1152,7 +1163,7 @@ export default function ReportsPage() {
                             <button
                               key={opt.value}
                               type="button"
-                              className={`w-100 btn btn-sm text-start rounded-3 px-3 py-2 my-0.5 d-flex align-items-center justify-content-between transition-all ${timeframeQuery === opt.value ? 'bg-primary text-white fw-bold' : 'text-dynamic hover-bg-subtle'
+                              className={`w-100 custom-dropdown-item my-0.5 border-0 bg-transparent ${timeframeQuery === opt.value ? 'active fw-bold' : ''
                                 }`}
                               style={{ fontSize: '0.85rem' }}
                               onClick={() => {
@@ -1173,11 +1184,11 @@ export default function ReportsPage() {
                 {/* Apply & Reset Filter Actions */}
                 <div className="col-12 col-sm-6 col-lg-3">
                   <label className="form-label d-none d-lg-block text-secondary small fw-bold text-uppercase mb-2" style={{ visibility: 'hidden' }}>Actions</label>
-                  <div className="d-flex align-items-center gap-2 w-100">
+                  <div className="d-flex align-items-center gap-2">
                     <button
                       type="button"
-                      className="btn btn-primary rounded-pill fw-bold text-nowrap d-flex align-items-center justify-content-center gap-2 shadow-primary flex-grow-1"
-                      style={{ fontSize: '0.85rem', height: '42px', padding: '0 20px' }}
+                      className="btn btn-primary rounded-pill fw-bold text-nowrap d-inline-flex align-items-center justify-content-center gap-2 shadow-primary px-4"
+                      style={{ fontSize: '0.85rem', height: '42px', minWidth: '135px' }}
                       onClick={() => setCurrentPage(1)}
                     >
                       <i className="bi bi-funnel-fill"></i>
@@ -1186,7 +1197,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-glow"
-                      style={{ width: '42px', height: '42px', border: '1px solid var(--border-input)', background: 'var(--bg-input)' }}
+                      style={{ width: '42px', height: '42px', border: '1px solid var(--border-color, rgba(0,0,0,0.12))', background: 'var(--bg-input)' }}
                       title="Reset All Filters"
                       onClick={() => { setSearchQuery(''); setCameraQuery('all'); setStatusQuery('all'); setTimeframeQuery('all'); setCurrentPage(1); }}
                     >
@@ -1200,98 +1211,109 @@ export default function ReportsPage() {
               <div className="reports-list-container w-100">
                 {currentReports.length > 0 ? (
                   <div className="row g-3 pb-2">
-                    {currentReports.map((rep, index) => (
-                      <div key={index} className="col-12 col-md-6 col-lg-4">
-                        <div className="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style={{ background: 'var(--bg-body, #ffffff)' }}>
-                          <div className="card-body p-3 d-flex flex-column">
-                            {/* Top Header: Avatar + Person Info & Camera Source */}
-                            <div className="d-flex align-items-center gap-3 mb-auto">
-                              <div className="flex-shrink-0">
-                                {rep.imageUrl ? (
-                                  <img
-                                    src={rep.imageUrl}
-                                    alt="Face"
-                                    className="rounded-3 shadow-sm border"
-                                    style={{ width: '52px', height: '52px', objectFit: 'cover', cursor: 'pointer' }}
-                                    onClick={() => setSelectedImage(rep.imageUrl)}
-                                    title="Click to view full photo"
-                                  />
-                                ) : (
-                                  <div className="rounded-3 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center border" style={{ width: '52px', height: '52px' }}>
-                                    <i className="bi bi-person text-secondary fs-3 opacity-75"></i>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex-grow-1 min-w-0">
-                                {/* Row 1: Person Name & Status Badge */}
-                                <div className="d-flex justify-content-between align-items-center mb-1">
-                                  <span className="fw-bold text-dynamic lh-sm text-truncate" style={{ fontSize: '0.98rem' }}>
-                                    {rep.person_name === "Unknown Person" ? "Unknown" : (rep.person_name || "Unknown")}
-                                  </span>
-                                  {rep.status === 'KNOWN' ? (
-                                    <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Known</span>
-                                  ) : rep.status === 'APPROVED' ? (
-                                    <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Approved</span>
+                    {currentReports.map((rep, index) => {
+                      const isKnown = rep.status === 'KNOWN' || rep.status === 'APPROVED';
+                      return (
+                        <div key={index} className="col-12 col-md-6 col-lg-4">
+                          <div
+                            className={`card shadow-sm rounded-4 overflow-hidden h-100 log-card-tile ${isKnown ? 'log-card-tile-known' : 'log-card-tile-unknown'}`}
+                            style={{
+                              background: 'var(--bg-body, #ffffff)',
+                              cursor: rep.imageUrl ? 'pointer' : 'default'
+                            }}
+                            onClick={() => {
+                              if (rep.imageUrl) setSelectedImage(rep.imageUrl);
+                            }}
+                          >
+                            <div className="card-body p-3 d-flex flex-column">
+                              {/* Top Header: Avatar + Person Info & Camera Source */}
+                              <div className="d-flex align-items-center gap-3 mb-auto">
+                                <div className="flex-shrink-0">
+                                  {rep.imageUrl ? (
+                                    <img
+                                      src={rep.imageUrl}
+                                      alt="Face"
+                                      className="rounded-3 shadow-sm border"
+                                      style={{ width: '52px', height: '52px', objectFit: 'cover' }}
+                                      title="Click to view full photo"
+                                    />
                                   ) : (
-                                    <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Unknown</span>
+                                    <div className="rounded-3 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center border" style={{ width: '52px', height: '52px' }}>
+                                      <i className="bi bi-person text-secondary fs-3 opacity-75"></i>
+                                    </div>
                                   )}
                                 </div>
 
-                                {/* Row 2: Date & Camera Source (Edge-to-edge alignment) */}
-                                <div className="d-flex justify-content-between align-items-center text-secondary font-mono" style={{ fontSize: '0.72rem' }}>
-                                  <span className="d-inline-flex align-items-center gap-1.5">
-                                    <i className="bi bi-calendar3 opacity-75"></i> {rep.date}
-                                  </span>
-                                  <span className="d-inline-flex align-items-center gap-1.5 text-truncate" style={{ maxWidth: '120px' }}>
-                                    <i className="bi bi-camera-video opacity-75"></i> {rep.camera_name?.replace('Mobile Access Scanner', 'Mobile')?.trim() || "Mobile"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                                <div className="flex-grow-1 min-w-0">
+                                  {/* Row 1: Person Name & Status Badge */}
+                                  <div className="d-flex justify-content-between align-items-center mb-1">
+                                    <span className="fw-bold text-dynamic lh-sm text-truncate" style={{ fontSize: '0.98rem' }}>
+                                      {rep.person_name === "Unknown Person" ? "Unknown" : (rep.person_name || "Unknown")}
+                                    </span>
+                                    {rep.status === 'KNOWN' ? (
+                                      <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Known</span>
+                                    ) : rep.status === 'APPROVED' ? (
+                                      <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Approved</span>
+                                    ) : (
+                                      <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Unknown</span>
+                                    )}
+                                  </div>
 
-                            {/* Bottom Row: Perfectly Symmetrical Entry & Exit Metric Tiles */}
-                            <div className="row g-2 mt-3 pt-3 border-top border-light-subtle">
-                              {/* Entry Tile */}
-                              <div className="col-6">
-                                <div
-                                  className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
-                                  style={{
-                                    background: 'rgba(25, 135, 84, 0.05)',
-                                    border: '1px solid rgba(25, 135, 84, 0.16)'
-                                  }}
-                                >
-                                  <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                                    Entry
-                                  </span>
-                                  <span className="text-success font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
-                                    <i className="bi bi-box-arrow-in-right opacity-75"></i> {rep.entry_time}
-                                  </span>
+                                  {/* Row 2: Date & Camera Source (Edge-to-edge alignment) */}
+                                  <div className="d-flex justify-content-between align-items-center text-secondary font-mono" style={{ fontSize: '0.72rem' }}>
+                                    <span className="d-inline-flex align-items-center gap-1.5">
+                                      <i className="bi bi-calendar3 opacity-75"></i> {rep.date}
+                                    </span>
+                                    <span className="d-inline-flex align-items-center gap-1.5 text-truncate" style={{ maxWidth: '120px' }}>
+                                      <i className="bi bi-camera-video opacity-75"></i> {rep.camera_name?.replace('Mobile Access Scanner', 'Mobile')?.trim() || "Mobile"}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Exit Tile */}
-                              <div className="col-6">
-                                <div
-                                  className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
-                                  style={{
-                                    background: 'rgba(220, 53, 69, 0.05)',
-                                    border: '1px solid rgba(220, 53, 69, 0.16)'
-                                  }}
-                                >
-                                  <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                                    Exit
-                                  </span>
-                                  <span className="text-danger font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
-                                    <i className="bi bi-box-arrow-left opacity-75"></i> {rep.exit_time}
-                                  </span>
+                              {/* Bottom Row: Perfectly Symmetrical Entry & Exit Metric Tiles */}
+                              <div className="row g-2 mt-3 pt-3 border-top border-light-subtle">
+                                {/* Entry Tile */}
+                                <div className="col-6">
+                                  <div
+                                    className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
+                                    style={{
+                                      background: 'rgba(25, 135, 84, 0.05)',
+                                      border: '1px solid rgba(25, 135, 84, 0.16)'
+                                    }}
+                                  >
+                                    <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                                      Entry
+                                    </span>
+                                    <span className="text-success font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
+                                      <i className="bi bi-box-arrow-in-right opacity-75"></i> {rep.entry_time}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Exit Tile */}
+                                <div className="col-6">
+                                  <div
+                                    className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
+                                    style={{
+                                      background: 'rgba(220, 53, 69, 0.05)',
+                                      border: '1px solid rgba(220, 53, 69, 0.16)'
+                                    }}
+                                  >
+                                    <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                                      Exit
+                                    </span>
+                                    <span className="text-danger font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
+                                      <i className="bi bi-box-arrow-left opacity-75"></i> {rep.exit_time}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-4 text-secondary border rounded-3 bg-light shadow-sm">
