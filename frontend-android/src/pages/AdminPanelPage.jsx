@@ -187,7 +187,7 @@ export default function AdminPanelPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="d-flex justify-content-center justify-content-md-end mb-3">
+        <div className="d-flex justify-content-center mb-3">
           <div className="input-group shadow-sm rounded-pill" style={{ maxWidth: '300px', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
             <span className="input-group-text bg-transparent border-0 text-secondary ps-3">
               <i className="bi bi-search"></i>
