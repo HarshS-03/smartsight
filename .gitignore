@@ -1,12 +1,14 @@
-# Virtual Environment
+# ==============================================================
+# SmartSight .gitignore
+# ==============================================================
+
+# ---------------------- Python ----------------------
 env/
-
-# Dependencies
-node_modules/
-
-# Python Cache
+venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -14,43 +16,93 @@ __pycache__/
 htmlcov/
 *.egg-info/
 
-# Database & Logs
+# ---------------------- Django ----------------------
+# Migrations (DB is on Supabase, migrations run locally)
+app/migrations/0*.py
+# Keep __init__.py so Django recognizes the migrations package
+
+# Static files collected for production
+staticfiles/
+
+# Database files
 *.sqlite3
-*.log
+
+# Media uploads (user content, not source code)
 /media/
 
-# Environment & Credentials
+# ---------------------- ML Models ----------------------
+*.onnx
+*.pt
+*.h5
+*.pb
+*.tflite
+app/models/*.onnx
+app/models/*.pt
+
+# ---------------------- Tools / Scripts ----------------------
+tools/
+
+# ---------------------- Deployment Plans ----------------------
+DEPLOYMENT_*.md
+
+# ---------------------- Data Dumps ----------------------
+datadump.json
+*.json.bak
+
+# ---------------------- Environment & Credentials ----------------------
 .env
 .env.*
 !.env.example
 firebase-credentials.json
+google-services.json
 local.properties
 *.keystore
 *.jks
 
-# ML Models
-*.onnx
-*.pt
-app/models/**/*.onnx
-app/models/**/*.pt
-
-# Build Outputs, Android & Desktop Electron
+# ---------------------- Node / Frontend Build ----------------------
+node_modules/
 dist/
 build/
-frontend/dist/
+.cache/
+*.tsbuildinfo
+
+# Frontend build outputs
 frontend-android/dist/
+frontend-android/android/.gradle/
+frontend-android/android/.kotlin/
+frontend-android/android/build/
+frontend-android/android/app/build/
+frontend-android/android/capacitor-cordova-android-plugins/build/
+
 desktop/dist/
 desktop/electron/app/
 desktop/electron/dist/
 desktop/electron/make/
+
+# Lock files (regenerated from package.json)
+package-lock.json
+frontend-android/package-lock.json
+desktop/package-lock.json
+desktop/electron/package-lock.json
+
+# ---------------------- Android APK / Build ----------------------
 *.apk
+*.aab
+.gradle/
+.kotlin/
+
+# ---------------------- Desktop / Electron ----------------------
 *.exe
 *.blockmap
-.gradle/
+*.dmg
+*.snap
 .jdk17/
+
+# ---------------------- IDE & OS ----------------------
 .vscode/
 .idea/
-
-# OS Files
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
