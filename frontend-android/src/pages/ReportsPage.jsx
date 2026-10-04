@@ -243,8 +243,8 @@ export default function ReportsPage() {
           date: dateStr,
           rawTimestamp: dateObj.getTime(),
           camera_name: (log.camera_name || "Default Camera").replace(/Biometric/gi, "Access"),
-          person_name: log.person_name || "Unknown Person",
-          name: log.person_name || "Unknown Person",
+          person_name: log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown"),
+          name: log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown"),
           status: log.status,
           entry_time: timeStr,
           exit_time: timeStr,
@@ -1246,94 +1246,111 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Responsive Table Container */}
-              <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
-                <table className="table custom-table table-hover align-middle mb-0" style={{ minWidth: '860px', width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th scope="col" style={{ width: '13%' }}>Date</th>
-                      <th scope="col" style={{ width: '16%' }}>Camera</th>
-                      <th scope="col" style={{ width: '18%' }}>Person Name</th>
-                      <th scope="col" style={{ width: '13%' }} className="text-center">Classification</th>
-                      <th scope="col" style={{ width: '14%' }} className="text-center">Entry Time (First Seen)</th>
-                      <th scope="col" style={{ width: '14%' }} className="text-center">Exit Time (Last Seen)</th>
-                      <th scope="col" style={{ width: '12%' }} className="text-center">Detections (Freq)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentReports.length > 0 ? currentReports.map((rep, index) => (
-                      <tr key={index}>
-                        <td className="text-secondary fw-semibold">
-                          <div className="d-flex align-items-center gap-2">
-                            <i className="bi bi-calendar3 text-primary"></i>
-                            <span>{rep.date}</span>
-                          </div>
-                        </td>
-                        <td className="text-secondary fw-semibold">
-                          <div className="d-flex align-items-center gap-2">
-                            <i className="bi bi-camera-video text-primary"></i>
-                            <span className="text-truncate" style={{ maxWidth: '160px' }}>{rep.camera_name || "Default Camera"}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="d-flex align-items-center gap-2.5">
-                            <div className={`rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${rep.status === 'KNOWN' ? 'bg-primary bg-opacity-10 text-primary' : rep.status === 'APPROVED' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}`}
-                              style={{ width: '36px', height: '36px', border: rep.status === 'KNOWN' ? '1px solid rgba(13, 110, 253, 0.25)' : rep.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(220, 53, 69, 0.25)' }}>
-                              {rep.status === 'KNOWN' ? (
-                                <i className="bi bi-person-fill fs-6"></i>
-                              ) : rep.status === 'APPROVED' ? (
-                                <i className="bi bi-person-check-fill fs-6"></i>
+              {/* Ultra-Compact Mobile List View (Replaces Table) */}
+              {/* Card Tiles View */}
+              <div className="reports-list-container w-100">
+                {currentReports.length > 0 ? (
+                  <div className="d-flex flex-column">
+                    {currentReports.map((rep, index) => (
+                      <div key={index} className="card border-0 shadow-sm mb-3 rounded-4 overflow-hidden" style={{ background: 'var(--bg-body, #ffffff)' }}>
+                        <div className="card-body p-3">
+                          {/* Top Header: Avatar + Person Info & Camera Source */}
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="flex-shrink-0">
+                              {rep.imageUrl ? (
+                                <img
+                                  src={rep.imageUrl}
+                                  alt="Face"
+                                  className="rounded-3 shadow-sm border"
+                                  style={{ width: '52px', height: '52px', objectFit: 'cover', cursor: 'pointer' }}
+                                  onClick={() => setSelectedImage(rep.imageUrl)}
+                                  title="Click to view full photo"
+                                />
                               ) : (
-                                <i className="bi bi-person-fill-exclamation fs-6"></i>
+                                <div className="rounded-3 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center border" style={{ width: '52px', height: '52px' }}>
+                                  <i className="bi bi-person text-secondary fs-3 opacity-75"></i>
+                                </div>
                               )}
                             </div>
-                            <span className={`fw-bold text-truncate ${rep.status === 'KNOWN' ? 'text-dynamic' : rep.status === 'APPROVED' ? 'text-success' : 'text-danger'}`} style={{ maxWidth: '150px' }}>
-                              {rep.person_name || "Unknown Person"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="text-center">
-                          {rep.status === 'KNOWN' ? (
-                            <span className="badge badge-known">Known</span>
-                          ) : rep.status === 'APPROVED' ? (
-                            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>Approved</span>
-                          ) : (
-                            <span className="badge badge-unknown">Unknown</span>
-                          )}
-                        </td>
-                        <td className="text-center">
-                          <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 font-mono d-inline-flex align-items-center gap-1.5" style={{ fontSize: '0.825rem' }}>
-                            <i className="bi bi-box-arrow-in-right"></i>
-                            <span>{rep.entry_time}</span>
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1.5 font-mono d-inline-flex align-items-center gap-1.5" style={{ fontSize: '0.825rem' }}>
-                            <i className="bi bi-box-arrow-left"></i>
-                            <span>{rep.exit_time}</span>
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <span className="badge rounded-pill px-3 py-1.5 fw-bold font-mono" style={{ background: 'rgba(13, 110, 253, 0.15)', color: '#3b82f6', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.85rem' }}>
-                            {rep.frequency}
-                          </span>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan="7" className="text-center py-5 text-secondary">
-                          <div className="py-4 d-flex flex-column align-items-center justify-content-center">
-                            <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-3" style={{ width: '64px', height: '64px', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
-                              <i className="bi bi-search text-primary fs-2"></i>
+
+                            <div className="flex-grow-1 min-w-0">
+                              {/* Row 1: Person Name & Status Badge */}
+                              <div className="d-flex justify-content-between align-items-center mb-1">
+                                <span className="fw-bold text-dynamic lh-sm text-truncate" style={{ fontSize: '0.98rem' }}>
+                                  {rep.person_name === "Unknown Person" ? "Unknown" : (rep.person_name || "Unknown")}
+                                </span>
+                                {rep.status === 'KNOWN' ? (
+                                  <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Known</span>
+                                ) : rep.status === 'APPROVED' ? (
+                                  <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Approved</span>
+                                ) : (
+                                  <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Unknown</span>
+                                )}
+                              </div>
+
+                              {/* Row 2: Date & Camera Source (Edge-to-edge alignment) */}
+                              <div className="d-flex justify-content-between align-items-center text-secondary font-mono" style={{ fontSize: '0.72rem' }}>
+                                <span className="d-inline-flex align-items-center gap-1.5">
+                                  <i className="bi bi-calendar3 opacity-75"></i> {rep.date}
+                                </span>
+                                <span className="d-inline-flex align-items-center gap-1.5 text-truncate" style={{ maxWidth: '120px' }}>
+                                  <i className="bi bi-camera-video opacity-75"></i> {rep.camera_name?.replace('Mobile Access Scanner', 'Mobile')?.trim() || "Mobile"}
+                                </span>
+                              </div>
                             </div>
-                            <p className="fs-5 mb-1 text-dynamic fw-bold">No Records Found</p>
-                            <p className="small text-muted mb-0">No detection logs match your selected camera, person, or timeframe filters.</p>
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+
+                          {/* Bottom Row: Perfectly Symmetrical Entry & Exit Metric Tiles */}
+                          <div className="row g-2 mt-2 pt-2 border-top border-light-subtle">
+                            {/* Entry Tile */}
+                            <div className="col-6">
+                              <div
+                                className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
+                                style={{
+                                  background: 'rgba(25, 135, 84, 0.05)',
+                                  border: '1px solid rgba(25, 135, 84, 0.16)'
+                                }}
+                              >
+                                <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                                  Entry
+                                </span>
+                                <span className="text-success font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
+                                  <i className="bi bi-box-arrow-in-right opacity-75"></i> {rep.entry_time}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Exit Tile */}
+                            <div className="col-6">
+                              <div
+                                className="d-flex flex-column align-items-center justify-content-center py-2 px-2 rounded-3 text-center h-100"
+                                style={{
+                                  background: 'rgba(220, 53, 69, 0.05)',
+                                  border: '1px solid rgba(220, 53, 69, 0.16)'
+                                }}
+                              >
+                                <span className="text-secondary fw-bold mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                                  Exit
+                                </span>
+                                <span className="text-danger font-mono d-inline-flex align-items-center justify-content-center gap-1.5 fw-bold" style={{ fontSize: '0.78rem' }}>
+                                  <i className="bi bi-box-arrow-left opacity-75"></i> {rep.exit_time}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-secondary border rounded-3 bg-light shadow-sm">
+                    <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-2 mx-auto" style={{ width: '48px', height: '48px' }}>
+                      <i className="bi bi-search text-primary fs-4"></i>
+                    </div>
+                    <p className="fs-6 mb-1 text-dynamic fw-bold">No Records Found</p>
+                    <p className="small text-muted mb-0 px-3" style={{ fontSize: '0.75rem' }}>No detection logs match your selected filters.</p>
+                  </div>
+                )}
               </div>
 
               {/* Pagination Controls */}
