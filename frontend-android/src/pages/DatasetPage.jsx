@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
+export const formatPersonName = (name) => {
+  if (!name) return '';
+  return name.replace(/\b(aiml|mca|cs|pgdca)\b/gi, m => m.toUpperCase());
+};
 
 export const CATEGORIES = [
   { key: 'ALL', label: 'All Personnel', icon: 'bi-people-fill' },
@@ -1141,7 +1145,7 @@ export default function DatasetPage() {
                           {/* Person Name & Category Badge */}
                           <div className="d-flex flex-column gap-1.5">
                             <h5 className="fw-bold text-heading mb-0 text-capitalize text-truncate" title={person.name} style={{ fontSize: '1.1rem', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
-                              {person.name}
+                              {formatPersonName(person.name)}
                             </h5>
                             <div className="d-flex align-items-center mt-0.5">
                               <span
@@ -1579,7 +1583,7 @@ export default function DatasetPage() {
                       </div>
                       <div className="flex-grow-1 min-w-0">
                         <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
-                          <h4 className="modal-title fw-bold text-heading text-capitalize mb-0 text-truncate" style={{ lineHeight: 1.2, fontSize: '1.25rem', maxWidth: '100%' }}>{selectedPerson.name}</h4>
+                          <h4 className="modal-title fw-bold text-heading text-capitalize mb-0 text-truncate" style={{ lineHeight: 1.2, fontSize: '1.25rem', maxWidth: '100%' }}>{formatPersonName(selectedPerson.name)}</h4>
                           {(() => {
                             const badge = getCategoryBadge(selectedPerson.category, selectedPerson.class_name, selectedPerson.department);
                             return (

@@ -435,14 +435,14 @@ export default function DetectionPage() {
                         )}
                       </td>
                       <td>
-                        <div className="fw-bold text-dynamic" style={{ fontSize: '0.92rem' }}>
+                        <div className="fw-bold text-dynamic text-capitalize" style={{ fontSize: '0.92rem' }}>
                           {log.person_name || 'Unregistered Person'}
                         </div>
                         <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
                           {((log.person_name || '').toLowerCase().includes('harsh') && (log.person_name || '').toLowerCase().includes('shrimali')) ? (
                             <span style={{ color: '#3b82f6', fontWeight: 600, letterSpacing: '0.03em' }}>THE SYSTEM GOD</span>
                           ) : (
-                            isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt'
+                            [log.department, log.class_name, log.role, (isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt')].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')
                           )}
                         </div>
                       </td>
@@ -691,9 +691,12 @@ export default function DetectionPage() {
                           <div className="small text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Identified Person
                           </div>
-                          <h4 className="fw-bold mb-0 text-dynamic" style={{ fontSize: '1.25rem' }}>
+                          <h4 className="fw-bold mb-0 text-dynamic text-capitalize" style={{ fontSize: '1.25rem' }}>
                             {selectedScan.person_name || 'Unregistered Person / Stranger'}
                           </h4>
+                          <div className="small text-secondary mt-1">
+                             {[selectedScan.department, selectedScan.class_name, selectedScan.role].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')}
+                          </div>
                         </div>
                         {selectedScan.confidence !== undefined && selectedScan.confidence !== null && (
                           <div className="text-end">

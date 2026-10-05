@@ -756,10 +756,16 @@ def biometric_verify_frame(request):
         recog_name = best.get('person_name')
         similarity = float(best.get('recognition_similarity', 0.0))
         det_conf = float(best.get('detection_confidence', 0.0))
+        recog_id = best.get('person_id')
 
         if recog_name:
             # ── ALLOWED / KNOWN PERSON ──
-            person_obj = Person.objects.filter(name__iexact=recog_name).first()
+            person_obj = None
+            if recog_id:
+                person_obj = Person.objects.filter(id=recog_id).first()
+            if not person_obj:
+                person_obj = Person.objects.filter(name__iexact=recog_name).first()
+                
             folder_name = person_obj.name if person_obj else recog_name
             safe_name = "".join([c if c.isalnum() else "_" for c in folder_name])
 
@@ -783,28 +789,39 @@ def biometric_verify_frame(request):
             p_name_lower = (person_obj.name.lower()) if person_obj else recog_lower
             p_class_lower = (person_obj.class_name.lower()) if (person_obj and person_obj.class_name) else ""
             
+            final_name = person_obj.name if person_obj else recog_name
+            final_class = person_obj.class_name if person_obj else ''
+            
+            # Clean up redundant class suffixes from the name for a cleaner UI
+            if final_class and final_name:
+                import re
+                # Use regex to replace the class name (case insensitive) and strip dangling hyphens/spaces
+                final_name = re.sub(re.escape(final_class), '', final_name, flags=re.IGNORECASE).strip(' -').strip()
+            
             is_creator = ('harsh' in p_name_lower and 'shrimali' in p_name_lower) or \
                          ('harsh' in p_name_lower and 'aiml-3' in p_class_lower)
             if is_creator:
                 dept_name = "THE SYSTEM GOD"
                 role_title = ""
+                final_name = "Harsh Shrimali"
+                final_class = ""
             elif person_obj:
                 if person_obj.class_name and person_obj.department:
-                    dept_name = f"{person_obj.class_name} • {person_obj.department}"
+                    dept_name = person_obj.department
                 elif person_obj.class_name:
-                    dept_name = person_obj.class_name
+                    dept_name = ""
                 elif person_obj.department:
                     dept_name = person_obj.department
                 else:
-                    dept_name = person_obj.get_category_display() or "Authorized"
-                role_title = person_obj.get_category_display() if person_obj.class_name else "Authorized Person"
+                    dept_name = ""
+                role_title = person_obj.get_category_display() if person_obj.get_category_display() else "Authorized Person"
             else:
-                dept_name = "Authorized"
+                dept_name = ""
                 role_title = "Authorized Person"
 
             # Save RecognitionLog
             log = RecognitionLog.objects.create(
-                person_name=recog_name,
+                person_name=final_name,
                 camera_name="Mobile Access Scanner",
                 confidence=similarity,
                 detection_confidence=det_conf,
@@ -816,9 +833,9 @@ def biometric_verify_frame(request):
             return Response({
                 'status': 'ALLOWED',
                 'decision': 'GRANTED',
-                'person_name': recog_name,
+                'person_name': final_name,
                 'department': dept_name,
-                'class_name': person_obj.class_name if person_obj else '',
+                'class_name': final_class,
                 'role': role_title,
                 'confidence': round(similarity * 100, 1),
                 'image_url': f"/media/{rel_img_path}",

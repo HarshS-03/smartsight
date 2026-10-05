@@ -226,7 +226,7 @@ export default function DetectionPage() {
             window.showToast('ACCESS GRANTED\nTHE SYSTEM GOD, Harsh Shrimali', 'success', 'VERIFIED');
           } else {
             const infoTag = (result.department || result.class_name || '').trim();
-            const tagStr = infoTag ? ` (${infoTag})` : '';
+            const tagStr = infoTag && !(result.person_name || '').toLowerCase().includes(infoTag.toLowerCase()) ? ` (${infoTag})` : '';
             window.showToast(`ACCESS GRANTED\n${result.person_name}${tagStr}`, 'success', 'VERIFIED');
           }
         }
@@ -553,20 +553,21 @@ export default function DetectionPage() {
                 </div>
 
                 <h5 className="fw-bold mb-1" style={{ 
-                  color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#ffffff' :
-                         (lastVerification.status === 'ALLOWED' ? '#4ade80' : 
+                  color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#1d4ed8' :
+                         (lastVerification.status === 'ALLOWED' ? '#0f172a' : 
                          lastVerification.status === 'PENDING_REVIEW' ? '#f59e0b' :
                          (lastVerification.status === 'DENIED' ? '#ef4444' : '#f8fafc')), 
                   fontSize: '1.08rem',
-                  letterSpacing: '0.01em'
+                  letterSpacing: '0.01em',
+                  textTransform: 'capitalize'
                 }}>
                   {lastVerification.person_name || (lastVerification.status === 'DENIED' || lastVerification.status === 'PENDING_REVIEW' ? 'Unregistered Person / Stranger' : 'No Face Found')}
                 </h5>
                 <p className="small mb-0" style={{ 
                   color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#3b82f6' :
-                         (lastVerification.status === 'ALLOWED' ? '#86efac' : 
-                         lastVerification.status === 'PENDING_REVIEW' ? '#fbbf24' :
-                         (lastVerification.status === 'DENIED' ? '#fca5a5' : '#cbd5e1')), 
+                         (lastVerification.status === 'ALLOWED' ? '#64748b' : 
+                         lastVerification.status === 'PENDING_REVIEW' ? '#d97706' :
+                         (lastVerification.status === 'DENIED' ? '#ef4444' : '#64748b')), 
                   fontSize: '0.82rem',
                   fontWeight: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? 700 : 500,
                   letterSpacing: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '0.04em' : 'normal'
@@ -574,10 +575,12 @@ export default function DetectionPage() {
                   {(() => {
                     const dept = (lastVerification.department || '').trim();
                     const role = (lastVerification.role || '').trim();
-                    if (dept && role && dept.toLowerCase() !== role.toLowerCase()) {
-                      return `${dept} • ${role}`;
-                    }
-                    return dept || role || lastVerification.message || '';
+                    const cls = (lastVerification.class_name || '').trim();
+                    
+                    const parts = [dept, cls, role].filter(Boolean);
+                    const uniqueParts = parts.filter((v, i, a) => a.findIndex(t => t.toLowerCase() === v.toLowerCase()) === i);
+
+                    return uniqueParts.join(' • ') || lastVerification.message || '';
                   })()}
                 </p>
               </div>
@@ -726,8 +729,10 @@ export default function DetectionPage() {
                       <i className="bi bi-person-circle fs-5 text-secondary"></i>
                     )}
                     <div>
-                      <div className="fw-bold small" style={{ fontSize: '0.8rem' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
-                      <div className="text-muted" style={{ fontSize: '0.68rem' }}>{scan.department || (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Unauthorized' : 'General')}</div>
+                      <div className="fw-bold small text-capitalize" style={{ fontSize: '0.8rem', color: scan.status === 'ALLOWED' ? '#0f172a' : 'inherit' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
+                      <div className="text-muted" style={{ fontSize: '0.68rem' }}>
+                        {[scan.department, scan.class_name].filter(Boolean).join(' • ') || (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Unauthorized' : 'General')}
+                      </div>
                     </div>
                   </div>
                   <span 
