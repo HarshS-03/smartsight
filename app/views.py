@@ -767,7 +767,7 @@ def biometric_verify_frame(request):
             cv.imwrite(abs_img_path, frame)
 
             log = RecognitionLog.objects.create(
-                person_name="🚨 Spoof / Fake Face Attempt",
+                person_name="Spoof / Fake Face Attempt",
                 camera_name="Mobile Access Scanner",
                 confidence=round(liveness_score, 2),
                 detection_confidence=float(best.get('detection_confidence', 0.0)),
@@ -779,7 +779,7 @@ def biometric_verify_frame(request):
             return Response({
                 'status': 'SPOOF_DETECTED',
                 'decision': 'DENIED',
-                'person_name': '🚨 Spoof / Fake Face Attempt',
+                'person_name': 'Spoof / Fake Face Attempt',
                 'message': 'Fake face or screen spoofing detected! Access Denied.',
                 'confidence': round(liveness_score * 100, 1),
                 'image_url': f"/media/{rel_img_path}",

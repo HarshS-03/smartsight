@@ -435,8 +435,10 @@ export default function DetectionPage() {
                         )}
                       </td>
                       <td>
-                        <div className="fw-bold text-dynamic text-capitalize" style={{ fontSize: '0.92rem' }}>
-                          {log.person_name || 'Unregistered Person'}
+                        <div className="fw-bold text-dynamic" style={{ fontSize: '0.92rem' }}>
+                          {(log.person_name || 'Unregistered Person')
+                            .replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase())
+                            .replace(/\b(sem)\b/gi, "Sem")}
                         </div>
                         <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
                           {((log.person_name || '').toLowerCase().includes('harsh') && (log.person_name || '').toLowerCase().includes('shrimali')) ? (
@@ -693,8 +695,10 @@ export default function DetectionPage() {
                           <div className="small text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Identified Person
                           </div>
-                          <h4 className="fw-bold mb-0 text-dynamic text-capitalize" style={{ fontSize: '1.25rem' }}>
-                            {selectedScan.person_name || 'Unregistered Person / Stranger'}
+                          <h4 className="fw-bold mb-0 text-dynamic" style={{ fontSize: '1.25rem' }}>
+                            {(selectedScan.person_name || 'Unregistered Person / Stranger')
+                              .replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase())
+                              .replace(/\b(sem)\b/gi, "Sem")}
                           </h4>
                           <div className="small text-secondary mt-1">
                              {[selectedScan.department, selectedScan.class_name, selectedScan.role].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')}

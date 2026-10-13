@@ -160,6 +160,14 @@ export default function ReportsPage() {
       setKnownDetections(knownCount);
       setUnknownDetections(logs.length - knownCount);
 
+      const formatDisplayName = (raw) => {
+        if (!raw || raw === "Unknown Person") return "Unknown";
+        if (raw.toLowerCase().includes('spoof')) return "Spoof Attempt";
+        return raw
+          .replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase())
+          .replace(/\b(sem)\b/gi, "Sem");
+      };
+
       // Map logs to individual detection records sorted by timestamp descending
       const mappedReports = logs.map(log => {
         const dateObj = new Date(log.timestamp);
@@ -169,13 +177,15 @@ export default function ReportsPage() {
         const dateStr = `${day}/${month}/${year}`;
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
+        const formattedName = formatDisplayName(log.person_name);
+
         return {
           id: log.id,
           date: dateStr,
           rawTimestamp: dateObj.getTime(),
           camera_name: (log.camera_name || "Default Camera").replace(/Biometric/gi, "Access"),
-          person_name: log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown"),
-          name: log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown"),
+          person_name: formattedName,
+          name: formattedName,
           status: log.status,
           entry_time: timeStr,
           exit_time: timeStr,
@@ -196,38 +206,59 @@ export default function ReportsPage() {
 
       const personCounts = {};
       logs.forEach(log => {
-        // If UNKNOWN/DENIED/no name/name contains 'unknown', treat each detection as a unique occurrence
-        const isUnknown = log.status === 'UNKNOWN' || log.status === 'DENIED' || !log.person_name || (log.person_name && log.person_name.toLowerCase().includes('unknown'));
-        const name = isUnknown ? `__unknown_${log.id || Math.floor(Math.random()*1000)}` : (log.person_name || 'Unknown Person');
+        const isSpoof = (log.person_name && log.person_name.toLowerCase().includes('spoof'));
+        // If UNKNOWN/DENIED/no name/name contains 'unknown' (and not a spoof attack), treat each detection as unique unknown
+        const isUnknown = !isSpoof && (log.status === 'UNKNOWN' || log.status === 'DENIED' || !log.person_name || (log.person_name && log.person_name.toLowerCase().includes('unknown')));
         
-        if (!personCounts[name]) {
-          personCounts[name] = { total_count: 0, daily_count: 0, weekly_count: 0, monthly_count: 0, last_seen: log.timestamp, status: log.status, image_path: log.image_path, is_unknown: isUnknown };
+        let rawName = log.person_name || 'Unknown Person';
+        // Uppercase courses (AIML, MCA, CS, IT) and title case Sem (Sem 3)
+        rawName = rawName
+          .replace(/\b(aiml|mca|cs|it)\b/gi, (match) => match.toUpperCase())
+          .replace(/\b(sem)\b/gi, "Sem");
+
+        const groupKey = isSpoof 
+          ? `__spoof_${log.id || Math.floor(Math.random()*1000)}`
+          : (isUnknown ? `__unknown_${log.id || Math.floor(Math.random()*1000)}` : rawName);
+        
+        if (!personCounts[groupKey]) {
+          personCounts[groupKey] = { 
+            display_name: isSpoof ? 'Spoof Attempt' : (isUnknown ? 'Unknown' : rawName),
+            total_count: 0, 
+            daily_count: 0, 
+            weekly_count: 0, 
+            monthly_count: 0, 
+            last_seen: log.timestamp, 
+            status: isSpoof ? 'SPOOF' : log.status, 
+            image_path: log.image_path, 
+            is_unknown: isUnknown,
+            is_spoof: isSpoof
+          };
         }
         
         const logDate = new Date(log.timestamp);
         const logDay = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
 
-        personCounts[name].total_count += 1;
+        personCounts[groupKey].total_count += 1;
         
         if (logDay.getTime() === today.getTime()) {
-          personCounts[name].daily_count += 1;
+          personCounts[groupKey].daily_count += 1;
         }
         if (logDate >= thisWeekStart) {
-          personCounts[name].weekly_count += 1;
+          personCounts[groupKey].weekly_count += 1;
         }
         if (logDate >= thisMonthStart) {
-          personCounts[name].monthly_count += 1;
+          personCounts[groupKey].monthly_count += 1;
         }
 
-        if (logDate > new Date(personCounts[name].last_seen)) {
-          personCounts[name].last_seen = log.timestamp;
-          if (log.image_path) personCounts[name].image_path = log.image_path;
-        } else if (!personCounts[name].image_path && log.image_path) {
-          personCounts[name].image_path = log.image_path;
+        if (logDate > new Date(personCounts[groupKey].last_seen)) {
+          personCounts[groupKey].last_seen = log.timestamp;
+          if (log.image_path) personCounts[groupKey].image_path = log.image_path;
+        } else if (!personCounts[groupKey].image_path && log.image_path) {
+          personCounts[groupKey].image_path = log.image_path;
         }
       });
 
-      const frequent = Object.entries(personCounts).map(([name, data]) => {
+      const frequent = Object.entries(personCounts).map(([groupKey, data]) => {
         const dateObj = new Date(data.last_seen);
         const day = String(dateObj.getDate()).padStart(2, '0');
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -236,7 +267,7 @@ export default function ReportsPage() {
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         return {
-          name: name.startsWith('__unknown_') ? 'Unknown' : name,
+          name: data.display_name,
           status: data.status,
           isUnknown: data.is_unknown,
           total_count: data.total_count,
@@ -704,10 +735,17 @@ export default function ReportsPage() {
                         <div className="d-flex align-items-center gap-2 mb-1">
                           <strong className="text-dynamic text-truncate" style={{ fontSize: '1rem' }}>{person.name}</strong>
                           <span
-                            className={`badge rounded-pill fw-bold ${person.status === 'KNOWN' ? 'bg-success' : 'bg-danger'} text-white`}
-                            style={{ fontSize: '0.65rem', padding: '0.35em 0.65em' }}
+                            className={`badge rounded-pill fw-bold ${
+                              person.status === 'KNOWN' ? 'bg-success text-white' :
+                              person.status === 'SPOOF' ? 'bg-danger text-white' : 'bg-danger text-white'
+                            }`}
+                            style={{ 
+                              fontSize: '0.65rem', 
+                              padding: '0.35em 0.65em',
+                              backgroundColor: person.status === 'SPOOF' ? '#dc2626' : undefined
+                            }}
                           >
-                            {person.status}
+                            {person.status === 'SPOOF' ? 'SPOOF BLOCKED' : person.status}
                           </span>
                         </div>
                         

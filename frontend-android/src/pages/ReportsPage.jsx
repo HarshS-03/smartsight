@@ -265,38 +265,57 @@ export default function ReportsPage() {
 
       const personCounts = {};
       logs.forEach(log => {
+        const isSpoof = (log.person_name && log.person_name.toLowerCase().includes('spoof'));
         // If UNKNOWN/DENIED/no name/name contains 'unknown', treat each detection as a unique occurrence
-        const isUnknown = log.status === 'UNKNOWN' || log.status === 'DENIED' || !log.person_name || (log.person_name && log.person_name.toLowerCase().includes('unknown'));
-        const name = isUnknown ? `__unknown_${log.id || Math.floor(Math.random()*1000)}` : (log.person_name || 'Unknown Person');
+        const isUnknown = !isSpoof && (log.status === 'UNKNOWN' || log.status === 'DENIED' || !log.person_name || (log.person_name && log.person_name.toLowerCase().includes('unknown')));
         
-        if (!personCounts[name]) {
-          personCounts[name] = { total_count: 0, daily_count: 0, weekly_count: 0, monthly_count: 0, last_seen: log.timestamp, status: log.status, image_path: log.image_path, is_unknown: isUnknown };
+        let rawName = log.person_name || 'Unknown Person';
+        // Uppercase courses like AIML, MCA, CS, SEM, etc.
+        rawName = rawName.replace(/\b(aiml|mca|cs|sem|it)\b/gi, (match) => match.toUpperCase());
+
+        const groupKey = isSpoof 
+          ? `__spoof_${log.id || Math.floor(Math.random()*1000)}`
+          : (isUnknown ? `__unknown_${log.id || Math.floor(Math.random()*1000)}` : rawName);
+        
+        if (!personCounts[groupKey]) {
+          personCounts[groupKey] = { 
+            display_name: isSpoof ? 'Spoof Attempt' : (isUnknown ? 'Unknown' : rawName),
+            total_count: 0, 
+            daily_count: 0, 
+            weekly_count: 0, 
+            monthly_count: 0, 
+            last_seen: log.timestamp, 
+            status: isSpoof ? 'SPOOF' : log.status, 
+            image_path: log.image_path, 
+            is_unknown: isUnknown,
+            is_spoof: isSpoof
+          };
         }
         
         const logDate = new Date(log.timestamp);
         const logDay = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
 
-        personCounts[name].total_count += 1;
+        personCounts[groupKey].total_count += 1;
         
         if (logDay.getTime() === today.getTime()) {
-          personCounts[name].daily_count += 1;
+          personCounts[groupKey].daily_count += 1;
         }
         if (logDate >= thisWeekStart) {
-          personCounts[name].weekly_count += 1;
+          personCounts[groupKey].weekly_count += 1;
         }
         if (logDate >= thisMonthStart) {
-          personCounts[name].monthly_count += 1;
+          personCounts[groupKey].monthly_count += 1;
         }
 
-        if (logDate > new Date(personCounts[name].last_seen)) {
-          personCounts[name].last_seen = log.timestamp;
-          if (log.image_path) personCounts[name].image_path = log.image_path;
-        } else if (!personCounts[name].image_path && log.image_path) {
-          personCounts[name].image_path = log.image_path;
+        if (logDate > new Date(personCounts[groupKey].last_seen)) {
+          personCounts[groupKey].last_seen = log.timestamp;
+          if (log.image_path) personCounts[groupKey].image_path = log.image_path;
+        } else if (!personCounts[groupKey].image_path && log.image_path) {
+          personCounts[groupKey].image_path = log.image_path;
         }
       });
 
-      const frequent = Object.entries(personCounts).map(([name, data]) => {
+      const frequent = Object.entries(personCounts).map(([groupKey, data]) => {
         const dateObj = new Date(data.last_seen);
         const day = String(dateObj.getDate()).padStart(2, '0');
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -305,7 +324,7 @@ export default function ReportsPage() {
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         return {
-          name: name.startsWith('__unknown_') ? 'Unknown' : name,
+          name: data.display_name,
           status: data.status,
           isUnknown: data.is_unknown,
           total_count: data.total_count,

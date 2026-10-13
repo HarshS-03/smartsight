@@ -232,7 +232,7 @@ export default function DetectionPage() {
         }
       } else if (result.status === 'SPOOF_DETECTED') {
         if (window.showToast) {
-          window.showToast('🚨 SPOOF DETECTED: Fake face or screen replay attempt! ACCESS DENIED.', 'error', 'SPOOF ALERT');
+          window.showToast('SPOOF DETECTED: Fake face or screen replay attempt! ACCESS DENIED.', 'error', 'SPOOF ALERT');
         }
       } else if (result.status === 'PENDING_REVIEW') {
         if (window.showToast) {
