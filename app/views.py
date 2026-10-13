@@ -753,6 +753,28 @@ def biometric_verify_frame(request):
             })
 
         best = detections[0]
+        face_bbox = best.get('bbox')
+
+        # ── LIVENESS / ANTI-SPOOFING CHECK ──
+        from app.utils.antispoof import check_liveness
+        is_live, liveness_score, liveness_msg = check_liveness(frame, face_bbox)
+        if not is_live:
+            captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
+            os.makedirs(captures_dir, exist_ok=True)
+            unique_name = f"spoof_{date_time_str}.jpg"
+            abs_img_path = os.path.join(captures_dir, unique_name)
+            rel_img_path = f"captures/{unique_name}"
+            cv.imwrite(abs_img_path, frame)
+
+            return Response({
+                'status': 'SPOOF_DETECTED',
+                'decision': 'DENIED',
+                'message': 'Fake face or screen spoofing detected! Access Denied.',
+                'confidence': round(liveness_score, 2),
+                'image_url': f"/media/{rel_img_path}",
+                'faces': 1
+            })
+
         recog_name = best.get('person_name')
         similarity = float(best.get('recognition_similarity', 0.0))
         det_conf = float(best.get('detection_confidence', 0.0))

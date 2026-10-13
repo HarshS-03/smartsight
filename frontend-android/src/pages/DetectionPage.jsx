@@ -230,6 +230,10 @@ export default function DetectionPage() {
             window.showToast(`ACCESS GRANTED\n${result.person_name}${tagStr}`, 'success', 'VERIFIED');
           }
         }
+      } else if (result.status === 'SPOOF_DETECTED') {
+        if (window.showToast) {
+          window.showToast('🚨 SPOOF DETECTED: Fake face or screen replay attempt! ACCESS DENIED.', 'error', 'SPOOF ALERT');
+        }
       } else if (result.status === 'PENDING_REVIEW') {
         if (window.showToast) {
           window.showToast(`⚠️ ESCALATED: Unknown person detected — Sent to Admin`, 'warning', 'REVIEW');
@@ -244,7 +248,7 @@ export default function DetectionPage() {
         }
       }
 
-      if (result.status === 'ALLOWED' || result.status === 'DENIED' || result.status === 'PENDING_REVIEW') {
+      if (result.status === 'ALLOWED' || result.status === 'DENIED' || result.status === 'PENDING_REVIEW' || result.status === 'SPOOF_DETECTED') {
         setRecentScans((prev) => [result, ...prev.slice(0, 4)]);
       }
     } catch (err) {
