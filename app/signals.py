@@ -100,7 +100,15 @@ def compute_embedding_on_image_save(sender, instance, created, **kwargs):
             from app.utils.embedding_engine import compute_person_embeddings
             # Run in a background thread to avoid blocking the request
             import threading
-            threading.Thread(target=compute_person_embeddings, args=(instance.person_id,), daemon=True).start()
+            from django import db
+
+            def _compute_and_close(pid):
+                try:
+                    compute_person_embeddings(pid)
+                finally:
+                    db.connections.close_all()
+
+            threading.Thread(target=_compute_and_close, args=(instance.person_id,), daemon=True).start()
             print(f"[Signal] Triggered embedding computation for person ID: {instance.person_id}")
         except Exception as e:
             print(f"[Signal] Error triggering embedding computation: {e}")

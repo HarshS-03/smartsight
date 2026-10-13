@@ -273,6 +273,7 @@ def _start_telegram_polling():
     _polling_started = True
     
     def poll_loop():
+        from django import db
         telegram_bot_api = os.environ.get("telegram_bot_api")
         if not telegram_bot_api:
             print("[Telegram Listener] No telegram_bot_api token found. Listener not starting.")
@@ -319,6 +320,8 @@ def _start_telegram_polling():
             except Exception as e:
                 print(f"[Telegram Listener] Unexpected polling error: {e}")
                 time.sleep(5)
+            finally:
+                db.connections.close_all()
             
     threading.Thread(target=poll_loop, daemon=True).start()
 
