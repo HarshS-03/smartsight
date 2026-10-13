@@ -731,7 +731,7 @@ export default function DetectionPage() {
                     <div>
                       <div className="fw-bold small text-capitalize" style={{ fontSize: '0.8rem', color: scan.status === 'ALLOWED' ? '#0f172a' : 'inherit' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
                       <div className="text-muted" style={{ fontSize: '0.68rem' }}>
-                        {[scan.department, scan.class_name].filter(Boolean).join(' • ') || (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Unauthorized' : 'General')}
+                        {[scan.department, scan.class_name].filter(Boolean).join(' • ') || (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Pending Admin Review' : (scan.role || 'Authorized'))}
                       </div>
                     </div>
                   </div>

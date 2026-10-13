@@ -520,6 +520,9 @@ def send_alerts(*args, **kwargs):
             for name in names:
                 if name and name.lower() != 'unknown':
                     person = Person.objects.filter(name__iexact=name).first()
+                    if not person:
+                        person = Person.objects.filter(name__istartswith=name).first() or \
+                                 Person.objects.filter(name__icontains=name).first()
                     if person:
                         dataset_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', person.name)
                         os.makedirs(dataset_dir, exist_ok=True)

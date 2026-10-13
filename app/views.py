@@ -765,24 +765,36 @@ def biometric_verify_frame(request):
                 person_obj = Person.objects.filter(id=recog_id).first()
             if not person_obj:
                 person_obj = Person.objects.filter(name__iexact=recog_name).first()
+            if not person_obj:
+                # Fallback: check starts with or contains (e.g. 'sujal' matches 'Sujal Aiml - Sem 3')
+                person_obj = Person.objects.filter(name__istartswith=recog_name).first() or \
+                             Person.objects.filter(name__icontains=recog_name).first()
                 
-            folder_name = person_obj.name if person_obj else recog_name
-            safe_name = "".join([c if c.isalnum() else "_" for c in folder_name])
-
-            # Save in dataset/<folder_name>/ (known person saved in their own dataset folder)
-            person_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', folder_name)
-            os.makedirs(person_dir, exist_ok=True)
-            unique_name = f"{safe_name}_{date_time_str}.jpg"
-            abs_img_path = os.path.join(person_dir, unique_name)
-            rel_img_path = f"dataset/{folder_name}/{unique_name}"
-            cv.imwrite(abs_img_path, frame)
-
-            # Auto-save sample to PersonImage for continuous self-learning
             if person_obj:
+                folder_name = person_obj.name
+                person_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', folder_name)
+                os.makedirs(person_dir, exist_ok=True)
+                safe_name = "".join([c if c.isalnum() else "_" for c in folder_name])
+                unique_name = f"{safe_name}_{date_time_str}.jpg"
+                abs_img_path = os.path.join(person_dir, unique_name)
+                rel_img_path = f"dataset/{folder_name}/{unique_name}"
+                cv.imwrite(abs_img_path, frame)
+
+                # Auto-save sample to PersonImage with a healthy cap (max 50 images per person)
                 try:
-                    PersonImage.objects.create(person=person_obj, image=rel_img_path)
+                    if person_obj.images.count() < 50:
+                        PersonImage.objects.create(person=person_obj, image=rel_img_path)
                 except Exception as e:
                     print(f"[Dataset Sync] Note creating PersonImage: {e}")
+            else:
+                # Fallback: person not in DB, save to captures/ without creating a phantom dataset folder
+                captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
+                os.makedirs(captures_dir, exist_ok=True)
+                safe_recog = "".join([c if c.isalnum() else "_" for c in (recog_name or 'verified')])
+                unique_name = f"{safe_recog}_{date_time_str}.jpg"
+                abs_img_path = os.path.join(captures_dir, unique_name)
+                rel_img_path = f"captures/{unique_name}"
+                cv.imwrite(abs_img_path, frame)
             
             # Easter Egg: Specifically Harsh Shrimali from AIML-3 only
             recog_lower = recog_name.lower()
