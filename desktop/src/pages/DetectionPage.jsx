@@ -441,6 +441,8 @@ export default function DetectionPage() {
                         <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
                           {((log.person_name || '').toLowerCase().includes('harsh') && (log.person_name || '').toLowerCase().includes('shrimali')) ? (
                             <span style={{ color: '#3b82f6', fontWeight: 600, letterSpacing: '0.03em' }}>THE SYSTEM GOD</span>
+                          ) : (log.person_name || '').includes('Spoof') ? (
+                            <span className="text-danger fw-semibold" style={{ fontSize: '0.72rem' }}>Digital Screen / Photo Attack Blocked</span>
                           ) : (
                             [log.department, log.class_name, log.role, (isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt')].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')
                           )}
