@@ -17,26 +17,60 @@ os.environ.setdefault('AUTOGRAPH_VERBOSITY', '0')
 # ---------------------------------------------------------------------------
 # Supabase Cloud Sync
 # ---------------------------------------------------------------------------
+_supabase_sync_lock = threading.Lock()
+_debounce_sync_timer = None
+_debounce_sync_lock = threading.Lock()
+
 def _sync_npz_to_supabase(filepath):
     import requests
     url = os.environ.get('SUPABASE_URL')
     key = os.environ.get('SUPABASE_KEY')
-    if not url or not key: return
-    try:
-        with open(filepath, 'rb') as f:
-            headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/octet-stream"}
-            requests.post(
-                f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
-                headers=headers, data=f
-            ) # Try POST first (create)
-            
-            f.seek(0) # Reset pointer
-            requests.put(
-                f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
-                headers=headers, data=f
-            ) # Put will Upsert/overwrite
-    except Exception as e:
-        logger.error(f"[Supabase Sync] Upload error: {e}")
+    if not url or not key or not os.path.exists(filepath):
+        return
+    with _supabase_sync_lock:
+        try:
+            with open(filepath, 'rb') as f:
+                headers = {
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/octet-stream",
+                    "x-upsert": "true"
+                }
+                res = requests.put(
+                    f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
+                    headers=headers, data=f, timeout=20
+                )
+                if res.status_code not in (200, 201):
+                    f.seek(0)
+                    requests.post(
+                        f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
+                        headers=headers, data=f, timeout=20
+                    )
+            logger.info("[Supabase Sync] Synced gallery_embeddings.npz to cloud storage.")
+        except Exception as e:
+            logger.error(f"[Supabase Sync] Upload error: {e}")
+
+def trigger_debounced_supabase_sync(filepath, delay=8.0):
+    global _debounce_sync_timer
+    from django.conf import settings
+    if not getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
+        return
+    with _debounce_sync_lock:
+        if _debounce_sync_timer is not None:
+            try:
+                _debounce_sync_timer.cancel()
+            except Exception:
+                pass
+
+        def _do_sync():
+            global _debounce_sync_timer
+            with _debounce_sync_lock:
+                _debounce_sync_timer = None
+            _sync_npz_to_supabase(filepath)
+
+        _debounce_sync_timer = threading.Timer(delay, _do_sync)
+        _debounce_sync_timer.daemon = True
+        _debounce_sync_timer.start()
+        logger.info(f"[Supabase Sync] Scheduled final .npz cloud sync in {delay}s...")
 
 def _download_npz_from_supabase(filepath):
     import requests
@@ -726,13 +760,7 @@ def compute_person_embeddings(person_id: int):
     )
 
     if computed > 0:
-        from django.conf import settings
-        if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
-            try:
-                _sync_npz_to_supabase(gallery.cache_file)
-                logger.info(f"[EmbeddingEngine] Synced updated embeddings for '{person.name}' to Supabase cloud storage.")
-            except Exception as e:
-                logger.error(f"[EmbeddingEngine] Error syncing embeddings to Supabase: {e}")
+        trigger_debounced_supabase_sync(gallery.cache_file, delay=8.0)
 
     return computed, skipped, errors
 

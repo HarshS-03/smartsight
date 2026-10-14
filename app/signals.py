@@ -86,30 +86,52 @@ def refresh_gallery_on_image_delete(sender, instance, **kwargs):
 
 
 from django.db.models.signals import post_save
+import threading
+from django import db
+
+_debounce_timers = {}
+_debounce_lock = threading.Lock()
+
+def _trigger_debounced_embedding(pid, delay=2.0):
+    with _debounce_lock:
+        existing_timer = _debounce_timers.get(pid)
+        if existing_timer:
+            try:
+                existing_timer.cancel()
+            except Exception:
+                pass
+
+        def _run():
+            with _debounce_lock:
+                _debounce_timers.pop(pid, None)
+            try:
+                from app.utils.embedding_engine import compute_person_embeddings
+                print(f"[Signal] Starting debounced embedding computation for person ID: {pid}")
+                compute_person_embeddings(pid)
+            except Exception as err:
+                print(f"[Signal] Error in debounced embedding computation for person ID {pid}: {err}")
+            finally:
+                db.connections.close_all()
+
+        timer = threading.Timer(delay, _run)
+        timer.daemon = True
+        _debounce_timers[pid] = timer
+        timer.start()
+        print(f"[Signal] Scheduled debounced embedding computation for person ID: {pid} (in {delay}s)")
+
 
 @receiver(post_save, sender=PersonImage)
 def compute_embedding_on_image_save(sender, instance, created, **kwargs):
     """
-    When a new PersonImage is saved, compute and store its embedding.
+    When a new PersonImage is saved, compute and store its embedding (debounced).
     """
     if kwargs.get('raw', False):
         return
 
     if created:
         try:
-            from app.utils.embedding_engine import compute_person_embeddings
-            # Run in a background thread to avoid blocking the request
-            import threading
-            from django import db
-
-            def _compute_and_close(pid):
-                try:
-                    compute_person_embeddings(pid)
-                finally:
-                    db.connections.close_all()
-
-            threading.Thread(target=_compute_and_close, args=(instance.person_id,), daemon=True).start()
-            print(f"[Signal] Triggered embedding computation for person ID: {instance.person_id}")
+            _trigger_debounced_embedding(instance.person_id, delay=2.0)
         except Exception as e:
             print(f"[Signal] Error triggering embedding computation: {e}")
+
 
