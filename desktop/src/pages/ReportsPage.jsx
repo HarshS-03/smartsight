@@ -1354,12 +1354,18 @@ export default function ReportsPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-secondary border rounded-3 bg-light shadow-sm">
-                    <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-2 mx-auto" style={{ width: '48px', height: '48px' }}>
+                  <div
+                    className="text-center py-5 text-secondary rounded-4 shadow-xs"
+                    style={{
+                      background: 'var(--bg-input, rgba(255, 255, 255, 0.03))',
+                      border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))'
+                    }}
+                  >
+                    <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-3 mx-auto" style={{ width: '52px', height: '52px' }}>
                       <i className="bi bi-search text-primary fs-4"></i>
                     </div>
                     <p className="fs-6 mb-1 text-dynamic fw-bold">No Records Found</p>
-                    <p className="small text-muted mb-0 px-3" style={{ fontSize: '0.75rem' }}>No detection logs match your selected filters.</p>
+                    <p className="small text-secondary mb-0 px-3" style={{ fontSize: '0.8rem' }}>No detection logs match your selected filters.</p>
                   </div>
                 )}
               </div>
