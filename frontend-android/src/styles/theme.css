@@ -3,8 +3,45 @@
    ══════════════════════════════════════════════════════ */
 
 /* ── Google Fonts (Locally Hosted TTF) ── */
-@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('/fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Inter'; font-weight: 100 900; font-style: italic; src: url('/fonts/Inter-Italic-VariableFont_opsz,wght.ttf') format('truetype'); font-display: swap; }
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 100 900;
+  src: url('/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 100 900;
+  font-style: italic;
+  src: url('/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto Condensed';
+  font-weight: 100 900;
+  src: url('/fonts/RobotoCondensed-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto Condensed';
+  font-weight: 100 900;
+  font-style: italic;
+  src: url('/fonts/RobotoCondensed-Italic-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-weight: 100 700;
+  src: url('/fonts/RobotoMono-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-weight: 100 700;
+  font-style: italic;
+  src: url('/fonts/RobotoMono-Italic-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+}
 
 /* ── Color Scheme Specification for Native Rendering ── */
 :root,
@@ -88,13 +125,13 @@ body::before {
 
 :root,
 [data-bs-theme="dark"] {
-  --bs-body-font-family: 'Inter', sans-serif !important;
-  --font-brand: 'Inter', sans-serif;
-  --font-heading: 'Inter', sans-serif;
-  --font-interface: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-telemetry: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-mono: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --bs-body-font-family: 'Roboto', sans-serif !important;
+  --font-brand: 'Roboto Condensed', 'Roboto', sans-serif;
+  --font-heading: 'Roboto Condensed', 'Roboto', sans-serif;
+  --font-interface: 'Roboto', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+  --font-telemetry: 'Roboto Mono', monospace;
+  --font-mono: 'Roboto Mono', monospace;
 
   /* Typography Scale */
   --fs-dashboard-title: 2.5rem;
@@ -9193,7 +9230,7 @@ detection-hero-bg,
   font-weight: 800;
   color: #0f172a;
   line-height: 1.1;
-  font-family: var(--font-telemetry, 'Inter', sans-serif);
+  font-family: var(--font-telemetry, 'Roboto Mono', monospace);
 }
 
 [data-bs-theme="dark"] .cmd-metric-value {
@@ -10078,7 +10115,7 @@ detection-hero-bg,
   font-weight: 800;
   line-height: 1;
   color: #f8fafc;
-  font-family: var(--font-telemetry, 'Inter', sans-serif);
+  font-family: var(--font-telemetry, 'Roboto Mono', monospace);
   letter-spacing: -0.02em;
   transition: color 0.18s ease;
 }
