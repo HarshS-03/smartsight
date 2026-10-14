@@ -30,6 +30,13 @@ export const getImageUrl = (path) => {
     cleanPath = `/media${cleanPath}`;
   }
 
+  // Ensure spaces and special chars in filenames/paths are properly percent-encoded
+  try {
+    cleanPath = encodeURI(decodeURI(cleanPath));
+  } catch (e) {
+    // fallback
+  }
+
   return `${backendBase}${cleanPath}`;
 };
 

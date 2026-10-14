@@ -634,7 +634,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             className="navbar-brand text-dynamic fw-bold m-0"
             href="#"
             style={{ fontSize: '1.75rem', letterSpacing: '-0.5px' }}
-            onClick={(e) => { e.preventDefault(); closeMobileNav(); }}
+            onClick={(e) => { e.preventDefault(); setActivePage('home'); closeMobileNav(); }}
           >
             Smart <span style={{ color: '#2563eb' }}>Sight</span>
           </a>
@@ -662,6 +662,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             />
 
             {[
+              { id: 'home', label: 'Home' },
               { id: 'detection', label: 'Scan & Detect' },
               { id: 'reports', label: 'Reports' },
               ...(isStaff ? [{ id: 'notifications', label: 'Alerts' }] : []),
@@ -823,6 +824,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               {/* Minimal Mobile Navigation Links (< 992px) */}
               <ul className="navbar-nav d-lg-none my-0.5 p-0">
                 {[
+                  { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
                   { id: 'detection', label: 'Scan & Detect', icon: 'bi-qr-code-scan' },
                   { id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' },
                   ...(isStaff ? [{ id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }] : []),

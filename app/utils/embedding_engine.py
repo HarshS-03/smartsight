@@ -127,40 +127,20 @@ def _get_face_detector(model_name=None):
 
 
 def _get_arcface():
-    """Lazy-load ArcFace recognition model."""
+    """Lazy-load InsightFace ArcFace recognition model via ONNX Runtime."""
     global _arcface_model
     if _arcface_model is None:
         with _models_lock:
             if _arcface_model is None:
                 try:
-                    import tensorflow as tf
-                    tf.get_logger().setLevel(logging.ERROR)
-                    if hasattr(tf, 'compat') and hasattr(tf.compat, 'v1') and hasattr(tf.compat.v1, 'logging'):
-                        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-                except Exception:
-                    pass
-                try:
-                    from deepface.modules import modeling
-                    _arcface_model = modeling.build_model(task='facial_recognition', model_name='ArcFace')
-                except Exception:
-                    from deepface import DeepFace
-                    dummy = np.zeros((112, 112, 3), dtype=np.uint8)
-                    try:
-                        DeepFace.represent(
-                            img_path=dummy,
-                            model_name='ArcFace',
-                            detector_backend='skip',
-                            enforce_detection=False,
-                            align=False,
-                        )
-                    except Exception:
-                        pass
-                    from deepface.modules import modeling
-                    try:
-                        _arcface_model = modeling.build_model(task='facial_recognition', model_name='ArcFace')
-                    except Exception:
-                        _arcface_model = True
-                # logger.info("[EmbeddingEngine] ArcFace model ready.")
+                    from insightface.app import FaceAnalysis
+                    app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider'])
+                    app.prepare(ctx_id=0, det_size=(320, 320))
+                    _arcface_model = app.models.get('recognition')
+                    logger.info("[EmbeddingEngine] InsightFace ArcFace recognition engine loaded.")
+                except Exception as e:
+                    logger.error(f"[EmbeddingEngine] Failed to load InsightFace: {e}")
+                    raise e
     return _arcface_model
 
 
@@ -416,8 +396,7 @@ def get_gallery() -> EmbeddingGallery:
 
 def embed_face_crop(crop_bgr):
     """
-    Compute a 512-d ArcFace embedding from a YOLOv8-Face cropped region.
-    Optimized direct model execution bypassing DeepFace wrapper overhead.
+    Compute a 512-d ArcFace embedding from a cropped region using InsightFace ONNX.
     """
     if crop_bgr is None or crop_bgr.size == 0:
         return None
@@ -429,28 +408,17 @@ def embed_face_crop(crop_bgr):
     try:
         with _arcface_infer_lock:
             model = _get_arcface()
-            # Convert BGR to RGB and resize to (112, 112)
-            crop_rgb = cv.cvtColor(crop_bgr, cv.COLOR_BGR2RGB)
-            crop_resized = cv.resize(crop_rgb, (112, 112), interpolation=cv.INTER_AREA)
-            
-            # ArcFace normalization: (pixel - 127.5) / 128.0
-            img_input = (crop_resized.astype(np.float32) - 127.5) / 128.0
-            img_input = np.expand_dims(img_input, axis=0)
-
-            if hasattr(model, 'predict_on_batch'):
+            if hasattr(model, 'get_feat'):
+                # InsightFace recognition model directly extracts 512d normalized embedding
+                raw_emb = model.get_feat(crop_bgr)
+            elif hasattr(model, 'predict_on_batch'):
+                crop_rgb = cv.cvtColor(crop_bgr, cv.COLOR_BGR2RGB)
+                crop_resized = cv.resize(crop_rgb, (112, 112), interpolation=cv.INTER_AREA)
+                img_input = (crop_resized.astype(np.float32) - 127.5) / 128.0
+                img_input = np.expand_dims(img_input, axis=0)
                 raw_emb = model.predict_on_batch(img_input)[0]
-            elif hasattr(model, '__call__') and not isinstance(model, bool):
-                raw_emb = model(img_input, training=False).numpy()[0]
             else:
-                from deepface import DeepFace
-                res = DeepFace.represent(
-                    img_path=crop_bgr,
-                    model_name='ArcFace',
-                    detector_backend='skip',
-                    enforce_detection=False,
-                    align=False,
-                )
-                return np.array(res[0]['embedding'], dtype=np.float32) if res else None
+                return None
 
         emb = np.array(raw_emb, dtype=np.float32).flatten()
         norm = np.linalg.norm(emb)
@@ -458,22 +426,7 @@ def embed_face_crop(crop_bgr):
             emb = emb / norm
         return emb
     except Exception as e:
-        logger.debug(f"[EmbeddingEngine] embed_face_crop direct error: {e}")
-        try:
-            from deepface import DeepFace
-            res = DeepFace.represent(
-                img_path=crop_bgr,
-                model_name='ArcFace',
-                detector_backend='skip',
-                enforce_detection=False,
-                align=False,
-            )
-            if res and len(res) > 0:
-                emb = np.array(res[0]['embedding'], dtype=np.float32)
-                norm = np.linalg.norm(emb)
-                return emb / norm if norm > 0 else emb
-        except Exception:
-            pass
+        logger.error(f"[EmbeddingEngine] embed_face_crop error: {e}")
 
     return None
 

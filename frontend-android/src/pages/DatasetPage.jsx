@@ -185,6 +185,7 @@ export default function DatasetPage() {
 
   const [unknowns, setUnknowns] = useState([]);
   const [selectedUnknownDate, setSelectedUnknownDate] = useState(null);
+  const [selectedSubfolderTab, setSelectedSubfolderTab] = useState('all');
   const [visibleUnknownLimit, setVisibleUnknownLimit] = useState(16);
   const [previewFullImage, setPreviewFullImage] = useState(null);
 
@@ -380,21 +381,50 @@ export default function DatasetPage() {
     return `${pct}%`;
   };
 
+  const categorizeLog = (log) => {
+    const p = (log.image_path || log.image_url || '').toLowerCase();
+    const n = (log.person_name || '').toLowerCase();
+    if (p.includes('spoof') || n.includes('spoof')) return 'spoof';
+    if (p.includes('noface') || n.includes('no face')) return 'noface';
+    if (p.includes('unknown') || n.includes('stranger') || n.includes('unregistered')) return 'unknown';
+    return 'scan';
+  };
+
   const fetchUnknowns = async () => {
     try {
       const response = await API.get('/logs/?status=UNKNOWN');
-      // Group logs by date
+      // Group logs by date and subfolders (spoof, unknown, noface, scan)
       const grouped = response.data.reduce((acc, log) => {
         const date = new Date(log.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         if (!acc[date]) {
-          acc[date] = { date_str: date, safe_id: date.replace(/[\s,]+/g, '-').toLowerCase(), logs: [] };
+          acc[date] = { 
+            date_str: date, 
+            safe_id: date.replace(/[\s,]+/g, '-').toLowerCase(), 
+            logs: [],
+            subfolders: {
+              unknown: [],
+              spoof: [],
+              noface: [],
+              scan: []
+            }
+          };
         }
-        acc[date].logs.push({
+        const category = categorizeLog(log);
+        const item = {
           id: log.id,
           image_url: getImageUrl(log.image_path),
           confidence: log.confidence,
-          time_str: new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        });
+          time_str: new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          category: category,
+          person_name: log.person_name,
+          image_path: log.image_path
+        };
+        acc[date].logs.push(item);
+        if (acc[date].subfolders[category]) {
+          acc[date].subfolders[category].push(item);
+        } else {
+          acc[date].subfolders[category] = [item];
+        }
         return acc;
       }, {});
       setUnknowns(Object.values(grouped));
@@ -804,13 +834,29 @@ export default function DatasetPage() {
         if (updatedLogs.length === 0) {
           setSelectedUnknownDate(null);
         } else {
-          setSelectedUnknownDate({ ...selectedUnknownDate, logs: updatedLogs });
+          const updatedSubfolders = {
+            unknown: (selectedUnknownDate.subfolders?.unknown || []).filter(l => l.id !== logId),
+            spoof: (selectedUnknownDate.subfolders?.spoof || []).filter(l => l.id !== logId),
+            noface: (selectedUnknownDate.subfolders?.noface || []).filter(l => l.id !== logId),
+            scan: (selectedUnknownDate.subfolders?.scan || []).filter(l => l.id !== logId),
+          };
+          setSelectedUnknownDate({ 
+            ...selectedUnknownDate, 
+            logs: updatedLogs, 
+            subfolders: updatedSubfolders 
+          });
         }
       }
       fetchUnknowns();
     } catch (error) {
       console.error("Failed to dismiss log", error);
     }
+  };
+
+  const openUnknownDate = (group, initialTab = 'all') => {
+    setSelectedUnknownDate(group);
+    setSelectedSubfolderTab(initialTab);
+    setVisibleUnknownLimit(24);
   };
 
   const startAutoClassification = async () => {
@@ -1243,7 +1289,7 @@ export default function DatasetPage() {
                   {unknowns.map((group, index) => (
                     <div className="col" key={index} data-reveal="true" data-reveal-delay="0">
                       <div className="folder-card folder-card-red p-3 p-md-4 rounded-4 h-100 position-relative overflow-hidden d-flex flex-column justify-content-between"
-                        onClick={() => setSelectedUnknownDate(group)}>
+                        onClick={() => openUnknownDate(group, 'all')}>
                         <div className="folder-glow" style={{ background: 'radial-gradient(circle at 10% 10%, rgba(220, 53, 69, 0.1) 0%, transparent 50%)' }}></div>
                         <div className="d-flex flex-column gap-3">
                           {/* Card Header: Folder Icon on left, Photo Count pill badge on right */}
@@ -1271,20 +1317,60 @@ export default function DatasetPage() {
                             <h5 className="fw-bold text-heading mb-0 text-truncate" title={group.date_str} style={{ fontSize: '1.1rem', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
                               {group.date_str}
                             </h5>
-                            <div className="d-flex align-items-center mt-0.5">
-                              <span
-                                className="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center"
-                                style={{
-                                  background: 'rgba(239, 68, 68, 0.12)',
-                                  color: '#f87171',
-                                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                                  fontSize: '0.72rem',
-                                  gap: '6px'
-                                }}
-                              >
-                                <i className="bi bi-shield-exclamation text-danger flex-shrink-0" style={{ fontSize: '0.75rem' }}></i>
-                                <span>Unknown Captures</span>
-                              </span>
+
+                            {/* Subfolder Tags Breakdown */}
+                            <div className="d-flex flex-wrap gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
+                              {group.subfolders?.unknown?.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="badge rounded-pill px-2 py-1 fw-semibold d-inline-flex align-items-center border-0 cursor-pointer shadow-sm"
+                                  style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.7rem', gap: '4px' }}
+                                  onClick={() => openUnknownDate(group, 'unknown')}
+                                  title="Open Unknown Strangers subfolder"
+                                >
+                                  <i className="bi bi-person-x-fill text-danger"></i>
+                                  <span>Unknown ({group.subfolders.unknown.length})</span>
+                                </button>
+                              )}
+
+                              {group.subfolders?.spoof?.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="badge rounded-pill px-2 py-1 fw-semibold d-inline-flex align-items-center border-0 cursor-pointer shadow-sm"
+                                  style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.7rem', gap: '4px' }}
+                                  onClick={() => openUnknownDate(group, 'spoof')}
+                                  title="Open Spoof Attempts subfolder"
+                                >
+                                  <i className="bi bi-shield-slash-fill text-warning"></i>
+                                  <span>Spoof ({group.subfolders.spoof.length})</span>
+                                </button>
+                              )}
+
+                              {group.subfolders?.noface?.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="badge rounded-pill px-2 py-1 fw-semibold d-inline-flex align-items-center border-0 cursor-pointer shadow-sm"
+                                  style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.7rem', gap: '4px' }}
+                                  onClick={() => openUnknownDate(group, 'noface')}
+                                  title="Open No Face Detected subfolder"
+                                >
+                                  <i className="bi bi-emoji-expressionless-fill" style={{ color: '#c084fc' }}></i>
+                                  <span>No Face ({group.subfolders.noface.length})</span>
+                                </button>
+                              )}
+
+                              {group.subfolders?.scan?.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="badge rounded-pill px-2 py-1 fw-semibold d-inline-flex align-items-center border-0 cursor-pointer shadow-sm"
+                                  style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', fontSize: '0.7rem', gap: '4px' }}
+                                  onClick={() => openUnknownDate(group, 'scan')}
+                                  title="Open Other Scans subfolder"
+                                >
+                                  <i className="bi bi-camera-fill text-primary"></i>
+                                  <span>Scans ({group.subfolders.scan.length})</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1292,8 +1378,15 @@ export default function DatasetPage() {
                         {/* Card Footer */}
                         <div className="pt-2.5 mt-3 border-top border-white border-opacity-10 d-flex align-items-center justify-content-between">
                           <div className="text-secondary small mb-0 d-flex align-items-center gap-1.5" style={{ fontSize: '0.73rem', opacity: 0.85 }}>
-                            <i className="bi bi-clock-history text-danger flex-shrink-0" style={{ fontSize: '0.75rem' }}></i>
-                            <span className="text-truncate font-mono">Unrecognized</span>
+                            <i className="bi bi-folder2-open text-danger flex-shrink-0" style={{ fontSize: '0.8rem' }}></i>
+                            <span className="text-truncate font-mono">
+                              {[
+                                group.subfolders?.unknown?.length ? 'Unknown' : null,
+                                group.subfolders?.spoof?.length ? 'Spoof' : null,
+                                group.subfolders?.noface?.length ? 'No Face' : null,
+                                group.subfolders?.scan?.length ? 'Scans' : null
+                              ].filter(Boolean).join(' • ') || 'Unrecognized'}
+                            </span>
                           </div>
                           <i className="bi bi-chevron-right text-secondary opacity-50" style={{ fontSize: '0.72rem' }}></i>
                         </div>
@@ -1929,10 +2022,10 @@ export default function DatasetPage() {
       {/* Unknown Date Modal - Mounted directly on document.body via React Portal */}
       {selectedUnknownDate && createPortal(
         <>
-          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
-          <div className="modal fade show d-block" tabIndex="-1" aria-hidden="true">
-            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-              <div className="modal-content overflow-hidden"
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, zIndex: 10540 }} onClick={() => setSelectedUnknownDate(null)}></div>
+          <div className="modal fade show d-flex align-items-center justify-content-center" tabIndex="-1" aria-hidden="true" onClick={() => setSelectedUnknownDate(null)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 10550, overflowY: 'auto' }}>
+            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable w-100 mx-auto" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1140px', margin: 'auto' }}>
+              <div className="modal-content overflow-hidden shadow-2xl"
                 style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', }}>
                 <div className="modal-header border-0 p-4 d-flex align-items-start">
                   <div className="d-flex align-items-center">
@@ -1942,47 +2035,165 @@ export default function DatasetPage() {
                     <div>
                       <h4 className="modal-title fw-bold text-dynamic mb-1">{selectedUnknownDate.date_str}</h4>
                       <div className="text-secondary small d-flex align-items-center gap-2">
-                        <i className="bi bi-shield-exclamation text-danger"></i>
-                        <span>{selectedUnknownDate.logs.length} Unknown Captures</span>
+                        <i className="bi bi-folder2-open text-danger"></i>
+                        <span>{selectedUnknownDate.logs.length} Total Captures Across Subfolders</span>
                       </div>
                     </div>
                   </div>
                   <button type="button" className="btn-close opacity-75 ms-auto" onClick={() => setSelectedUnknownDate(null)}></button>
                 </div>
                 <div className="modal-body p-4 pt-0">
-                  <div className="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3">
-                    {selectedUnknownDate.logs.slice(0, visibleUnknownLimit).map(log => {
-                      const fullImgUrl = getImageUrl(log.image_url || log.image_path);
+                  {/* Subfolder Filter Bar */}
+                  <div className="d-flex flex-wrap align-items-center gap-2 mb-4 p-2 rounded-4"
+                    style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-color)' }}>
+                    <button
+                      type="button"
+                      className={`ds-pill-btn ${selectedSubfolderTab === 'all' ? 'active' : ''}`}
+                      onClick={() => { setSelectedSubfolderTab('all'); setVisibleUnknownLimit(24); }}
+                    >
+                      <i className="bi bi-collection-fill"></i>
+                      <span>All Captures</span>
+                      <span className={`ds-pill-badge ${selectedSubfolderTab === 'all' ? 'active' : ''}`}>
+                        {selectedUnknownDate.logs.length}
+                      </span>
+                    </button>
+
+                    {(selectedUnknownDate.subfolders?.unknown?.length > 0) && (
+                      <button
+                        type="button"
+                        className={`ds-pill-btn ${selectedSubfolderTab === 'unknown' ? 'active' : ''}`}
+                        onClick={() => { setSelectedSubfolderTab('unknown'); setVisibleUnknownLimit(24); }}
+                        style={selectedSubfolderTab === 'unknown' ? { borderColor: '#ef4444', color: '#f87171' } : {}}
+                      >
+                        <i className="bi bi-person-x-fill text-danger"></i>
+                        <span>Unknown Strangers</span>
+                        <span className={`ds-pill-badge ${selectedSubfolderTab === 'unknown' ? 'active' : ''}`}
+                          style={selectedSubfolderTab === 'unknown' ? { background: '#ef4444', color: '#fff' } : {}}>
+                          {selectedUnknownDate.subfolders.unknown.length}
+                        </span>
+                      </button>
+                    )}
+
+                    {(selectedUnknownDate.subfolders?.spoof?.length > 0) && (
+                      <button
+                        type="button"
+                        className={`ds-pill-btn ${selectedSubfolderTab === 'spoof' ? 'active' : ''}`}
+                        onClick={() => { setSelectedSubfolderTab('spoof'); setVisibleUnknownLimit(24); }}
+                        style={selectedSubfolderTab === 'spoof' ? { borderColor: '#f59e0b', color: '#fbbf24' } : {}}
+                      >
+                        <i className="bi bi-shield-slash-fill text-warning"></i>
+                        <span>Spoof Attempts</span>
+                        <span className={`ds-pill-badge ${selectedSubfolderTab === 'spoof' ? 'active' : ''}`}
+                          style={selectedSubfolderTab === 'spoof' ? { background: '#f59e0b', color: '#fff' } : {}}>
+                          {selectedUnknownDate.subfolders.spoof.length}
+                        </span>
+                      </button>
+                    )}
+
+                    {(selectedUnknownDate.subfolders?.noface?.length > 0) && (
+                      <button
+                        type="button"
+                        className={`ds-pill-btn ${selectedSubfolderTab === 'noface' ? 'active' : ''}`}
+                        onClick={() => { setSelectedSubfolderTab('noface'); setVisibleUnknownLimit(24); }}
+                        style={selectedSubfolderTab === 'noface' ? { borderColor: '#8b5cf6', color: '#c084fc' } : {}}
+                      >
+                        <i className="bi bi-emoji-expressionless-fill" style={{ color: '#c084fc' }}></i>
+                        <span>No Face Detected</span>
+                        <span className={`ds-pill-badge ${selectedSubfolderTab === 'noface' ? 'active' : ''}`}
+                          style={selectedSubfolderTab === 'noface' ? { background: '#8b5cf6', color: '#fff' } : {}}>
+                          {selectedUnknownDate.subfolders.noface.length}
+                        </span>
+                      </button>
+                    )}
+
+                    {(selectedUnknownDate.subfolders?.scan?.length > 0) && (
+                      <button
+                        type="button"
+                        className={`ds-pill-btn ${selectedSubfolderTab === 'scan' ? 'active' : ''}`}
+                        onClick={() => { setSelectedSubfolderTab('scan'); setVisibleUnknownLimit(24); }}
+                        style={selectedSubfolderTab === 'scan' ? { borderColor: '#3b82f6', color: '#60a5fa' } : {}}
+                      >
+                        <i className="bi bi-camera-fill text-primary"></i>
+                        <span>Other Scans</span>
+                        <span className={`ds-pill-badge ${selectedSubfolderTab === 'scan' ? 'active' : ''}`}>
+                          {selectedUnknownDate.subfolders.scan.length}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+
+                  {(() => {
+                    const currentLogs = selectedSubfolderTab === 'all'
+                      ? selectedUnknownDate.logs
+                      : (selectedUnknownDate.subfolders?.[selectedSubfolderTab] || []);
+
+                    if (currentLogs.length === 0) {
                       return (
-                        <div className="col" key={log.id}>
-                          <div className="unknown-card rounded-4 overflow-hidden position-relative h-100 shadow-sm border border-secondary border-opacity-25 cursor-pointer" onClick={() => setPreviewFullImage({ url: fullImgUrl, id: log.id, type: 'unknown' })}>
-                            <div className="position-relative overflow-hidden" style={{ background: '#0f172a', aspectRatio: '1/1' }}>
-                              <img src={fullImgUrl} className="w-100 h-100 object-fit-cover d-block" alt="Captured Target" loading="lazy" decoding="async" />
-                              <div className="unknown-card-actions">
-                                <button type="button" className="btn btn-primary btn-sm rounded-circle shadow-lg" title="View Full Image" onClick={(e) => { e.stopPropagation(); setPreviewFullImage({ url: fullImgUrl, id: log.id, type: 'unknown' }); }}>
-                                  <i className="bi bi-eye-fill"></i>
-                                </button>
-                                <button type="button" className="btn btn-danger btn-sm rounded-circle shadow-lg" title="Dismiss Log" onClick={(e) => { e.stopPropagation(); handleDismissLog(log.id); }}>
-                                  <i className="bi bi-trash-fill"></i>
-                                </button>
-                              </div>
-                            </div>
-                            <div className="p-3">
-                              <div className="d-flex justify-content-between align-items-center mb-2">
-                                <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 text-uppercase fw-800" style={{ fontSize: '0.68rem' }}>
-                                  Stranger ({formatConfidence(log.confidence)})
-                                </span>
-                              </div>
-                              <div className="text-secondary small d-flex align-items-center me-2" style={{ fontSize: '0.75rem' }}>
-                                <i className="bi bi-clock-fill text-secondary opacity-50 me-2"></i>
-                                <span>{log.time_str}</span>
-                              </div>
-                            </div>
-                          </div>
+                        <div className="text-center py-5 opacity-75">
+                          <i className="bi bi-folder-x display-4 mb-3 text-secondary"></i>
+                          <h5>No captures in this subfolder</h5>
+                          <p className="text-secondary small">Select another subfolder or choose "All Captures".</p>
                         </div>
                       );
-                    })}
-                  </div>
+                    }
+
+                    return (
+                      <div className="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3">
+                        {currentLogs.slice(0, visibleUnknownLimit).map(log => {
+                          const fullImgUrl = getImageUrl(log.image_url || log.image_path);
+                          const cat = log.category || 'unknown';
+
+                          let badgeStyle = { background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' };
+                          let badgeIcon = 'bi-person-x-fill text-danger';
+                          let badgeText = `Stranger (${formatConfidence(log.confidence)})`;
+
+                          if (cat === 'spoof') {
+                            badgeStyle = { background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' };
+                            badgeIcon = 'bi-shield-slash-fill text-warning';
+                            badgeText = 'Spoof Attempt';
+                          } else if (cat === 'noface') {
+                            badgeStyle = { background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.3)' };
+                            badgeIcon = 'bi-emoji-expressionless-fill text-purple';
+                            badgeText = 'No Face';
+                          } else if (cat === 'scan') {
+                            badgeStyle = { background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' };
+                            badgeIcon = 'bi-camera-fill text-primary';
+                            badgeText = `Scan (${formatConfidence(log.confidence)})`;
+                          }
+
+                          return (
+                            <div className="col" key={log.id}>
+                              <div className="unknown-card rounded-4 overflow-hidden position-relative h-100 shadow-sm border border-secondary border-opacity-25 cursor-pointer" onClick={() => setPreviewFullImage({ url: fullImgUrl, id: log.id, type: 'unknown' })}>
+                                <div className="position-relative overflow-hidden" style={{ background: '#0f172a', aspectRatio: '1/1' }}>
+                                  <img src={fullImgUrl} className="w-100 h-100 object-fit-cover d-block" alt="Captured Target" loading="lazy" decoding="async" />
+                                  <div className="unknown-card-actions">
+                                    <button type="button" className="btn btn-primary btn-sm rounded-circle shadow-lg" title="View Full Image" onClick={(e) => { e.stopPropagation(); setPreviewFullImage({ url: fullImgUrl, id: log.id, type: 'unknown' }); }}>
+                                      <i className="bi bi-eye-fill"></i>
+                                    </button>
+                                    <button type="button" className="btn btn-danger btn-sm rounded-circle shadow-lg" title="Dismiss Log" onClick={(e) => { e.stopPropagation(); handleDismissLog(log.id); }}>
+                                      <i className="bi bi-trash-fill"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="p-3">
+                                  <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <span className="badge rounded-pill px-2.5 py-1 text-uppercase fw-800 d-inline-flex align-items-center gap-1.5" style={{ ...badgeStyle, fontSize: '0.68rem' }}>
+                                      <i className={`bi ${badgeIcon}`}></i>
+                                      <span>{badgeText}</span>
+                                    </span>
+                                  </div>
+                                  <div className="text-secondary small d-flex align-items-center me-2" style={{ fontSize: '0.75rem' }}>
+                                    <i className="bi bi-clock-fill text-secondary opacity-50 me-2"></i>
+                                    <span>{log.time_str}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   {selectedUnknownDate.logs.length > visibleUnknownLimit && (
                     <div ref={loaderRef} className="text-center mt-4 py-3">
                       <div className="spinner-border text-danger spinner-border-sm" role="status">
@@ -2001,10 +2212,10 @@ export default function DatasetPage() {
       {/* Auto Classification Modal */}
       {showAutoClassifyModal && (
         <>
-          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, }}></div>
-          <div className="modal fade show d-block" tabIndex="-1" data-bs-backdrop="static" aria-hidden="true">
-            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-              <div className="modal-content overflow-hidden"
+          <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, zIndex: 10540 }}></div>
+          <div className="modal fade show d-flex align-items-center justify-content-center" tabIndex="-1" data-bs-backdrop="static" aria-hidden="true" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 10550, overflowY: 'auto' }}>
+            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable w-100 mx-auto" style={{ maxWidth: '1140px', margin: 'auto' }}>
+              <div className="modal-content overflow-hidden shadow-2xl"
                 style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', }}>
                 <div className="modal-header border-0 p-4">
                   <h5 className="modal-title fw-bold text-dynamic d-flex align-items-center">
@@ -2094,6 +2305,18 @@ export default function DatasetPage() {
                                         className="w-100 h-100 object-fit-cover rounded-3 border border-secondary border-opacity-25 shadow-sm"
                                         style={{ background: '#0f172a' }}
                                       />
+                                      {img.category === 'spoof' && (
+                                        <span className="badge position-absolute bottom-0 start-0 m-1 px-1 py-0.5 rounded fw-bold text-uppercase"
+                                          style={{ background: 'rgba(245, 158, 11, 0.95)', color: '#000', fontSize: '0.55rem', zIndex: 4 }}>
+                                          Spoof
+                                        </span>
+                                      )}
+                                      {img.category === 'noface' && (
+                                        <span className="badge position-absolute bottom-0 start-0 m-1 px-1 py-0.5 rounded fw-bold text-uppercase"
+                                          style={{ background: 'rgba(139, 92, 246, 0.95)', color: '#fff', fontSize: '0.55rem', zIndex: 4 }}>
+                                          No Face
+                                        </span>
+                                      )}
                                       <button
                                         type="button"
                                         className="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm"

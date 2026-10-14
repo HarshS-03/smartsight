@@ -635,22 +635,21 @@ export default function DetectionPage() {
                   <div className="modal-body p-4 pt-1">
                     {/* Snapshot Frame */}
                     <div
-                      className="d-flex align-items-center justify-content-center rounded-4 overflow-hidden mb-3.5 position-relative border"
+                      className="d-flex align-items-center justify-content-center rounded-4 overflow-hidden mb-3 position-relative border"
                       style={{
-                        minHeight: '260px',
-                        maxHeight: '340px',
-                        background: 'var(--bg-input, rgba(0, 0, 0, 0.25))',
+                        background: 'var(--bg-input, rgba(0, 0, 0, 0.4))',
                         borderColor: 'var(--border-color)',
+                        width: '100%',
                       }}
                     >
                       {selectedScan.image_path && !imgError ? (
                         <img
                           src={getImageUrl(selectedScan.image_path)}
                           alt="Access Control Snapshot"
-                          className="w-100 h-100"
+                          className="w-100"
                           style={{
-                            objectFit: 'contain',
-                            maxHeight: '340px',
+                            objectFit: 'cover',
+                            maxHeight: '380px',
                             display: 'block',
                           }}
                           onError={() => setImgError(true)}

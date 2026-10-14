@@ -352,11 +352,27 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
         return Response({'status': 'success', 'deleted_count': deleted_count})
 
     def get_queryset(self):
+        from django.db.models import Q
         queryset = RecognitionLog.objects.all().order_by('-timestamp')
-        status_param = self.request.query_params.get('status')
+        params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
+        status_param = params.get('status')
         if status_param:
-            queryset = queryset.filter(status=status_param.upper())
-        search = self.request.query_params.get('search')
+            st = status_param.upper()
+            if st == 'UNKNOWN':
+                # Return all unrecognized captures (explicit UNKNOWN, strangers, spoof, or noface)
+                queryset = queryset.filter(
+                    Q(status='UNKNOWN') | 
+                    Q(person_name__isnull=True) | 
+                    Q(person_name__exact='') | 
+                    Q(person_name__icontains='Unregistered') |
+                    Q(person_name__icontains='Stranger') |
+                    Q(person_name__icontains='Spoof') |
+                    Q(person_name__icontains='No Face') |
+                    Q(image_path__icontains='noface')
+                )
+            else:
+                queryset = queryset.filter(status=st)
+        search = params.get('search')
         if search:
             queryset = queryset.filter(person_name__icontains=search)
         return queryset
@@ -744,12 +760,24 @@ def biometric_verify_frame(request):
             rel_img_path = f"captures/{unique_name}"
             cv.imwrite(abs_img_path, frame)
 
+            log = RecognitionLog.objects.create(
+                person_name="No Face Detected",
+                camera_name="Mobile Access Scanner",
+                confidence=0.0,
+                detection_confidence=0.0,
+                recognition_similarity=0.0,
+                status='DENIED',
+                image_path=rel_img_path
+            )
+
             return Response({
                 'status': 'NO_FACE',
                 'decision': 'RETRY',
                 'message': 'No face detected in camera. Please align face clearly.',
                 'image_url': f"/media/{rel_img_path}",
-                'faces': 0
+                'faces': 0,
+                'log_id': log.id,
+                'timestamp': log.timestamp.isoformat()
             })
 
         best = detections[0]

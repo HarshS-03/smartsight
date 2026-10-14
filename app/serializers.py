@@ -52,13 +52,32 @@ class PersonImageSerializer(serializers.ModelSerializer):
         return None
 
 class PersonSerializer(serializers.ModelSerializer):
-    images = PersonImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     category_display = serializers.CharField(source='get_category_display', read_only=True)
 
     class Meta:
         model = Person
         fields = ['id', 'name', 'category', 'category_display', 'class_name', 'department', 'created_at', 'images']
+
+    def get_images(self, obj):
+        import os
+        request = self.context.get('request')
+        valid_images = []
+        for img in obj.images.all():
+            if img.image:
+                try:
+                    if os.path.exists(img.image.path):
+                        url = request.build_absolute_uri(img.image.url) if request else img.image.url
+                        valid_images.append({
+                            'id': img.id,
+                            'image': img.image.url,
+                            'url': url,
+                            'uploaded_at': img.uploaded_at
+                        })
+                except Exception:
+                    continue
+        return valid_images
 
     def validate(self, data):
         # Format name to Title Case and optionally append class/department to guarantee uniqueness

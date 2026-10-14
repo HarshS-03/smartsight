@@ -374,16 +374,18 @@ export default function DetectionPage() {
         </div>
 
         {/* Start / Stop Toggle + Scan Button Row */}
-        <div className="d-flex justify-content-center align-items-center gap-3 mb-3 w-100 px-2" style={{ maxWidth: '400px', margin: '0 auto' }}>
+        <div className="d-flex justify-content-center align-items-center gap-2.5 mb-3 w-100 px-3" style={{ maxWidth: '440px', margin: '0 auto' }}>
           {/* Scan & Verify Button */}
           <button
             type="button"
-            className="btn py-2.5 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center justify-content-center gap-2"
+            className="btn py-2.5 px-3 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center justify-content-center gap-2 text-nowrap"
             onClick={handleScanPerson}
             disabled={isScanning || !isCameraActive || isUnknownPending}
             style={{
-              flex: 1,
-              fontSize: '1rem',
+              flex: '1 1 50%',
+              minWidth: '135px',
+              height: '46px',
+              fontSize: '0.95rem',
               letterSpacing: '0.3px',
               background: isUnknownPending
                 ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
@@ -430,11 +432,13 @@ export default function DetectionPage() {
           {/* Start / Stop Camera Toggle */}
           <button
             type="button"
-            className="btn py-2.5 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center justify-content-center gap-2"
+            className="btn py-2.5 px-3 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center justify-content-center gap-2 text-nowrap"
             onClick={() => isCameraActive ? stopCamera() : startCamera(facingMode)}
             style={{
-              flex: 1,
-              fontSize: '1rem',
+              flex: '1 1 50%',
+              minWidth: '135px',
+              height: '46px',
+              fontSize: '0.95rem',
               letterSpacing: '0.3px',
               background: isCameraActive
                 ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
@@ -483,14 +487,8 @@ export default function DetectionPage() {
           <div
             className={`card border-0 p-3 mb-3 rounded-4 shadow-sm animate__animated animate__fadeIn mx-2`}
             style={{
-              background:
-                lastVerification.status === 'ALLOWED'
-                  ? 'linear-gradient(135deg, rgba(220, 252, 231, 0.95) 0%, rgba(187, 247, 208, 0.95) 100%)'
-                  : lastVerification.status === 'PENDING_REVIEW'
-                  ? 'linear-gradient(135deg, rgba(254, 243, 199, 0.95) 0%, rgba(253, 230, 138, 0.95) 100%)'
-                  : lastVerification.status === 'DENIED'
-                  ? 'linear-gradient(135deg, rgba(254, 226, 226, 0.95) 0%, rgba(254, 202, 202, 0.95) 100%)'
-                  : 'rgba(30, 41, 59, 0.85)',
+              background: 'var(--bg-surface-solid, #0f172a)',
+              border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
               borderLeft:
                 lastVerification.status === 'ALLOWED'
                   ? '5px solid #10b981'
@@ -499,7 +497,7 @@ export default function DetectionPage() {
                   : lastVerification.status === 'DENIED'
                   ? '5px solid #dc2626'
                   : '5px solid #94a3b8',
-              backdropFilter: 'blur(10px)',
+              boxShadow: 'var(--shadow-md)',
             }}
           >
             <div className="d-flex align-items-center gap-3">
@@ -520,23 +518,24 @@ export default function DetectionPage() {
                 </div>
               )}
 
-              <div className="flex-grow-1">
-                <div className="d-flex align-items-center justify-content-between gap-2 mb-1.5 flex-nowrap" style={{ minWidth: 0 }}>
+              <div className="flex-grow-1 min-w-0 d-flex flex-column justify-content-center">
+                <div className="d-flex align-items-center justify-content-between gap-2 mb-1 flex-nowrap" style={{ minWidth: 0 }}>
                   <span
                     className={`badge rounded-pill fw-bold text-nowrap flex-shrink-0 ${
                       lastVerification.status === 'ALLOWED'
                         ? 'bg-success text-white'
                         : lastVerification.status === 'PENDING_REVIEW'
                         ? 'text-white'
-                        : lastVerification.status === 'DENIED'
+                        : lastVerification.status === 'DENIED' || (lastVerification.person_name && lastVerification.person_name.includes('Spoof'))
                         ? 'bg-danger text-white'
                         : 'bg-secondary text-white'
                     }`}
                     style={{ 
-                      fontSize: '0.67rem',
+                      fontSize: '0.66rem',
                       padding: '3px 8px',
                       whiteSpace: 'nowrap',
                       lineHeight: '1.2',
+                      letterSpacing: '0.3px',
                       ...(lastVerification.status === 'PENDING_REVIEW' ? { background: '#d97706' } : {}),
                       ...(((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)' } : {})
                     }}
@@ -545,36 +544,38 @@ export default function DetectionPage() {
                       ? (((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? 'CREATOR ACCESS: GOD' : '✓ ACCESS GRANTED')
                       : lastVerification.status === 'PENDING_REVIEW'
                       ? '⚠ ESCALATED TO ADMIN'
+                      : (lastVerification.person_name && lastVerification.person_name.includes('Spoof'))
+                      ? '✕ SPOOF DETECTED'
                       : lastVerification.status === 'DENIED'
                       ? '✕ ACCESS DENIED'
                       : 'NOTICE'}
                   </span>
                   {lastVerification.confidence > 0 && (
-                    <span className="small fw-semibold text-nowrap flex-shrink-0 ms-auto" style={{ fontSize: '0.72rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                    <span className="small fw-semibold text-nowrap flex-shrink-0 ms-auto" style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', whiteSpace: 'nowrap' }}>
                       {lastVerification.confidence}% Match
                     </span>
                   )}
                 </div>
 
-                <h5 className="fw-bold mb-1" style={{ 
-                  color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#1d4ed8' :
-                         (lastVerification.status === 'ALLOWED' ? '#0f172a' : 
-                         lastVerification.status === 'PENDING_REVIEW' ? '#f59e0b' :
-                         (lastVerification.status === 'DENIED' ? '#ef4444' : '#f8fafc')), 
-                  fontSize: '1.08rem',
+                <h5 className="fw-bold mb-0.5" style={{ 
+                  color: 'var(--text-heading, #ffffff)', 
+                  fontSize: '1rem',
+                  lineHeight: '1.25',
                   letterSpacing: '0.01em',
-                  textTransform: 'capitalize'
+                  wordBreak: 'break-word',
                 }}>
                   {lastVerification.person_name || (lastVerification.status === 'DENIED' || lastVerification.status === 'PENDING_REVIEW' ? 'Unregistered Person / Stranger' : 'No Face Found')}
                 </h5>
                 <p className="small mb-0" style={{ 
-                  color: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '#3b82f6' :
-                         (lastVerification.status === 'ALLOWED' ? '#64748b' : 
-                         lastVerification.status === 'PENDING_REVIEW' ? '#d97706' :
-                         (lastVerification.status === 'DENIED' ? '#ef4444' : '#64748b')), 
-                  fontSize: '0.82rem',
-                  fontWeight: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? 700 : 500,
-                  letterSpacing: ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? '0.04em' : 'normal'
+                  color: (lastVerification.person_name && lastVerification.person_name.includes('Spoof')) || lastVerification.status === 'DENIED'
+                    ? '#f87171'
+                    : ((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3'))))
+                    ? '#38bdf8'
+                    : 'var(--text-secondary, #94a3b8)', 
+                  fontSize: '0.76rem',
+                  lineHeight: '1.35',
+                  fontWeight: 500,
+                  wordBreak: 'break-word',
                 }}>
                   {(() => {
                     const dept = (lastVerification.department || '').trim();
@@ -607,7 +608,7 @@ export default function DetectionPage() {
 
                     {/* Quick Tag Suggestion Chips */}
                     <div className="mb-2">
-                      <div className="text-muted small mb-1" style={{ fontSize: '0.7rem' }}>Quick tags:</div>
+                      <div className="text-secondary small fw-semibold mb-1.5" style={{ fontSize: '0.75rem' }}>Quick tags:</div>
                       <div className="row g-2">
                         {[
                           'Unregistered visitor',
@@ -619,7 +620,7 @@ export default function DetectionPage() {
                           <div className="col-6" key={tag}>
                             <button
                               type="button"
-                              className="btn btn-sm w-100 rounded-pill px-2 py-1 border text-truncate text-start"
+                              className="btn w-100 rounded-pill px-3 py-2 border text-truncate text-start d-flex align-items-center gap-1.5 shadow-sm"
                               onClick={() => {
                                 setSecurityNote((prev) => {
                                   if (!prev) return tag;
@@ -629,13 +630,16 @@ export default function DetectionPage() {
                                 });
                               }}
                               style={{
-                                fontSize: '0.72rem',
-                                background: 'rgba(255, 255, 255, 0.75)',
-                                borderColor: 'rgba(0, 0, 0, 0.15)',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                minHeight: '38px',
+                                background: 'rgba(255, 255, 255, 0.85)',
+                                borderColor: 'rgba(0, 0, 0, 0.12)',
                                 color: '#1e293b',
                               }}
                             >
-                              + {tag}
+                              <span>+</span>
+                              <span className="text-truncate">{tag}</span>
                             </button>
                           </div>
                         ))}
@@ -655,23 +659,25 @@ export default function DetectionPage() {
                         }
                       }}
                       style={{
-                        fontSize: '0.82rem',
-                        background: 'rgba(255,255,255,0.9)',
+                        fontSize: '0.85rem',
+                        padding: '10px 12px',
+                        background: 'rgba(255,255,255,0.95)',
                         border: '1.5px solid rgba(220, 38, 38, 0.35)',
                         resize: 'none',
                       }}
                     />
-                    <div className="d-flex align-items-center justify-content-between">
-                      <span className="text-muted" style={{ fontSize: '0.72rem' }}>
+                    <div className="d-flex align-items-center justify-content-between pt-1">
+                      <span className="text-muted fw-semibold font-mono" style={{ fontSize: '0.75rem' }}>
                         {securityNote.trim().split(/\s+/).filter(Boolean).length}/100 words
                       </span>
                       <button
                         type="button"
-                        className="btn btn-sm rounded-pill fw-bold px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-sm"
+                        className="btn rounded-pill fw-bold px-4 py-2.5 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm text-nowrap"
                         disabled={!securityNote.trim() || noteSubmitting}
                         onClick={handleSubmitSecurityNote}
                         style={{
-                          fontSize: '0.8rem',
+                          fontSize: '0.88rem',
+                          minHeight: '44px',
                           background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
                           color: '#fff',
                           border: 'none',
@@ -686,7 +692,7 @@ export default function DetectionPage() {
                           </>
                         ) : (
                           <>
-                            <i className="bi bi-unlock-fill"></i>
+                            <i className="bi bi-unlock-fill fs-6"></i>
                             <span>Submit Note &amp; Unlock Next Scan</span>
                           </>
                         )}
@@ -694,20 +700,41 @@ export default function DetectionPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 rounded-3 d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3" style={{ background: 'rgba(22, 163, 74, 0.12)', border: '1px solid rgba(22, 163, 74, 0.3)' }}>
-                    <div className="d-flex align-items-start align-items-sm-center gap-2.5 min-w-0">
-                      <i className="bi bi-check-circle-fill text-success fs-5 mt-1 mt-sm-0 flex-shrink-0"></i>
-                      <div className="min-w-0">
-                        <span className="fw-bold small d-block text-truncate" style={{ color: '#166534', fontSize: '0.82rem', marginBottom: '2px' }}>
+                  <div
+                    className="d-flex flex-column align-items-center justify-content-center text-center shadow-sm"
+                    style={{
+                      padding: '22px 18px',
+                      background: 'rgba(22, 163, 74, 0.12)',
+                      border: '1px solid rgba(22, 163, 74, 0.3)',
+                      borderRadius: '18px',
+                      gap: '12px',
+                    }}
+                  >
+                    <div className="d-flex flex-column align-items-center justify-content-center gap-1 w-100">
+                      <div className="d-flex align-items-center justify-content-center gap-2">
+                        <i className="bi bi-check-circle-fill text-success fs-5"></i>
+                        <span className="fw-bold" style={{ color: '#22c55e', fontSize: '0.92rem' }}>
                           Security Note Submitted
                         </span>
-                        <span className="text-secondary small fst-italic d-block text-truncate" style={{ fontSize: '0.75rem', opacity: 0.9 }}>
+                      </div>
+                      {securityNote && (
+                        <span className="text-secondary small fst-italic text-truncate px-2" style={{ fontSize: '0.8rem', opacity: 0.9, maxWidth: '100%' }}>
                           "{securityNote}"
                         </span>
-                      </div>
+                      )}
                     </div>
-                    <span className="badge bg-success text-white rounded-pill px-2.5 py-1.5 fw-bold flex-shrink-0 align-self-end align-self-sm-center" style={{ fontSize: '0.72rem', letterSpacing: '0.3px', boxShadow: '0 2px 4px rgba(22, 163, 74, 0.2)' }}>
-                      <i className="bi bi-unlock-fill me-1"></i> Scanner Ready
+                    <span
+                      className="badge bg-success text-white rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2"
+                      style={{
+                        fontSize: '0.85rem',
+                        lineHeight: 1.2,
+                        minHeight: '38px',
+                        letterSpacing: '0.3px',
+                        boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
+                      }}
+                    >
+                      <i className="bi bi-unlock-fill" style={{ fontSize: '0.95rem' }}></i>
+                      <span>Scanner Ready</span>
                     </span>
                   </div>
                 )}
@@ -733,8 +760,8 @@ export default function DetectionPage() {
                       <i className="bi bi-person-circle fs-5 text-secondary"></i>
                     )}
                     <div>
-                      <div className="fw-bold small text-capitalize" style={{ fontSize: '0.8rem', color: scan.status === 'ALLOWED' ? '#0f172a' : 'inherit' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
-                      <div className="text-muted" style={{ fontSize: '0.68rem' }}>
+                      <div className="fw-bold small text-capitalize" style={{ fontSize: '0.8rem', color: 'var(--text-heading, #ffffff)' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
+                      <div className="text-secondary" style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>
                         {[scan.department, scan.class_name].filter(Boolean).join(' • ') || (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Pending Admin Review' : (scan.role || 'Authorized'))}
                       </div>
                     </div>
