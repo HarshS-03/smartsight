@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
+import { subscribeNotificationEvents } from '../utils/notificationStream';
 
 export default function DetectionPage() {
   const [logs, setLogs] = useState([]);
@@ -122,10 +123,18 @@ export default function DetectionPage() {
 
   useEffect(() => {
     fetchRecentScans();
-    if (!autoRefresh) return;
-    const interval = setInterval(fetchRecentScans, 3500); // Poll every 3.5s for real-time mobile sync
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
+
+    // Instant zero-latency SSE sync whenever any mobile terminal or admin takes an action
+    const unsubscribe = subscribeNotificationEvents((eventType) => {
+      if (eventType === 'ACTION_UPDATE' || eventType === 'NOTIFICATION_NEW' || eventType === 'SCAN_NEW') {
+        fetchRecentScans();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const filteredLogs = logs.filter((l) => {
     if (filter === 'KNOWN') return l.status === 'KNOWN' || l.status === 'APPROVED';
@@ -186,16 +195,10 @@ export default function DetectionPage() {
         </div>
 
         <div className="d-flex align-items-center gap-2">
-          <button
-            type="button"
-            className={`btn btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 ${
-              autoRefresh ? 'btn-outline-success active' : 'btn-outline-secondary'
-            }`}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
-            <i className={`bi ${autoRefresh ? 'bi-arrow-repeat spin' : 'bi-pause-circle'}`}></i>
-            <span>{autoRefresh ? 'Auto Syncing (3s)' : 'Sync Paused'}</span>
-          </button>
+          <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5" style={{ fontSize: '0.8rem' }}>
+            <span className="spinner-grow spinner-grow-sm text-success" role="status" style={{ width: '8px', height: '8px' }}></span>
+            <span>Live Real-Time Stream</span>
+          </span>
 
           <button
             type="button"

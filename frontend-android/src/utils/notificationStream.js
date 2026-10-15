@@ -57,6 +57,13 @@ export const startNotificationStream = () => {
       } catch (err) {}
     });
 
+    eventSource.addEventListener('SCAN_NEW', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        notifyListeners('SCAN_NEW', payload.data || payload);
+      } catch (err) {}
+    });
+
     eventSource.onerror = () => {
       if (eventSource) {
         eventSource.close();

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import API from '../api/axios';
 import getImageUrl from '../utils/imageUrl';
+import { subscribeNotificationEvents } from '../utils/notificationStream';
 
 export default function NotificationsPage({ setActivePage, user }) {
   const isLoggedIn = !!user || !!localStorage.getItem('access_token');
@@ -69,7 +70,18 @@ export default function NotificationsPage({ setActivePage, user }) {
   useEffect(() => {
     fetchNotifications();
     window.addEventListener('refresh-notifications', fetchNotifications);
-    return () => window.removeEventListener('refresh-notifications', fetchNotifications);
+
+    // Instant real-time sync with Mobile App actions and other clients
+    const unsubscribe = subscribeNotificationEvents((eventType) => {
+      if (eventType === 'ACTION_UPDATE' || eventType === 'NOTIFICATION_NEW') {
+        fetchNotifications();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('refresh-notifications', fetchNotifications);
+      unsubscribe();
+    };
   }, []);
 
   const fetchNotifications = async () => {

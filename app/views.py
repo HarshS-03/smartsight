@@ -287,31 +287,41 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
         
         response = super().update(request, *args, **kwargs)
         
-        # Sync notification status so the mobile app (guard) unlocks automatically
-        if request.data.get('status') == 'APPROVED':
-            log = self.get_object()
-            if log.image_path:
-                Notification.objects.filter(
-                    image_url=f"/media/{log.image_path}",
-                    status='PENDING'
-                ).update(
-                    status='APPROVED',
-                    action_source='APP',
-                    processed_at=timezone.now(),
-                    is_read=True
-                )
-        elif request.data.get('status') == 'DENIED':
-            log = self.get_object()
-            if log.image_path:
-                Notification.objects.filter(
-                    image_url=f"/media/{log.image_path}",
-                    status='PENDING'
-                ).update(
-                    status='CANCELLED',
-                    action_source='APP',
-                    processed_at=timezone.now(),
-                    is_read=True
-                )
+        status_val = request.data.get('status')
+        log = self.get_object()
+        
+        # Sync notification status and emit instant SSE so all connected clients sync
+        if status_val == 'APPROVED':
+            new_notif_status = 'APPROVED'
+        elif status_val == 'DENIED':
+            new_notif_status = 'CANCELLED'
+        else:
+            new_notif_status = None
+
+        if new_notif_status and log.image_path:
+            notifs = Notification.objects.filter(
+                image_url=f"/media/{log.image_path}",
+                status='PENDING'
+            )
+            for notif in notifs:
+                notif.status = new_notif_status
+                notif.action_source = 'APP'
+                notif.processed_at = timezone.now()
+                notif.is_read = True
+                notif.save()
+
+                try:
+                    from app.services.event_bus import event_bus
+                    event_bus.publish('ACTION_UPDATE', {
+                        'notification_id': notif.id,
+                        'log_id': log.id,
+                        'status': new_notif_status,
+                        'action_source': 'APP',
+                        'person_name': getattr(notif, 'alert_person_name', '') or log.person_name
+                    })
+                except Exception as bus_err:
+                    print(f"[SSE Error] Failed to publish action update from log update: {bus_err}")
+
         return response
 
     def perform_destroy(self, instance):
@@ -924,6 +934,17 @@ def biometric_verify_frame(request):
                 image_path=rel_img_path
             )
 
+            # Broadcast instant scan event to Desktop
+            try:
+                from app.services.event_bus import event_bus
+                event_bus.publish('SCAN_NEW', {
+                    'log_id': log.id,
+                    'status': 'KNOWN',
+                    'person_name': final_name
+                })
+            except Exception as e:
+                pass
+
             return Response({
                 'status': 'ALLOWED',
                 'decision': 'GRANTED',
@@ -1415,27 +1436,30 @@ class NotificationActionAPIView(APIView):
                 relative_img = notification.image_url.replace('/media/', '') if notification.image_url else None
 
                 try:
-                    # Fix: Find the original UNKNOWN log and update it to APPROVED to preserve original timestamp
+                    # Fix: Find the original UNKNOWN log and update it to APPROVED or DENIED to preserve original timestamp
                     original_log = RecognitionLog.objects.filter(
                         image_path=relative_img,
                         status='UNKNOWN'
                     ).order_by('-timestamp').first()
 
+                    target_log_status = 'APPROVED' if action == 'approve' else 'DENIED'
+
                     if original_log:
-                        original_log.status = 'APPROVED'
-                        original_log.person_name = person_name
-                        original_log.camera_name = camera_name
+                        original_log.status = target_log_status
+                        if action == 'approve':
+                            original_log.person_name = person_name
+                            original_log.camera_name = camera_name
                         original_log.save()
-                        print(f"[Mobile App] Updated log to APPROVED: {person_name}")
+                        print(f"[Mobile App] Updated log to {target_log_status}: {person_name}")
                     else:
                         RecognitionLog.objects.create(
-                            person_name=person_name,
-                            camera_name=camera_name,
-                            confidence=confidence,
-                            status='APPROVED',
+                            person_name=person_name if action == 'approve' else "Unregistered Person",
+                            camera_name=camera_name if action == 'approve' else "Mobile Access Scanner",
+                            confidence=confidence if action == 'approve' else 0.0,
+                            status=target_log_status,
                             image_path=relative_img
                         )
-                        print(f"[Mobile App] Approved and created new log: {person_name}")
+                        print(f"[Mobile App] Created new log as {target_log_status}: {person_name}")
                 except Exception as e:
                     print(f"[Mobile App] Error updating RecognitionLog: {e}")
 
