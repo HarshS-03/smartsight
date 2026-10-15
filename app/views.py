@@ -1437,9 +1437,9 @@ class NotificationActionAPIView(APIView):
 
 
 from django.http import StreamingHttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
+@csrf_exempt
 def notification_stream(request):
     """
     Server-Sent Events (SSE) streaming endpoint.

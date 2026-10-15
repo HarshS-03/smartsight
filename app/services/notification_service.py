@@ -152,43 +152,7 @@ def dispatch_notification(title, message, image_url=None, user=None):
         user=user
     )
 
-    # 2. Dispatch to Telegram Bot (Optional environment variables)
-    telegram_bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-
-    if telegram_bot_token and telegram_chat_id:
-        try:
-            telegram_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendPhoto"
-            caption = f"🚨 *{title}*\n{message}\n\n*Status:* Pending Approval"
-
-            # Inline keyboard buttons for Approve and Cancel
-            reply_markup = {
-                "inline_keyboard": [
-                    [
-                        {"text": "✅ Approve", "callback_data": f"approve_{notification.id}"},
-                        {"text": "❌ Cancel", "callback_data": f"cancel_{notification.id}"}
-                    ]
-                ]
-            }
-
-            payload = {
-                "chat_id": telegram_chat_id,
-                "caption": caption,
-                "parse_mode": "Markdown",
-                "reply_markup": reply_markup
-            }
-
-            if image_url:
-                payload["photo"] = image_url
-                res = requests.post(telegram_url, json=payload, timeout=5)
-                if res.status_code == 200:
-                    res_json = res.json()
-                    notification.telegram_message_id = str(res_json.get("result", {}).get("message_id", ""))
-                    notification.save()
-        except Exception as err:
-            print(f"[Telegram Dispatch Error]: {err}")
-
-    # 3. Dispatch FCM Push Notification
+    # 2. Dispatch FCM Push Notification
     send_fcm_push(notification, image_url)
 
     # 4. Broadcast instant SSE event to connected frontends

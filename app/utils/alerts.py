@@ -367,8 +367,8 @@ def _start_telegram_polling():
     threading.Thread(target=poll_loop, daemon=True).start()
 
 
-# Start polling listener automatically when module is loaded
-_start_telegram_polling()
+# Telegram polling listener disabled as per user request
+# _start_telegram_polling()
 
 
 def send_alerts(*args, **kwargs):
@@ -519,40 +519,8 @@ def send_alerts(*args, **kwargs):
             except Exception as db_err:
                 print(f"[Alert System] Error saving pending Notification to DB: {db_err}")
 
-            if telegram_bot_api and telegram_chat_id:
-                try:
-                    url = f"https://api.telegram.org/bot{telegram_bot_api}/sendPhoto"
-                    files = {'photo': ('alert.jpg', frame_bytes, 'image/jpeg')}
-                    reply_markup = {
-                        "inline_keyboard": [
-                            [
-                                {"text": "OK \u2705", "callback_data": f"ok_{alert_id}"},
-                                {"text": "Cancel \u274c", "callback_data": f"cancel_{alert_id}"}
-                            ]
-                        ]
-                    }
-                    data = {
-                        'chat_id': telegram_chat_id,
-                        'caption': alert_details,
-                        'parse_mode': 'HTML',
-                        'reply_markup': json.dumps(reply_markup)
-                    }
-                    response = requests.post(url, files=files, data=data)
-                    if response.status_code == 200:
-                        resp_json = response.json()
-                        if resp_json.get("ok"):
-                            msg_id = resp_json["result"]["message_id"]
-                            if alert_id in _pending_alerts:
-                                _pending_alerts[alert_id]["message_id"] = msg_id
-                                _pending_alerts[alert_id]["chat_id"] = telegram_chat_id
-                                db_id = _pending_alerts[alert_id].get("db_notification_id")
-                                if db_id:
-                                    Notification.objects.filter(id=db_id).update(telegram_message_id=str(msg_id))
-                        print("[Alert] Telegram OK/Cancel alert sent successfully.")
-                    else:
-                        print(f"[Alert] Telegram API error: {response.text}")
-                except Exception as e:
-                    print(f"[Alert] Telegram send error: {e}")
+            # Telegram dispatch disabled as per user request
+            pass
     else:
         relative_path = None
         clean_frame_bytes = kwargs.get('clean_frame_bytes')
