@@ -296,8 +296,8 @@ export default function AboutPage() {
                 <div className="tech-use">Video Ingestion &amp; Frames</div>
               </a>
 
-              {/* DeepFace AI */}
-              <a href="https://github.com/serengil/deepface" target="_blank" rel="noopener noreferrer" className="tech-card tech-card-deepface text-decoration-none" data-reveal="scale" data-reveal-delay="200">
+              {/* InsightFace AI */}
+              <a href="https://github.com/deepinsight/insightface" target="_blank" rel="noopener noreferrer" className="tech-card tech-card-deepface text-decoration-none" data-reveal="scale" data-reveal-delay="200">
                 <div className="tech-icon">
                   <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     {/* Top-Left Corner */}
@@ -317,8 +317,8 @@ export default function AboutPage() {
                     <path d="M35 60C42 67 58 67 65 60" stroke="var(--text-heading)" strokeWidth="5.5" strokeLinecap="round" />
                   </svg>
                 </div>
-                <div className="tech-name">DeepFace AI</div>
-                <div className="tech-use">Facial Recognition Model</div>
+                <div className="tech-name">InsightFace AI</div>
+                <div className="tech-use">SCRFD &amp; ArcFace Recognition</div>
               </a>
 
               {/* ONNX Runtime */}

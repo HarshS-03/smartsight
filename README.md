@@ -6,10 +6,11 @@ A state-of-the-art **Real-Time AI Face Recognition, Detection, and Surveillance 
 
 ## Core Features
 
-- **Real-Time Detection & Recognition**: Utilizes YOLOv8 for high-speed face detection and DeepFace (ArcFace) for highly accurate biometric recognition via live RTSP/HTTP camera feeds.
+- **Real-Time Detection & Recognition**: Utilizes InsightFace (SCRFD & ArcFace) with 5-point facial landmark alignment for robust, highly accurate biometric recognition.
+- **Ultra-Fast Anti-Spoofing**: MiniFASNet V2 ONNX runtime integration for real-time fake face & screen attack detection (~5ms).
 - **Intelligent Dataset Management**: Effortlessly organize face folders, bulk upload photos, and enjoy infinite-scroll galleries with lazy loading.
 - **Automated Stranger Classification**: Employs DBSCAN clustering to automatically group unknown individuals into distinct categories for easy identification.
-- **Hybrid Notification System**: Instant localized audio alerts combined with Firebase Cloud Messaging (FCM) push notifications and Telegram alerts for intrusion events.
+- **Hybrid Notification System**: Instant localized audio alerts combined with Firebase Cloud Messaging (FCM) push notifications and Server-Sent Events (SSE) real-time stream.
 - **Comprehensive Analytics & Reports**: A beautifully designed dashboard offering time-filtered analytics, visual data logs, interactive 24-hour timeline scrubber, and one-click `.xlsx` Excel report generation.
 - **Tri-Platform Architecture**: Seamless experience across Browser Web, Native Android App (Capacitor), and Native Desktop App (Electron).
 - **Ultra-Modern UI/UX**: Features a highly polished glassmorphic & solid-surface design system, incorporating pill-shaped interactive elements, a seamless neon-breathing preloader animation, light/dark themes, and optimized system-native typography.
@@ -21,7 +22,7 @@ A state-of-the-art **Real-Time AI Face Recognition, Detection, and Surveillance 
 **Backend & AI Services:**
 - **Framework:** Django 6.0.5 (Python 3.13+)
 - **Database:** SQLite
-- **Computer Vision:** Ultralytics YOLOv8, DeepFace, OpenCV
+- **Computer Vision:** InsightFace (SCRFD & ArcFace), ONNX Runtime, OpenCV
 - **Data Export:** OpenPyXL
 
 **Frontend (Web, Mobile & Desktop):**

@@ -812,6 +812,17 @@ def biometric_verify_frame(request):
                 image_path=rel_img_path
             )
 
+            # Dispatch FCM native push notification & SSE alert to Admin
+            try:
+                from app.services.notification_service import dispatch_notification
+                dispatch_notification(
+                    title="Security Alert: Fake Face / Spoof Attempt",
+                    message="A screen spoof or fake face attempt was detected at Mobile Scanner. Access Denied.",
+                    image_url=f"/media/{rel_img_path}"
+                )
+            except Exception as notif_err:
+                print("[Access Control Verify] Spoof notification failed:", notif_err)
+
             return Response({
                 'status': 'SPOOF_DETECTED',
                 'decision': 'DENIED',
@@ -960,7 +971,7 @@ def biometric_verify_frame(request):
                 # Escalate to admin approval instead of auto-denial
                 try:
                     notification = Notification.objects.create(
-                        title="⚠️ Unknown Person Detected — Admin Review Required",
+                        title="Unknown Person Detected — Admin Review Required",
                         message="An unregistered person has been detected at Mobile Scanner.",
                         image_url=f"/media/{rel_img_path}",
                         status='PENDING',
@@ -968,6 +979,25 @@ def biometric_verify_frame(request):
                         alert_camera_name="Mobile Access Scanner",
                         alert_confidence=det_conf,
                     )
+                    # Dispatch FCM Native Push Notification & SSE Broadcast
+                    try:
+                        from app.services.notification_service import send_fcm_push
+                        send_fcm_push(notification, notification.image_url)
+                    except Exception as fcm_err:
+                        print("[Access Control Verify] FCM Push dispatch failed:", fcm_err)
+
+                    try:
+                        from app.services.event_bus import event_bus
+                        event_bus.publish('NOTIFICATION_NEW', {
+                            'id': notification.id,
+                            'title': notification.title,
+                            'message': notification.message,
+                            'status': notification.status,
+                            'image_url': notification.image_url,
+                            'created_at': notification.created_at.isoformat() if notification.created_at else ''
+                        })
+                    except Exception as sse_err:
+                        print("[Access Control Verify] SSE broadcast failed:", sse_err)
                 except Exception as notif_err:
                     print("[Access Control Verify] Admin escalation notification failed:", notif_err)
 

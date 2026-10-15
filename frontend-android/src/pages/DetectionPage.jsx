@@ -515,10 +515,10 @@ export default function DetectionPage() {
                 </div>
               )}
 
-              <div className="flex-grow-1 min-w-0 d-flex flex-column justify-content-center">
-                <div className="d-flex align-items-center justify-content-between gap-2 mb-1 flex-nowrap" style={{ minWidth: 0 }}>
+              <div className="flex-grow-1 min-w-0 d-flex flex-column justify-content-center" style={{ gap: '3px' }}>
+                <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap" style={{ minWidth: 0 }}>
                   <span
-                    className={`badge rounded-pill fw-bold text-nowrap flex-shrink-0 ${
+                    className={`badge rounded-pill fw-bold text-nowrap flex-shrink-0 d-inline-flex align-items-center ${
                       lastVerification.status === 'ALLOWED'
                         ? 'bg-success text-white'
                         : lastVerification.status === 'PENDING_REVIEW'
@@ -528,11 +528,13 @@ export default function DetectionPage() {
                         : 'bg-secondary text-white'
                     }`}
                     style={{ 
-                      fontSize: '0.66rem',
-                      padding: '3px 8px',
+                      fontSize: '0.68rem',
+                      padding: '4px 9px',
                       whiteSpace: 'nowrap',
-                      lineHeight: '1.2',
-                      letterSpacing: '0.3px',
+                      lineHeight: '1.1',
+                      letterSpacing: '0.35px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
                       ...(lastVerification.status === 'PENDING_REVIEW' ? { background: '#d97706' } : {}),
                       ...(((lastVerification.department === 'THE SYSTEM GOD') || ((lastVerification.person_name || '').toLowerCase().includes('harsh') && ((lastVerification.person_name || '').toLowerCase().includes('shrimali') || (lastVerification.class_name || '').toLowerCase().includes('aiml-3')))) ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)' } : {})
                     }}
@@ -548,18 +550,27 @@ export default function DetectionPage() {
                       : 'NOTICE'}
                   </span>
                   {lastVerification.confidence > 0 && (
-                    <span className="small fw-semibold text-nowrap flex-shrink-0 ms-auto" style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', whiteSpace: 'nowrap' }}>
+                    <span 
+                      className="small fw-semibold text-nowrap flex-shrink-0 d-inline-flex align-items-center ms-auto" 
+                      style={{ 
+                        fontSize: '0.74rem', 
+                        color: 'var(--text-secondary, #94a3b8)', 
+                        whiteSpace: 'nowrap',
+                        lineHeight: '1.1'
+                      }}
+                    >
                       {lastVerification.confidence}% Match
                     </span>
                   )}
                 </div>
 
-                <h5 className="fw-bold mb-0.5" style={{ 
+                <h5 className="fw-bold mb-0" style={{ 
                   color: 'var(--text-heading, #ffffff)', 
-                  fontSize: '1rem',
+                  fontSize: '0.98rem',
                   lineHeight: '1.25',
                   letterSpacing: '0.01em',
                   wordBreak: 'break-word',
+                  marginTop: '1px'
                 }}>
                   {lastVerification.person_name || (lastVerification.status === 'DENIED' || lastVerification.status === 'PENDING_REVIEW' ? 'Unregistered Person / Stranger' : 'No Face Found')}
                 </h5>
@@ -570,7 +581,7 @@ export default function DetectionPage() {
                     ? '#38bdf8'
                     : 'var(--text-secondary, #94a3b8)', 
                   fontSize: '0.76rem',
-                  lineHeight: '1.35',
+                  lineHeight: '1.3',
                   fontWeight: 500,
                   wordBreak: 'break-word',
                 }}>
@@ -767,10 +778,12 @@ export default function DetectionPage() {
                     className={`badge rounded-pill ${scan.status === 'ALLOWED' ? 'bg-success' : scan.status === 'PENDING_REVIEW' ? '' : 'bg-danger'}`} 
                     style={{ 
                       fontSize: '0.65rem',
+                      letterSpacing: '0.3px',
+                      padding: '4px 8px',
                       ...(scan.status === 'PENDING_REVIEW' ? { background: '#d97706', color: '#fff' } : {})
                     }}
                   >
-                    {scan.status === 'PENDING_REVIEW' ? 'REVIEW' : scan.status}
+                    {scan.status === 'PENDING_REVIEW' ? 'REVIEW' : (scan.status || '').replace(/_/g, ' ')}
                   </span>
                 </div>
               ))}

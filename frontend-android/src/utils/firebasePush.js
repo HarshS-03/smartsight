@@ -6,14 +6,22 @@ import { updateAppBadge } from './badgeHelper';
 import API from '../api/axios';
 
 let _fcmInitialized = false;
+let _lastRegisteredToken = null;
 
-export const initFirebasePush = async () => {
-  if (_fcmInitialized) {
-    console.log('[FCM Push] Already initialized, skipping.');
-    return;
-  }
+export const initFirebasePush = async (forceReregister = false) => {
   if (Capacitor.getPlatform() === 'web') {
     console.log('[FCM Push] Push notifications not supported on web platform.');
+    return;
+  }
+
+  // If already initialized and we have the cached token, ensure backend knows current logged-in user
+  if (_fcmInitialized && !forceReregister) {
+    if (_lastRegisteredToken) {
+      API.post('/notifications/register_push_token/', {
+        device_token: _lastRegisteredToken,
+        platform: 'android'
+      }).catch(() => {});
+    }
     return;
   }
   _fcmInitialized = true;
@@ -30,6 +38,7 @@ export const initFirebasePush = async () => {
     // Attach listeners BEFORE calling register() so registration events are never missed
     PushNotifications.addListener('registration', async (tokenData) => {
       console.log('[FCM Push] Device Token:', tokenData.value);
+      _lastRegisteredToken = tokenData.value;
       try {
         await API.post('/notifications/register_push_token/', {
           device_token: tokenData.value,
