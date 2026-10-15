@@ -191,4 +191,18 @@ def dispatch_notification(title, message, image_url=None, user=None):
     # 3. Dispatch FCM Push Notification
     send_fcm_push(notification, image_url)
 
+    # 4. Broadcast instant SSE event to connected frontends
+    try:
+        from app.services.event_bus import event_bus
+        event_bus.publish('NOTIFICATION_NEW', {
+            'id': notification.id,
+            'title': notification.title,
+            'message': notification.message,
+            'status': notification.status,
+            'image_url': notification.image_url,
+            'created_at': notification.created_at.isoformat() if notification.created_at else ''
+        })
+    except Exception as bus_err:
+        print(f"[SSE Error] Failed to publish new notification: {bus_err}")
+
     return notification

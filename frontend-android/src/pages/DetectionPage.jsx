@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import API from '../api/axios';
+import { subscribeNotificationEvents } from '../utils/notificationStream';
 
 /**
  * Resolve a relative media path (e.g. '/media/unknown/img.jpg') to a full
@@ -84,53 +85,49 @@ export default function DetectionPage() {
     };
   }, []);
 
-  // Poll for admin approval status
+  // Real-time Event-Driven Action Updates via SSE (Zero Polling Overhead)
   useEffect(() => {
-    const pendingScans = recentScans.filter(s => s.status === 'PENDING_REVIEW' && s.notification_id);
-    if (pendingScans.length === 0) return;
+    const unsubscribe = subscribeNotificationEvents((eventType, data) => {
+      if (eventType === 'ACTION_UPDATE' && data && data.notification_id) {
+        const notifId = data.notification_id;
+        const newStatus = data.status; // 'APPROVED' or 'CANCELLED'
 
-    const intervalId = setInterval(async () => {
-      let updated = false;
-      const nextScans = await Promise.all(recentScans.map(async (scan) => {
-        if (scan.status === 'PENDING_REVIEW' && scan.notification_id) {
-          try {
-            const res = await API.get(`/notifications/${scan.notification_id}/action/`);
-            if (res.data && res.data.status) {
-              if (res.data.status === 'APPROVED') {
-                updated = true;
+        setRecentScans((prevScans) => {
+          let matched = false;
+          const updated = prevScans.map((scan) => {
+            if (scan.notification_id === notifId) {
+              matched = true;
+              if (newStatus === 'APPROVED') {
                 if (window.showToast) {
-                  window.showToast(`Admin Approved: ${scan.person_name}`, 'success', 'APPROVED');
+                  window.showToast(`Admin Approved: ${scan.person_name || 'Visitor'}`, 'success', 'APPROVED');
                 }
                 return { ...scan, status: 'ALLOWED', role: 'Verified safe visitor by Admin' };
-              } else if (res.data.status === 'CANCELLED') {
-                updated = true;
+              } else if (newStatus === 'CANCELLED') {
                 if (window.showToast) {
-                  window.showToast(`Admin Rejected: ${scan.person_name}`, 'error', 'REJECTED');
+                  window.showToast(`Admin Rejected: ${scan.person_name || 'Visitor'}`, 'error', 'REJECTED');
                 }
                 return { ...scan, status: 'DENIED', role: 'Clearance denied' };
               }
             }
-          } catch (e) {
-            console.error('Polling error:', e);
-          }
-        }
-        return scan;
-      }));
+            return scan;
+          });
 
-      if (updated) {
-        setRecentScans(nextScans);
-        setLastVerification(prev => {
-           if (prev && prev.status === 'PENDING_REVIEW' && prev.notification_id) {
-              const updatedScan = nextScans.find(s => s.notification_id === prev.notification_id);
-              if (updatedScan && updatedScan.status !== 'PENDING_REVIEW') return updatedScan;
-           }
-           return prev;
+          if (matched) {
+            setLastVerification((prev) => {
+              if (prev && prev.notification_id === notifId) {
+                const found = updated.find((s) => s.notification_id === notifId);
+                return found || prev;
+              }
+              return prev;
+            });
+          }
+          return updated;
         });
       }
-    }, 3000);
+    });
 
-    return () => clearInterval(intervalId);
-  }, [recentScans]);
+    return () => unsubscribe();
+  }, []);
 
   const [securityNote, setSecurityNote] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);

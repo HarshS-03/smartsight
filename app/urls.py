@@ -121,6 +121,7 @@ urlpatterns = [
 
     # Notification & Push Notification API Endpoints
     path('notifications/', views.NotificationListAPIView.as_view(), name='notification_list'),
+    path('notifications/stream/', views.notification_stream, name='notification_stream'),
     path('notifications/<int:pk>/action/', views.NotificationActionAPIView.as_view(), name='notification_action'),
     path('notifications/register_push_token/', views.RegisterPushTokenAPIView.as_view(), name='register_push_token'),
 

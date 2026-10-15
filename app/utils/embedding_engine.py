@@ -89,59 +89,49 @@ def _download_npz_from_supabase(filepath):
     return False
 
 # ---------------------------------------------------------------------------
-# Lazy model loading
+# Lazy model loading (InsightFace SCRFD + ArcFace)
 # ---------------------------------------------------------------------------
 _models_lock = threading.Lock()
-_arcface_infer_lock = threading.Lock()
-_detector_infer_lock = threading.Lock()
-_face_detector_models = {}
-_arcface_model = None
+_insightface_app = None
 
 
-def _get_face_detector(model_name=None):
-    """Lazy-load YOLO Face detector."""
-    global _face_detector_models
-    
-    # We only have yolo26n-face.pt left
-    model_path = 'app/models/yolo26n-face.pt'
-            
-    cache_key = model_path
-    
-    if cache_key not in _face_detector_models:
+def get_face_analysis_app():
+    """
+    Lazy-load InsightFace FaceAnalysis engine with SCRFD detector + ArcFace recognizer.
+    Uses 'buffalo_sc' for fast, lightweight, and landmark-aligned face processing.
+    """
+    global _insightface_app
+    if _insightface_app is None:
         with _models_lock:
-            if cache_key not in _face_detector_models:
+            if _insightface_app is None:
                 try:
-                    from ultralytics.utils import LOGGER as ULTRALYTICS_LOGGER
-                    ULTRALYTICS_LOGGER.setLevel(logging.ERROR)
-                except Exception:
-                    pass
-                from ultralytics import YOLO
-                try:
-                    yolo = YOLO(model_path, task='detect', verbose=False)
-                    yolo.model.fuse = lambda *args, **kwargs: yolo.model
-                    _face_detector_models[cache_key] = yolo
-                except Exception as load_err:
-                    logger.warning(f"[EmbeddingEngine] Failed to load detector {model_path}: {load_err}")
-                    raise load_err
-    return _face_detector_models[cache_key]
+                    from insightface.app import FaceAnalysis
+                    det_size = getattr(settings, 'SCRFD_DETECTION_SIZE', (640, 640))
+                    app = FaceAnalysis(
+                        name='buffalo_sc',
+                        allowed_modules=['detection', 'recognition'],
+                        providers=['CPUExecutionProvider']
+                    )
+                    app.prepare(ctx_id=0, det_size=det_size)
+                    _insightface_app = app
+                    logger.info("[EmbeddingEngine] InsightFace (SCRFD + ArcFace) engine initialized successfully.")
+                except Exception as e:
+                    logger.error(f"[EmbeddingEngine] Failed to load InsightFace FaceAnalysis: {e}")
+                    raise e
+    return _insightface_app
 
 
 def _get_arcface():
-    """Lazy-load InsightFace ArcFace recognition model via ONNX Runtime."""
-    global _arcface_model
-    if _arcface_model is None:
-        with _models_lock:
-            if _arcface_model is None:
-                try:
-                    from insightface.app import FaceAnalysis
-                    app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider'])
-                    app.prepare(ctx_id=0, det_size=(320, 320))
-                    _arcface_model = app.models.get('recognition')
-                    logger.info("[EmbeddingEngine] InsightFace ArcFace recognition engine loaded.")
-                except Exception as e:
-                    logger.error(f"[EmbeddingEngine] Failed to load InsightFace: {e}")
-                    raise e
-    return _arcface_model
+    """Compatibility getter for direct ArcFace model reference."""
+    app = get_face_analysis_app()
+    return app.models.get('recognition')
+
+
+def _get_face_detector(model_name=None):
+    """Compatibility getter for detection model reference."""
+    app = get_face_analysis_app()
+    return app.models.get('detection')
+
 
 
 # ============================================================================
@@ -433,11 +423,10 @@ def embed_face_crop(crop_bgr):
 
 def compute_embedding(image_or_path, model_name=None):
     """
-    Compute a 512-d ArcFace embedding for an image using YOLOv8-Face detection.
+    Compute a 512-d ArcFace embedding for an image using SCRFD detection and 5-point landmark alignment.
     Returns: (embedding_512d_np, detection_confidence, aligned_face_bgr) or None
     """
-    _get_face_detector(model_name)
-    _get_arcface()
+    app = get_face_analysis_app()
 
     try:
         if isinstance(image_or_path, str):
@@ -447,35 +436,32 @@ def compute_embedding(image_or_path, model_name=None):
         else:
             img = image_or_path
 
-        h, w = img.shape[:2]
-        with _detector_infer_lock:
-            detector = _get_face_detector(model_name)
-            results = detector(img, conf=0.30, verbose=False)
-
-        if not results or len(results[0].boxes) == 0:
+        faces = app.get(img)
+        if not faces:
+            # Fallback to direct crop embedding if already tightly cropped
             emb = embed_face_crop(img)
             if emb is not None:
                 return (emb, 0.5, img)
             return None
 
-        best_box = None
-        best_conf = 0.0
-        for b in results[0].boxes:
-            conf = float(b.conf[0])
-            if conf > best_conf:
-                best_conf = conf
-                best_box = b
+        # Pick best face by detection score
+        best_face = max(faces, key=lambda f: float(f.det_score))
+        det_conf = float(best_face.det_score)
 
-        bx1, by1, bx2, by2 = [int(v) for v in best_box.xyxy[0]]
-        x1 = max(0, bx1)
-        y1 = max(0, by1)
-        x2 = min(w, bx2)
-        y2 = min(h, by2)
+        embedding = best_face.embedding
+        if embedding is not None:
+            norm = np.linalg.norm(embedding)
+            if norm > 0:
+                embedding = (embedding / norm).astype(np.float32)
+
+        # Extract aligned or cropped face region for preview
+        bx1, by1, bx2, by2 = best_face.bbox.astype(int)
+        h, w = img.shape[:2]
+        x1, y1 = max(0, bx1), max(0, by1)
+        x2, y2 = min(w, bx2), min(h, by2)
         face_crop = img[y1:y2, x1:x2].copy()
 
-        embedding = embed_face_crop(face_crop)
-        if embedding is not None:
-            return (embedding, best_conf, face_crop)
+        return (embedding, det_conf, face_crop)
 
     except Exception as e:
         logger.error(f"[EmbeddingEngine] compute_embedding error: {e}")
@@ -484,183 +470,103 @@ def compute_embedding(image_or_path, model_name=None):
 
 
 # ---------------------------------------------------------------------------
-# Spatial Face Tracker & Recognition Cache (prevents frame freezing)
+# Face Detection & Recognition Pipeline (SCRFD + Landmark Alignment)
 # ---------------------------------------------------------------------------
-_face_tracks = {}
-_tracks_lock = threading.Lock()
-_track_counter = 0
 
-
-def _box_iou(b1, b2):
-    """Compute Intersection over Union between two (x1, y1, x2, y2) bounding boxes."""
-    xA = max(b1[0], b2[0])
-    yA = max(b1[1], b2[1])
-    xB = min(b1[2], b2[2])
-    yB = min(b1[3], b2[3])
-    inter = max(0, xB - xA) * max(0, yB - yA)
-    area1 = max(1, (b1[2] - b1[0]) * (b1[3] - b1[1]))
-    area2 = max(1, (b2[2] - b2[0]) * (b2[3] - b2[1]))
-    return inter / float(area1 + area2 - inter)
-
-
-def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None):
+def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None, check_spoof=False):
     """
-    High-performance YOLOv8-Face + ArcFace pipeline on a video frame.
-    Incorporates spatial face tracking to eliminate redundant neural re-embeddings,
-    keeping stream FPS fluid and preventing frame freezing.
+    High-performance SCRFD + 5-Point Landmark Aligned ArcFace pipeline.
+    Eliminates video tracking delays for instant, precise image recognition.
     """
-    global _track_counter
-    import time
+    if frame is None or frame.size == 0:
+        return []
 
     if threshold is None:
         threshold = getattr(settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45)
 
-    detector = _get_face_detector(model_name)
-    _get_arcface()
+    det_conf_thresh = getattr(settings, 'ARCFACE_DETECTION_CONFIDENCE', 0.40)
+    app = get_face_analysis_app()
     gallery = get_gallery()
-
-    now = time.time()
     results_list = []
 
     try:
-        fh, fw = frame.shape[:2]
-        if fw > 640:
-            scale_w = 640.0 / fw
-            target_h = max(320, int(fh * scale_w))
-            infer_frame = cv.resize(frame, (640, target_h), interpolation=cv.INTER_AREA)
-            scale_x = fw / 640.0
-            scale_y = fh / float(target_h)
-        else:
-            infer_frame = frame
-            scale_x = 1.0
-            scale_y = 1.0
-
-        det_conf_thresh = getattr(settings, 'ARCFACE_DETECTION_CONFIDENCE', 0.45)
-        with _detector_infer_lock:
-            results = detector(infer_frame, conf=det_conf_thresh, verbose=False, imgsz=640)
-        if not results or len(results[0].boxes) == 0:
-            with _tracks_lock:
-                _face_tracks.clear()
+        # Run SCRFD detector + ArcFace with 5-point facial landmark alignment
+        faces = app.get(frame)
+        if not faces:
             return results_list
 
-        boxes = results[0].boxes[:max_faces]
+        # Sort by confidence / size and limit to max_faces
+        valid_faces = [f for f in faces if float(f.det_score) >= det_conf_thresh]
+        valid_faces.sort(key=lambda f: float(f.det_score), reverse=True)
+        valid_faces = valid_faces[:max_faces]
 
-        with _tracks_lock:
-            # Clean up old tracks (> 0.8s unseen)
-            to_del = [tid for tid, t in _face_tracks.items() if now - t['last_seen'] > 0.8]
-            for tid in to_del:
-                _face_tracks.pop(tid, None)
+        for face in valid_faces:
+            bx1, by1, bx2, by2 = face.bbox.astype(int)
+            det_conf = float(face.det_score)
+            kps = face.kps.tolist() if face.kps is not None else []
+            current_bbox = (int(bx1), int(by1), int(bx2), int(by2))
 
-            for box in boxes:
-                cls_id = int(box.cls[0])
-                if cls_id != 0:
+            # Anti-spoof check if requested
+            is_real = True
+            spoof_score = 1.0
+            if check_spoof:
+                from app.utils.antispoof import check_liveness
+                is_real, spoof_score, _ = check_liveness(frame, bbox=current_bbox)
+                if not is_real:
+                    results_list.append({
+                        'bbox': current_bbox,
+                        'kps': kps,
+                        'person_name': 'Spoof Attempt',
+                        'display_name': 'Spoof Alert',
+                        'class_name': '',
+                        'person_id': None,
+                        'detection_confidence': det_conf,
+                        'recognition_similarity': 0.0,
+                        'is_known': False,
+                        'is_real': False,
+                        'spoof_score': spoof_score,
+                        'embedding': None,
+                    })
                     continue
-                det_conf = float(box.conf[0])
-                if det_conf < det_conf_thresh:
-                    continue
-                bx1, by1, bx2, by2 = [float(v) for v in box.xyxy[0]]
-                x1 = max(0, int(bx1 * scale_x))
-                y1 = max(0, int(by1 * scale_y))
-                x2 = min(fw, int(bx2 * scale_x))
-                y2 = min(fh, int(by2 * scale_y))
 
-                # Ignore tiny spurious noise regions (< 36x36 px)
-                if (x2 - x1) < 36 or (y2 - y1) < 36:
-                    continue
+            # Normalized 512-D embedding from InsightFace
+            embedding = face.embedding
+            if embedding is not None:
+                norm = np.linalg.norm(embedding)
+                if norm > 0:
+                    embedding = (embedding / norm).astype(np.float32)
 
-                current_bbox = (x1, y1, x2, y2)
+            person_name, person_id, similarity = None, None, 0.0
+            is_known = False
+            display_name = 'Unknown'
+            class_name = ''
 
-                # Match against active tracks
-                matched_track_id = None
-                best_iou = 0.0
-                for tid, track in _face_tracks.items():
-                    iou = _box_iou(current_bbox, track['bbox'])
-                    if iou > best_iou and iou >= 0.30:
-                        best_iou = iou
-                        matched_track_id = tid
-
-                # If face is already tracked and re-embedded recently (< 12 frames), reuse identity
-                if matched_track_id is not None:
-                    track = _face_tracks[matched_track_id]
-                    track['bbox'] = current_bbox
-                    track['last_seen'] = now
-                    track['frames'] += 1
-
-                    if track['frames'] < 12:
-                        # Ensure tracked face has class/dept resolved
-                        if track['is_known'] and ('[' not in str(track.get('display_name', ''))):
-                            p_info = gallery.get_person_info(track.get('person_id'), track.get('person_name'))
-                            cls = p_info.get('class_name') or p_info.get('department') or ''
-                            if cls:
-                                track['class_name'] = cls
-                                track['display_name'] = f"{track['person_name']} [{cls}]"
-
-                        # Fast path: instant identity reuse, 0ms neural latency
-                        results_list.append({
-                            'bbox': current_bbox,
-                            'person_name': track['person_name'],
-                            'display_name': track.get('display_name') or (track['person_name'] if track['is_known'] else 'Unknown'),
-                            'class_name': track.get('class_name', ''),
-                            'person_id': track['person_id'],
-                            'detection_confidence': det_conf,
-                            'recognition_similarity': track['recognition_similarity'],
-                            'is_known': track['is_known'],
-                            'embedding': track.get('embedding'),
-                        })
-                        continue
+            if embedding is not None:
+                person_name, person_id, similarity = gallery.match(embedding, threshold)
+                is_known = person_name is not None
+                if is_known:
+                    p_info = gallery.get_person_info(person_id, person_name)
+                    cls = p_info.get('class_name') or p_info.get('department') or ''
+                    class_name = cls
+                    if cls:
+                        display_name = f"{person_name} [{cls}]"
                     else:
-                        track['frames'] = 0  # Trigger periodic refresh
+                        display_name = person_name
 
-                # Compute ArcFace embedding for new or refreshed face
-                crop = frame[y1:y2, x1:x2]
-                embedding = embed_face_crop(crop)
-
-                person_name, person_id, similarity = None, None, 0.0
-                is_known = False
-                display_name = 'Unknown'
-                class_name = ''
-                if embedding is not None:
-                    person_name, person_id, similarity = gallery.match(embedding, threshold)
-                    is_known = person_name is not None
-                    if is_known:
-                        p_info = gallery.get_person_info(person_id, person_name)
-                        cls = p_info.get('class_name') or p_info.get('department') or ''
-                        class_name = cls
-                        if cls:
-                            display_name = f"{person_name} [{cls}]"
-                        else:
-                            display_name = person_name
-
-                # Register or update track
-                if matched_track_id is None:
-                    _track_counter += 1
-                    matched_track_id = _track_counter
-
-                _face_tracks[matched_track_id] = {
-                    'bbox': current_bbox,
-                    'person_name': person_name,
-                    'display_name': display_name,
-                    'class_name': class_name,
-                    'person_id': person_id,
-                    'detection_confidence': det_conf,
-                    'recognition_similarity': similarity,
-                    'is_known': is_known,
-                    'embedding': embedding,
-                    'last_seen': now,
-                    'frames': 0,
-                }
-
-                results_list.append({
-                    'bbox': current_bbox,
-                    'person_name': person_name,
-                    'display_name': display_name,
-                    'class_name': class_name,
-                    'person_id': person_id,
-                    'detection_confidence': det_conf,
-                    'recognition_similarity': similarity,
-                    'is_known': is_known,
-                    'embedding': embedding,
-                })
+            results_list.append({
+                'bbox': current_bbox,
+                'kps': kps,
+                'person_name': person_name,
+                'display_name': display_name,
+                'class_name': class_name,
+                'person_id': person_id,
+                'detection_confidence': det_conf,
+                'recognition_similarity': similarity,
+                'is_known': is_known,
+                'is_real': is_real,
+                'spoof_score': spoof_score,
+                'embedding': embedding,
+            })
 
     except Exception as e:
         logger.error(f"[EmbeddingEngine] detect_and_recognize error: {e}")

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../api/axios';
 import ServerConfigModal from './ServerConfigModal';
+import { subscribeNotificationEvents } from '../utils/notificationStream';
 
 export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const [showServerModal, setShowServerModal] = useState(false);
@@ -102,12 +103,20 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
         // Silent catch
       }
     };
+
     fetchUnread();
     window.addEventListener('refresh-notifications', fetchUnread);
-    const interval = setInterval(fetchUnread, 15000);
+
+    // Event-driven real-time updates via SSE (0 polling)
+    const unsubscribe = subscribeNotificationEvents((eventType) => {
+      if (eventType === 'NOTIFICATION_NEW' || eventType === 'ACTION_UPDATE') {
+        fetchUnread();
+      }
+    });
+
     return () => {
       window.removeEventListener('refresh-notifications', fetchUnread);
-      clearInterval(interval);
+      unsubscribe();
     };
   }, []);
 

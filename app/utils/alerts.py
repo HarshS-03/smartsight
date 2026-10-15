@@ -102,8 +102,19 @@ def handle_admin_response(action, alert_id, cb_id, chat_id, message_id):
                 if relative_image_path:
                     notif.image_url = f"/media/{relative_image_path}"
                 notif.save()
+                # Broadcast instant SSE event to connected frontends
+                try:
+                    from app.services.event_bus import event_bus
+                    event_bus.publish('ACTION_UPDATE', {
+                        'notification_id': notif.id,
+                        'status': 'APPROVED',
+                        'action_source': 'TELEGRAM',
+                        'person_name': person_name
+                    })
+                except Exception as bus_err:
+                    print(f"[SSE Error] Failed to publish Telegram approval: {bus_err}")
             else:
-                Notification.objects.create(
+                new_notif = Notification.objects.create(
                     title=f"Intruder Approved ({person_name})",
                     message=f"Approved on Telegram for {camera_name} (Confidence: {confidence:.2f})",
                     image_url=f"/media/{relative_image_path}" if relative_image_path else None,
@@ -112,6 +123,16 @@ def handle_admin_response(action, alert_id, cb_id, chat_id, message_id):
                     processed_at=timezone.now(),
                     telegram_message_id=str(message_id) if message_id else None
                 )
+                try:
+                    from app.services.event_bus import event_bus
+                    event_bus.publish('ACTION_UPDATE', {
+                        'notification_id': new_notif.id,
+                        'status': 'APPROVED',
+                        'action_source': 'TELEGRAM',
+                        'person_name': person_name
+                    })
+                except Exception as bus_err:
+                    print(f"[SSE Error] Failed to publish Telegram approval: {bus_err}")
         except Exception as e:
             print(f"[Telegram Polling] Error saving Notification approval: {e}")
             
@@ -150,8 +171,18 @@ def handle_admin_response(action, alert_id, cb_id, chat_id, message_id):
                 notif.action_source = 'TELEGRAM'
                 notif.processed_at = timezone.now()
                 notif.save()
+                try:
+                    from app.services.event_bus import event_bus
+                    event_bus.publish('ACTION_UPDATE', {
+                        'notification_id': notif.id,
+                        'status': 'CANCELLED',
+                        'action_source': 'TELEGRAM',
+                        'person_name': person_name
+                    })
+                except Exception as bus_err:
+                    print(f"[SSE Error] Failed to publish Telegram cancellation: {bus_err}")
             else:
-                Notification.objects.create(
+                new_notif = Notification.objects.create(
                     title=f"Intruder Alert Cancelled ({person_name})",
                     message=f"Alert for {person_name} was rejected/cancelled on Telegram.",
                     status='CANCELLED',
@@ -159,6 +190,16 @@ def handle_admin_response(action, alert_id, cb_id, chat_id, message_id):
                     processed_at=timezone.now(),
                     telegram_message_id=str(message_id) if message_id else None
                 )
+                try:
+                    from app.services.event_bus import event_bus
+                    event_bus.publish('ACTION_UPDATE', {
+                        'notification_id': new_notif.id,
+                        'status': 'CANCELLED',
+                        'action_source': 'TELEGRAM',
+                        'person_name': person_name
+                    })
+                except Exception as bus_err:
+                    print(f"[SSE Error] Failed to publish Telegram cancellation: {bus_err}")
         except Exception as e:
             print(f"[Telegram Polling] Error saving Notification cancellation: {e}")
 

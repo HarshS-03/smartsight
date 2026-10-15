@@ -617,10 +617,10 @@ def face_verify_frame(request):
         use_arcface = getattr(settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
 
         if use_arcface:
-            # ── ArcFace Pipeline ──
+            # ── ArcFace Pipeline with SCRFD + Anti-Spoofing ──
             from app.utils.embedding_engine import detect_and_recognize
             login_threshold = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
-            detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1)
+            detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1, check_spoof=True)
 
             if not detections:
                 return Response({
@@ -630,6 +630,14 @@ def face_verify_frame(request):
                 })
 
             best = detections[0]
+            if not best.get('is_real', True):
+                return Response({
+                    'status': 'spoof_detected',
+                    'message': 'Security Alert: Live human face required. Spoofing or screen photo detected.',
+                    'faces': 1,
+                    'spoof_score': best.get('spoof_score', 0.0)
+                }, status=status.HTTP_403_FORBIDDEN)
+
             recognized_name = best['person_name']
             best_conf = best['recognition_similarity']
             det_conf = best['detection_confidence']
@@ -1406,6 +1414,19 @@ class NotificationActionAPIView(APIView):
             notification.processed_at = now
             notification.is_read = True
             notification.save()
+
+            # Broadcast instant SSE event to all connected frontends
+            try:
+                from app.services.event_bus import event_bus
+                event_bus.publish('ACTION_UPDATE', {
+                    'notification_id': notification.id,
+                    'status': new_status,
+                    'action_source': source,
+                    'person_name': getattr(notification, 'alert_person_name', '')
+                })
+            except Exception as bus_err:
+                print(f"[SSE Error] Failed to publish action update: {bus_err}")
+
             return Response({
                 'status': 'success',
                 'notification_status': new_status,
@@ -1413,6 +1434,45 @@ class NotificationActionAPIView(APIView):
             })
 
         return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+from django.http import StreamingHttpResponse
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def notification_stream(request):
+    """
+    Server-Sent Events (SSE) streaming endpoint.
+    Keeps a single open HTTP connection to push real-time alerts and action updates
+    directly to web/mobile clients with 0ms latency and 0 polling requests.
+    """
+    from app.services.event_bus import event_bus
+    import queue
+    import time
+
+    def event_stream():
+        client_queue = event_bus.subscribe()
+        # Initial greeting event
+        yield "event: CONNECTED\ndata: {\"status\": \"connected\"}\n\n"
+
+        try:
+            while True:
+                try:
+                    # Non-blocking wait with 15s keep-alive ping
+                    message = client_queue.get(timeout=15.0)
+                    yield message
+                except queue.Empty:
+                    # Heartbeat comment to prevent proxy or mobile network disconnects
+                    yield ": ping\n\n"
+        except (GeneratorExit, Exception):
+            pass
+        finally:
+            event_bus.unsubscribe(client_queue)
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache, no-transform'
+    response['X-Accel-Buffering'] = 'no'
+    return response
 
 
 class RegisterPushTokenAPIView(APIView):
