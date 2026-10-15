@@ -8,7 +8,8 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const [showServerModal, setShowServerModal] = useState(false);
   const hasToken = !!localStorage.getItem('access_token');
   const isAuthenticated = hasToken || !!user;
-  const isStaff = isAuthenticated && (user ? (user.is_staff ?? true) : true);
+  // Non-staff / normal users should have isStaff = false
+  const isStaff = isAuthenticated && Boolean(user?.is_staff);
   const displayName = user?.username ? user.username : (user?.first_name ? user.first_name : 'User');
 
   const handleLogout = (e) => {
@@ -835,7 +836,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
                 {[
                   { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
                   { id: 'detection', label: 'Scan & Detect', icon: 'bi-qr-code-scan' },
-                  { id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' },
+                  ...(isStaff ? [{ id: 'reports', label: 'Reports & Logs', icon: 'bi-bar-chart-fill' }] : []),
                   ...(isStaff ? [{ id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }] : []),
                   ...(isStaff ? [{ id: 'admin', label: 'Admin Panel', icon: 'bi-speedometer2' }] : []),
                   { id: 'about', label: 'About Us', icon: 'bi-info-circle-fill' }

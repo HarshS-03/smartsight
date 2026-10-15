@@ -310,15 +310,15 @@ export default function App() {
             />
             <Route
               path="/reports"
-              element={user ? <ReportsPage /> : <Navigate to="/login" replace />}
+              element={user ? (user.is_staff ? <ReportsPage /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
             />
             <Route
               path="/notifications"
-              element={user ? <NotificationsPage setActivePage={setActivePage} user={user} /> : <Navigate to="/login" replace />}
+              element={user ? (user.is_staff ? <NotificationsPage setActivePage={setActivePage} user={user} /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
             />
             <Route
               path="/admin"
-              element={user ? <AdminPanelPage /> : <Navigate to="/login" replace />}
+              element={user ? (user.is_staff ? <AdminPanelPage /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

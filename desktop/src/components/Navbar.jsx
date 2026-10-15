@@ -7,7 +7,7 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
   const [showServerModal, setShowServerModal] = useState(false);
   const hasToken = !!localStorage.getItem('access_token');
   const isAuthenticated = hasToken || !!user;
-  const isStaff = isAuthenticated && (user ? (user.is_staff ?? true) : true);
+  const isStaff = isAuthenticated && Boolean(user?.is_staff);
   const displayName = user?.username ? user.username : (user?.first_name ? user.first_name : 'User');
 
   const handleLogout = (e) => {
@@ -762,10 +762,12 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
             />
 
             {[
+              { id: 'home', label: 'Home' },
               { id: 'detection', label: 'Scan Results' },
-              { id: 'dataset', label: 'Dataset' },
-              { id: 'reports', label: 'Reports' },
-              { id: 'notifications', label: 'Alerts' },
+              ...(isStaff ? [{ id: 'dataset', label: 'Dataset' }] : []),
+              ...(isStaff ? [{ id: 'reports', label: 'Reports' }] : []),
+              ...(isStaff ? [{ id: 'notifications', label: 'Alerts' }] : []),
+              ...(isStaff ? [{ id: 'admin', label: 'Admin' }] : []),
               { id: 'about', label: 'About' }
             ].map((item) => {
               const isActive = (hoveredPage ? hoveredPage === item.id : activePage === item.id);
@@ -924,10 +926,11 @@ export default function Navbar({ activePage, setActivePage, user, setUser }) {
               {/* Minimal Mobile Navigation Links */}
               <ul className="navbar-nav my-0.5 p-0">
                 {[
+                  { id: 'home', label: 'Home', icon: 'bi-house-door-fill' },
                   { id: 'detection', label: 'Scan Results', icon: 'bi-broadcast' },
-                  { id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' },
-                  { id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' },
-                  { id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' },
+                  ...(isStaff ? [{ id: 'dataset', label: 'Dataset', icon: 'bi-database-fill-gear' }] : []),
+                  ...(isStaff ? [{ id: 'reports', label: 'Reports', icon: 'bi-bar-chart-fill' }] : []),
+                  ...(isStaff ? [{ id: 'notifications', label: 'Alerts', icon: 'bi-bell-fill' }] : []),
                   ...(isStaff ? [{ id: 'admin', label: 'Admin', icon: 'bi-speedometer2' }] : []),
                   { id: 'about', label: 'About', icon: 'bi-info-circle-fill' }
                 ].map(item => (
