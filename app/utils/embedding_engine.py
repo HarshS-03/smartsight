@@ -15,78 +15,17 @@ os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')
 os.environ.setdefault('AUTOGRAPH_VERBOSITY', '0')
 
 # ---------------------------------------------------------------------------
-# Supabase Cloud Sync
+# Cloud Sync disabled (Local-only NPZ cache)
 # ---------------------------------------------------------------------------
-_supabase_sync_lock = threading.Lock()
-_debounce_sync_timer = None
-_debounce_sync_lock = threading.Lock()
-
 def _sync_npz_to_supabase(filepath):
-    import requests
-    url = os.environ.get('SUPABASE_URL')
-    key = os.environ.get('SUPABASE_KEY')
-    if not url or not key or not os.path.exists(filepath):
-        return
-    with _supabase_sync_lock:
-        try:
-            with open(filepath, 'rb') as f:
-                headers = {
-                    "Authorization": f"Bearer {key}",
-                    "Content-Type": "application/octet-stream",
-                    "x-upsert": "true"
-                }
-                res = requests.put(
-                    f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
-                    headers=headers, data=f, timeout=20
-                )
-                if res.status_code not in (200, 201):
-                    f.seek(0)
-                    requests.post(
-                        f"{url}/storage/v1/object/models/gallery_embeddings.npz", 
-                        headers=headers, data=f, timeout=20
-                    )
-            logger.info("[Supabase Sync] Synced gallery_embeddings.npz to cloud storage.")
-        except Exception as e:
-            logger.error(f"[Supabase Sync] Upload error: {e}")
+    pass
 
 def trigger_debounced_supabase_sync(filepath, delay=8.0):
-    global _debounce_sync_timer
-    from django.conf import settings
-    if not getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
-        return
-    with _debounce_sync_lock:
-        if _debounce_sync_timer is not None:
-            try:
-                _debounce_sync_timer.cancel()
-            except Exception:
-                pass
-
-        def _do_sync():
-            global _debounce_sync_timer
-            with _debounce_sync_lock:
-                _debounce_sync_timer = None
-            _sync_npz_to_supabase(filepath)
-
-        _debounce_sync_timer = threading.Timer(delay, _do_sync)
-        _debounce_sync_timer.daemon = True
-        _debounce_sync_timer.start()
-        logger.info(f"[Supabase Sync] Scheduled final .npz cloud sync in {delay}s...")
+    pass
 
 def _download_npz_from_supabase(filepath):
-    import requests
-    url = os.environ.get('SUPABASE_URL')
-    key = os.environ.get('SUPABASE_KEY')
-    if not url or not key: return False
-    try:
-        headers = {"Authorization": f"Bearer {key}"}
-        res = requests.get(f"{url}/storage/v1/object/models/gallery_embeddings.npz", headers=headers)
-        if res.status_code == 200:
-            with open(filepath, 'wb') as f:
-                f.write(res.content)
-            return True
-    except Exception as e:
-        logger.error(f"[Supabase Sync] Download error: {e}")
     return False
+
 
 # ---------------------------------------------------------------------------
 # Lazy model loading (InsightFace SCRFD + ArcFace)
@@ -233,14 +172,9 @@ class EmbeddingGallery:
     # Load / Reload
     # ------------------------------------------------------------------
     def load_gallery(self):
-        """Load from NPZ cache (try downloading from Supabase first)."""
+        """Load from NPZ cache."""
         self._refresh_person_info()
         with self._lock:
-            # Try syncing from Supabase before loading (if enabled)
-            from django.conf import settings
-            if getattr(settings, 'SUPABASE_SYNC_ENABLED', True):
-                _download_npz_from_supabase(self.cache_file)
-
             if os.path.exists(self.cache_file):
                 try:
                     data = np.load(self.cache_file, allow_pickle=True)
@@ -590,13 +524,16 @@ def detect_and_recognize(frame, threshold=None, max_faces=10, model_name=None, c
     return results_list
 
 
-def compute_person_embeddings(person_id: int):
+def compute_person_embeddings(person_id: int, delete_invalid_images: bool = False):
     """
     Compute and store ArcFace embeddings for all images of a given person.
     Skips images that already have an embedding.
+    If delete_invalid_images is True, images without detectable faces or missing files
+    are deleted from disk and the database.
 
     Returns:
-        (computed_count, skipped_count, error_count)
+        (computed_count, skipped_count, error_count, deleted_count) if delete_invalid_images
+        else (computed_count, skipped_count, error_count)
     """
     from app.models import Person, PersonImage
 
@@ -604,7 +541,7 @@ def compute_person_embeddings(person_id: int):
         person = Person.objects.get(id=person_id)
     except Person.DoesNotExist:
         logger.error(f"[EmbeddingEngine] Person {person_id} not found.")
-        return 0, 0, 0
+        return (0, 0, 0, 0) if delete_invalid_images else (0, 0, 0)
 
     gallery = get_gallery()
     # Clear existing to prevent duplicates during recompute
@@ -613,12 +550,13 @@ def compute_person_embeddings(person_id: int):
     computed = 0
     skipped = 0
     errors = 0
+    deleted = 0
 
     embeddings_to_add = []
     from django.conf import settings
     dataset_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', person.name)
 
-    for pi in PersonImage.objects.filter(person=person):
+    for pi in list(PersonImage.objects.filter(person=person)):
         try:
             image_path = pi.image.path if pi.image else None
             # If path on disk does not exist, check fallback in person's dataset folder
@@ -630,6 +568,10 @@ def compute_person_embeddings(person_id: int):
 
             if not image_path or not os.path.exists(image_path):
                 errors += 1
+                if delete_invalid_images:
+                    logger.info(f"[EmbeddingEngine] Deleting missing image record {pi.id} from DB")
+                    pi.delete()
+                    deleted += 1
                 continue
 
             result = compute_embedding(image_path)
@@ -640,6 +582,15 @@ def compute_person_embeddings(person_id: int):
             else:
                 errors += 1
                 logger.warning(f"[EmbeddingEngine] No face found in {image_path}")
+                if delete_invalid_images:
+                    logger.info(f"[EmbeddingEngine] Deleting image without face {image_path} (ID: {pi.id})")
+                    try:
+                        if os.path.isfile(image_path):
+                            os.remove(image_path)
+                    except Exception as rm_err:
+                        logger.warning(f"[EmbeddingEngine] Could not remove file {image_path}: {rm_err}")
+                    pi.delete()
+                    deleted += 1
         except Exception as e:
             errors += 1
             logger.error(f"[EmbeddingEngine] Error computing embedding for image {pi.id}: {e}")
@@ -649,13 +600,14 @@ def compute_person_embeddings(person_id: int):
 
     logger.info(
         f"[EmbeddingEngine] Person '{person.name}': "
-        f"{computed} computed, {skipped} skipped, {errors} errors."
+        f"{computed} computed, {skipped} skipped, {errors} errors, {deleted} deleted."
     )
 
-    if computed > 0:
-        trigger_debounced_supabase_sync(gallery.cache_file, delay=8.0)
 
+    if delete_invalid_images:
+        return computed, skipped, errors, deleted
     return computed, skipped, errors
+
 
 
 import atexit

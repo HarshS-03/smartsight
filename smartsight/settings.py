@@ -304,6 +304,5 @@ ARCFACE_LOGIN_THRESHOLD = 0.60                  # Stricter threshold for face lo
 ARCFACE_DETECTION_CONFIDENCE = 0.45             # Face detection confidence threshold
 ARCFACE_MAX_FACES_PER_FRAME = 10                # Max faces to process per frame
 ANTISPOOF_ENABLED = os.environ.get('ANTISPOOF_ENABLED', 'True').lower() in ('true', '1', 't')
-
-SUPABASE_SYNC_ENABLED = True
+SUPABASE_SYNC_ENABLED = False
 
