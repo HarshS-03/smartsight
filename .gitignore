@@ -98,6 +98,12 @@ desktop/electron/package-lock.json
 *.snap
 .jdk17/
 
+# ---------------------- Generated Reports & Exports ----------------------
+*.xlsx
+*.pdf
+SmartSight_*_Report_*.xlsx
+SmartSight_*_Report_*.pdf
+
 # ---------------------- IDE & OS ----------------------
 .vscode/
 .idea/

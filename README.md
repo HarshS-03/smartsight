@@ -1,49 +1,55 @@
 # Smart Sight
 
-A state-of-the-art **Real-Time AI Face Recognition, Detection, and Surveillance Platform**. Smart Sight seamlessly integrates advanced computer vision models with a highly responsive, tri-platform interface built for **Web**, **Android**, and **Desktop (Electron)**.
+A state-of-the-art **Real-Time AI Face Recognition, Access Control.** Smart Sight seamlessly integrates deep-learning computer vision models with high-performance client applications built for **Web**, **Android**, and **Desktop (Electron)**.
 
 ---
 
 ## Core Features
 
-- **Real-Time Detection & Recognition**: Utilizes InsightFace (SCRFD & ArcFace) with 5-point facial landmark alignment for robust, highly accurate biometric recognition.
-- **Ultra-Fast Anti-Spoofing**: MiniFASNet V2 ONNX runtime integration for real-time fake face & screen attack detection (~5ms).
-- **Intelligent Dataset Management**: Effortlessly organize face folders, bulk upload photos, and enjoy infinite-scroll galleries with lazy loading.
-- **Automated Stranger Classification**: Employs DBSCAN clustering to automatically group unknown individuals into distinct categories for easy identification.
-- **Hybrid Notification System**: Instant localized audio alerts combined with Firebase Cloud Messaging (FCM) push notifications and Server-Sent Events (SSE) real-time stream.
-- **Comprehensive Analytics & Reports**: A beautifully designed dashboard offering time-filtered analytics, visual data logs, interactive 24-hour timeline scrubber, and one-click `.xlsx` Excel report generation.
-- **Tri-Platform Architecture**: Seamless experience across Browser Web, Native Android App (Capacitor), and Native Desktop App (Electron).
-- **Ultra-Modern UI/UX**: Features a highly polished glassmorphic & solid-surface design system, incorporating pill-shaped interactive elements, a seamless neon-breathing preloader animation, light/dark themes, and optimized system-native typography.
+- **Real-Time Detection & Recognition**: Employs InsightFace (SCRFD & ArcFace) with 5-point facial landmark alignment for robust, highly accurate biometric identification and tracking.
+- **Ultra-Fast Anti-Spoofing (Liveness Defense)**: Integrated MiniFASNet V2 ONNX runtime for real-time fake face, printed photo, and screen attack detection (~5ms).
+- **Intelligent Dataset Management**: Effortlessly organize person profiles, bulk upload photos, manage face embeddings, and browse infinite-scroll galleries.
+- **Automated Stranger Classification**: ArcFace + DBSCAN auto-clustering to automatically cluster unknown individuals into distinct face groups for quick bulk registration or review.
+- **Comprehensive Analytics & Filtering**: Real-time logs and time-filtered analytics with dedicated classification views for **All**, **Known**, **Unknown / Strangers**, and **Spoof Attempts**.
+- **Professional PDF & Excel Reports**: One-click generation of beautifully structured portrait A4 PDF reports (powered by ReportLab) and comprehensive multi-sheet Excel reports (powered by OpenPyXL) with customizable timeframes and role breakdowns.
+- **Hybrid Alert & Notification System**: Instant localized audio alerts, Server-Sent Events (SSE) real-time streaming, and Firebase Cloud Messaging (FCM) push notifications with background badge counters.
+- **Multi-Platform Native Experience**: Shared modern React 18 frontend customized for Browser Web, Native Android App (Capacitor 8.5), and Native Desktop App (Electron 5).
+- **Ultra-Modern UI/UX**: Polished glassmorphic & dark/light responsive interface, pill-shaped controls, smooth Framer Motion micro-animations, and system-native typography.
 
 ---
 
 ## Technology Stack
 
 **Backend & AI Services:**
-- **Framework:** Django 6.0.5 (Python 3.13+)
-- **Database:** SQLite
-- **Computer Vision:** InsightFace (SCRFD & ArcFace), ONNX Runtime, OpenCV
-- **Data Export:** OpenPyXL
 
-**Frontend (Web, Mobile & Desktop):**
-- **Core:** React 18, Vite, Bootstrap 5, Bootstrap Icons
-- **Mobile Packaging:** Capacitor 8.5 (@capacitor/core, @capacitor/android)
-- **Desktop Packaging:** Electron (@capacitor-community/electron)
-- **Styling:** Custom Glassmorphic & Material 3 Pill CSS Design System
+- **Framework:** Django 5.x / 6.x (Python 3.13+) & Django REST Framework
+- **Computer Vision & Deep Learning:** InsightFace (SCRFD & ArcFace), MiniFASNet V2, ONNX Runtime, OpenCV
+- **Clustering & Embeddings:** Scikit-Learn (DBSCAN), NumPy
+- **Document & Report Generation:** ReportLab (Portrait A4 PDF), OpenPyXL (Excel `.xlsx`)
+- **Push Notifications:** Firebase Admin SDK (FCM)
+- **Database:** Supabase PostgreSQL (Managed Cloud DB via `dj-database-url` & `psycopg2-binary`)
+
+**Frontend (Web, Desktop & Android):**
+
+- **Core:** React 18, Vite 6, React Router DOM v6
+- **UI & Icons:** Bootstrap 5.3, Bootstrap Icons, Lucide React, Framer Motion
+- **Desktop Runtime:** Electron (@capacitor-community/electron)
+- **Mobile Runtime:** Capacitor 8.5 (@capacitor/core, @capacitor/android, push & local notifications)
 
 ---
 
 ## Project Architecture
 
 ```text
-Smart_Sight/
-├── app/                          # Django Backend Application (Models, Views, AI Utils)
-├── frontend/                     # Primary React 18 + Vite Web Application
-├── frontend-android/             # Android Capacitor Web & App Project (APK Build)
-├── frontend-desktop/             # Desktop Capacitor & Electron Project (EXE Build)
-├── media/                        # Saved Dataset Photos & Stranger Captures
-├── smartsight/                   # Django Core Project Settings
-└── requirements.txt              # Python Backend Dependencies
+smartsight/
+├── app/                          # Django Backend Application (Models, Views, AI Engine, Reports)
+├── desktop/                      # React 18 + Vite + Electron Desktop Application
+├── frontend-android/             # React 18 + Vite + Capacitor Android Mobile Project
+├── media/                        # Saved Dataset Photos, Stranger Captures, & Generated Reports
+├── smartsight/                   # Django Core Project Settings & Routing
+├── tools/                        # Utility & maintenance scripts
+├── requirements.txt              # Python Backend Dependencies
+└── manage.py                     # Django Management CLI
 ```
 
 ---
@@ -51,72 +57,114 @@ Smart_Sight/
 ## Installation & Setup
 
 ### 1. Prerequisites
-- **Python 3.13+**
+
+- **Python 3.10+ / 3.13+** with `pip`
 - **Node.js 18+** & **npm**
-- **Android Studio / JDK 17** (for building Android APK)
+- **Supabase Account / PostgreSQL Database**:
+  - `DATABASE_URL` (Connection pooling or direct URI)
+  - `SUPABASE_URL` & `SUPABASE_KEY`
+- **Firebase Project Credentials** (for mobile FCM push notifications):
+  - `firebase-credentials.json` placed in root directory
+- **Android Studio & JDK 17+** *(Required only for compiling Android APK)*
+- **C++ Build Tools / Visual Studio Build Tools** *(Optional/Recommended for compiling ONNX / InsightFace wheels on Windows if needed)*
+
+---
 
 ### 2. Backend Initialization
+
 ```bash
 # Navigate to the project root
-cd Smart_Sight
+cd smartsight
 
 # Create and activate a virtual environment
 python -m venv env
-.\env\Scripts\Activate.ps1
+.\env\Scripts\Activate.ps1    # On Windows
+# source env/bin/activate     # On Linux / macOS
 
-# Install dependencies and migrate database
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Run migrations & populate database
 python manage.py migrate
 
-# Start the Django server
+# Start the Django API server
 python manage.py runserver 0.0.0.0:8000
 ```
 
-### 3. Web Frontend Setup
+---
+
+### 3. Desktop Application (Web / Electron)
+
+#### Web Development Mode:
+
 ```bash
-cd frontend
+cd desktop
 npm install
-
-# Run the development server
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-### 4. Android App Build (APK)
+#### Standalone Windows Desktop App (.EXE / Electron):
+
+```bash
+cd desktop
+
+# Run the Electron app in development mode
+npm run electron:start
+
+# Package standalone Windows installer / executable
+npm run electron:make
+```
+
+*The packaged executable will be generated inside `desktop/electron/make/`.*
+
+---
+
+### 4. Android Mobile Application (Capacitor)
+
+#### Mobile Web Preview:
+
 ```bash
 cd frontend-android
 npm install
+npm run dev
+```
 
-# Build the mobile-optimized web assets & sync
+#### Build Android APK:
+
+```bash
+cd frontend-android
+
+# Build mobile assets & sync native Android project
 npm run build
 npx cap sync android
 
-# Build the Android Debug APK
+# Build the Android Debug APK via Gradle
 cd android
 .\gradlew assembleDebug
 ```
-*The generated APK will be available at: `frontend-android/android/app/build/outputs/apk/debug/app-debug.apk`*
 
-### 5. Desktop App Build (Windows .EXE / Electron)
-```bash
-cd frontend-desktop
-npm install
+*The output APK will be generated at:*
+`frontend-android/android/app/build/outputs/apk/debug/app-debug.apk`
 
-# Build web assets and package standalone Windows installer/executable
-npm run electron:make
-```
-*The generated executable and installer packages will be available at: `frontend-desktop/electron/make/`*
+---
+
+## Reporting & Exports
+
+Smart Sight provides built-in enterprise reporting:
+
+- **PDF Export**: Portrait A4 layout created with ReportLab, featuring summary statistics, severity-colored spoof indicators, and timestamped detection tables.
+- **Excel Export**: Multi-column Excel spreadsheets generated with OpenPyXL, including timeframes, classification tags, confidence scores, and camera metadata.
 
 ---
 
 ## License & Security
-Developed for Smart Sight surveillance intelligence. All detection activities and biometric logs are securely encrypted and authenticated.
+
+Developed for Smart Sight biometric intelligence. Biometric embeddings and detection logs are authenticated and stored locally.
 
 ## Developer
 
 - **Harsh_03** ([@HarshS-03](https://github.com/HarshS-03))
 
 ---
+
 *© Harsh_03. All rights reserved.*
