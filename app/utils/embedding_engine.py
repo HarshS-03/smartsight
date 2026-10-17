@@ -270,7 +270,7 @@ class EmbeddingGallery:
     # ------------------------------------------------------------------
     # Hot-update (no restart needed)
     # ------------------------------------------------------------------
-    def add_embedding(self, person_id: int, person_name: str, embedding):
+    def add_embedding(self, person_id: int, person_name: str, embedding, save_cache: bool = True):
         """Add a single embedding to the in-memory gallery (instant, no restart)."""
         emb = np.array(embedding, dtype=np.float32)
         norm = np.linalg.norm(emb)
@@ -278,6 +278,22 @@ class EmbeddingGallery:
             emb = emb / norm
         with self._lock:
             self._gallery.setdefault(person_id, []).append((emb, person_name))
+            if save_cache:
+                self._rebuild_matrix()
+                self._save_cache()
+
+    def add_embeddings_batch(self, person_id: int, person_name: str, embeddings_list):
+        """Add multiple embeddings at once and write to disk only once."""
+        if not embeddings_list:
+            return
+        with self._lock:
+            target = self._gallery.setdefault(person_id, [])
+            for raw_emb in embeddings_list:
+                emb = np.array(raw_emb, dtype=np.float32)
+                norm = np.linalg.norm(emb)
+                if norm > 0:
+                    emb = emb / norm
+                target.append((emb, person_name))
             self._rebuild_matrix()
             self._save_cache()
 
@@ -598,13 +614,28 @@ def compute_person_embeddings(person_id: int):
     skipped = 0
     errors = 0
 
+    embeddings_to_add = []
+    from django.conf import settings
+    dataset_dir = os.path.join(settings.MEDIA_ROOT, 'dataset', person.name)
+
     for pi in PersonImage.objects.filter(person=person):
         try:
-            image_path = pi.image.path
+            image_path = pi.image.path if pi.image else None
+            # If path on disk does not exist, check fallback in person's dataset folder
+            if not image_path or not os.path.exists(image_path):
+                filename = os.path.basename(pi.image.name) if pi.image else ""
+                candidate = os.path.join(dataset_dir, filename)
+                if os.path.exists(candidate):
+                    image_path = candidate
+
+            if not image_path or not os.path.exists(image_path):
+                errors += 1
+                continue
+
             result = compute_embedding(image_path)
             if result is not None:
                 emb, det_conf, _ = result
-                gallery.add_embedding(person.id, person.name, emb)
+                embeddings_to_add.append(emb)
                 computed += 1
             else:
                 errors += 1
@@ -612,6 +643,9 @@ def compute_person_embeddings(person_id: int):
         except Exception as e:
             errors += 1
             logger.error(f"[EmbeddingEngine] Error computing embedding for image {pi.id}: {e}")
+
+    if embeddings_to_add:
+        gallery.add_embeddings_batch(person.id, person.name, embeddings_to_add)
 
     logger.info(
         f"[EmbeddingEngine] Person '{person.name}': "
