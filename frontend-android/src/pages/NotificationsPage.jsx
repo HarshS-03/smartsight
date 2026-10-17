@@ -196,9 +196,8 @@ export default function NotificationsPage({ setActivePage, user }) {
 
   // Calculate Stat Counts
   const totalCount = notifications.length;
-  const appApprovals = notifications.filter(n => n.action_source === 'APP' && n.status === 'APPROVED').length;
-  const telegramApprovals = notifications.filter(n => n.action_source === 'TELEGRAM' && n.status === 'APPROVED').length;
-  const totalCancelled = notifications.filter(n => n.status === 'CANCELLED').length;
+  const totalApproved = notifications.filter(n => n.status === 'APPROVED').length;
+  const totalDenied = notifications.filter(n => n.status === 'CANCELLED').length;
 
   return (
     <div className="notifications-page min-vh-100">
@@ -245,10 +244,10 @@ export default function NotificationsPage({ setActivePage, user }) {
       </section>
 
       <div className="container">
-        {/* Overview Stats Cards - Premium Counter Inside Round Design */}
+        {/* Overview Stats Cards - Exactly 3 Cards: Total, Approved, Denied */}
         <div className="row g-3 mb-4">
           {/* Total Alerts Card */}
-          <div className="col-12 col-sm-6 col-xl-3">
+          <div className="col-12 col-md-4">
             <div className="stat-card-blue p-3 p-md-4 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: '20px' }}>
               <div className="d-flex align-items-center gap-3 min-w-0">
                 <div className="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0" style={{ width: '36px', height: '36px', background: 'rgba(13, 110, 253, 0.1)' }}>
@@ -266,109 +265,56 @@ export default function NotificationsPage({ setActivePage, user }) {
             </div>
           </div>
 
-          {/* Mobile App Approved Card */}
-          <div className="col-12 col-sm-6 col-xl-3">
+          {/* Approved Card */}
+          <div className="col-12 col-md-4">
             <div className="stat-card-green p-3 p-md-4 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: '20px' }}>
               <div className="d-flex align-items-center gap-3 min-w-0">
                 <div className="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0" style={{ width: '36px', height: '36px', background: 'rgba(16, 185, 129, 0.1)' }}>
-                  <i className="bi bi-phone-fill" style={{ color: '#10b981', fontSize: '1rem' }}></i>
+                  <i className="bi bi-check-circle-fill" style={{ color: '#10b981', fontSize: '1rem' }}></i>
                 </div>
                 <div className="min-w-0">
-                  <h6 className="mb-0 fw-bold text-dynamic text-truncate" style={{ fontSize: '0.95rem' }}>Mobile App</h6>
-                  <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Approved</span>
+                  <h6 className="mb-0 fw-bold text-dynamic text-truncate" style={{ fontSize: '0.95rem' }}>Approved</h6>
+                  <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Allowed Access</span>
                 </div>
               </div>
               <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
                 style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #10b981, #34d399)', border: '3px solid rgba(255,255,255,0.1)' }}>
-                {appApprovals}
+                {totalApproved}
               </div>
             </div>
           </div>
 
-          {/* Telegram Approved Card */}
-          <div className="col-12 col-sm-6 col-xl-3">
-            <div className="stat-card-cyan p-3 p-md-4 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: '20px' }}>
-              <div className="d-flex align-items-center gap-3 min-w-0">
-                <div className="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0" style={{ width: '36px', height: '36px', background: 'rgba(6, 182, 212, 0.1)' }}>
-                  <i className="bi bi-telegram" style={{ color: '#06b6d4', fontSize: '1rem' }}></i>
-                </div>
-                <div className="min-w-0">
-                  <h6 className="mb-0 fw-bold text-dynamic text-truncate" style={{ fontSize: '0.95rem' }}>Telegram</h6>
-                  <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Approved</span>
-                </div>
-              </div>
-              <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
-                style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #06b6d4, #22d3ee)', border: '3px solid rgba(255,255,255,0.1)' }}>
-                {telegramApprovals}
-              </div>
-            </div>
-          </div>
-
-          {/* Rejected / Cancelled Card */}
-          <div className="col-12 col-sm-6 col-xl-3">
+          {/* Denied Card */}
+          <div className="col-12 col-md-4">
             <div className="stat-card-red p-3 p-md-4 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: '20px' }}>
               <div className="d-flex align-items-center gap-3 min-w-0">
                 <div className="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0" style={{ width: '36px', height: '36px', background: 'rgba(239, 68, 68, 0.1)' }}>
                   <i className="bi bi-x-circle-fill" style={{ color: '#ef4444', fontSize: '1rem' }}></i>
                 </div>
                 <div className="min-w-0">
-                  <h6 className="mb-0 fw-bold text-dynamic text-truncate" style={{ fontSize: '0.95rem' }}>Cancelled</h6>
-                  <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Rejected</span>
+                  <h6 className="mb-0 fw-bold text-dynamic text-truncate" style={{ fontSize: '0.95rem' }}>Denied</h6>
+                  <span className="text-secondary d-block text-truncate" style={{ fontSize: '0.68rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Blocked / Rejected</span>
                 </div>
               </div>
               <div className="rounded-circle d-flex align-items-center justify-content-center text-white shadow font-mono ms-2 flex-shrink-0"
                 style={{ width: '46px', height: '46px', fontSize: '1.2rem', fontWeight: '800', background: 'linear-gradient(135deg, #ef4444, #f87171)', border: '3px solid rgba(255,255,255,0.1)' }}>
-                {totalCancelled}
+                {totalDenied}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filter Toolbar (Segment Radio Group + UI Custom Dropdowns + Search) */}
-        <div className="glass-card p-3 p-md-4 mb-4" style={{ position: 'relative', zIndex: 10 }}>
+        {/* Filter Toolbar (UI Custom Dropdowns + Search) */}
+        <div className="glass-card p-3 p-md-4 mb-4" style={{ position: 'relative', zIndex: 100, overflow: 'visible' }}>
           <div className="row g-3 align-items-center">
 
-            {/* 1. Radio Button Segment Group for Action Source Filter */}
-            <div className="col-12 col-lg-5">
-              <label className="form-label text-secondary small fw-bold mb-2 d-block">Filter By Action Origin:</label>
-              <div className="source-radio-group">
-                <button
-                  type="button"
-                  className={`source-radio-btn ${sourceFilter === 'ALL' ? 'active' : ''}`}
-                  onClick={() => setSourceFilter('ALL')}
-                >
-                  <i className="bi bi-grid-fill"></i>
-                  <span>All<span className="d-none d-sm-inline"> Sources</span></span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`source-radio-btn ${sourceFilter === 'APP' ? 'active' : ''}`}
-                  onClick={() => setSourceFilter('APP')}
-                >
-                  <i className="bi bi-phone-fill"></i>
-                  <span>Mobile<span className="d-none d-sm-inline"> App</span></span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`source-radio-btn ${sourceFilter === 'TELEGRAM' ? 'active' : ''}`}
-                  onClick={() => setSourceFilter('TELEGRAM')}
-                >
-                  <i className="bi bi-telegram"></i>
-                  <span>Telegram<span className="d-none d-sm-inline"> Bot</span></span>
-                </button>
-              </div>
-            </div>
-
-            {/* 2. Custom UI Dropdowns (Timeframe & Status) */}
-            <div className="col-12 col-md-6 col-lg-4">
+            {/* 1. Custom UI Dropdowns (Timeframe & Status) */}
+            <div className="col-12 col-md-7 col-lg-8">
               <div className="row g-2">
-
                 {/* Timeframe Custom UI Dropdown */}
                 <div className="col-6">
                   <label className="form-label text-secondary small fw-bold mb-1">Timeframe:</label>
-                  <div className="dropdown position-relative">
+                  <div className="dropdown position-relative" style={{ overflow: 'visible' }}>
                     <button
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic py-2 px-3 rounded-pill"
@@ -384,24 +330,31 @@ export default function NotificationsPage({ setActivePage, user }) {
 
                     {showTimeframeDropdown && (
                       <>
-                        <div className="position-fixed inset-0" style={{ zIndex: 1050 }} onClick={() => setShowTimeframeDropdown(false)}></div>
-                        <div className="custom-dropdown-menu">
+                        <div className="position-fixed" style={{ top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 9998 }} onClick={() => setShowTimeframeDropdown(false)}></div>
+                        <div
+                          className="custom-dropdown-menu"
+                          style={{
+                            minWidth: '200px',
+                            zIndex: 9999
+                          }}
+                        >
                           {[
                             { label: 'All Time', value: 'all', icon: 'bi-calendar3' },
                             { label: 'Today', value: 'today', icon: 'bi-clock-history' },
                             { label: 'Last Week', value: 'week', icon: 'bi-calendar-week' },
                             { label: 'Last Month', value: 'month', icon: 'bi-calendar-month' }
                           ].map((opt) => (
-                            <div
+                            <button
                               key={opt.value}
-                              className={`custom-dropdown-item ${timeframeFilter === opt.value ? 'active' : ''}`}
+                              type="button"
+                              className={`custom-dropdown-item my-0.5 border-0 ${timeframeFilter === opt.value ? 'active' : ''}`}
                               onClick={() => { setTimeframeFilter(opt.value); setShowTimeframeDropdown(false); }}
                             >
                               <span className="d-flex align-items-center gap-2">
                                 <i className={`bi ${opt.icon}`}></i> {opt.label}
                               </span>
                               {timeframeFilter === opt.value && <i className="bi bi-check2 text-primary"></i>}
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </>
@@ -412,7 +365,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                 {/* Status Custom UI Dropdown */}
                 <div className="col-6">
                   <label className="form-label text-secondary small fw-bold mb-1">Status:</label>
-                  <div className="dropdown position-relative">
+                  <div className="dropdown position-relative" style={{ overflow: 'visible' }}>
                     <button
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic py-2 px-3 rounded-pill"
@@ -421,32 +374,39 @@ export default function NotificationsPage({ setActivePage, user }) {
                     >
                       <span className="text-truncate d-flex align-items-center gap-2">
                         <i className="bi bi-funnel-fill text-primary"></i>
-                        {statusFilter === 'APPROVED' ? 'Approved' : statusFilter === 'CANCELLED' ? 'Cancelled' : statusFilter === 'EXPIRED' ? 'Expired' : statusFilter === 'PENDING' ? 'Pending' : 'All Status'}
+                        {statusFilter === 'APPROVED' ? 'Approved' : statusFilter === 'CANCELLED' ? 'Denied' : statusFilter === 'EXPIRED' ? 'Expired' : statusFilter === 'PENDING' ? 'Pending' : 'All Status'}
                       </span>
                       <i className={`bi bi-chevron-down ms-1 small transition-all ${showStatusDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.7rem' }}></i>
                     </button>
 
                     {showStatusDropdown && (
                       <>
-                        <div className="position-fixed inset-0" style={{ zIndex: 1050 }} onClick={() => setShowStatusDropdown(false)}></div>
-                        <div className="custom-dropdown-menu">
+                        <div className="position-fixed" style={{ top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 9998 }} onClick={() => setShowStatusDropdown(false)}></div>
+                        <div
+                          className="custom-dropdown-menu"
+                          style={{
+                            minWidth: '200px',
+                            zIndex: 9999
+                          }}
+                        >
                           {[
                             { label: 'All Status', value: 'ALL', icon: 'bi-grid-fill' },
                             { label: 'Approved', value: 'APPROVED', icon: 'bi-check-circle-fill' },
-                            { label: 'Cancelled', value: 'CANCELLED', icon: 'bi-x-circle-fill' },
+                            { label: 'Denied', value: 'CANCELLED', icon: 'bi-x-circle-fill' },
                             { label: 'Expired', value: 'EXPIRED', icon: 'bi-clock-history' },
                             { label: 'Pending', value: 'PENDING', icon: 'bi-hourglass-split' }
                           ].map((opt) => (
-                            <div
+                            <button
                               key={opt.value}
-                              className={`custom-dropdown-item ${statusFilter === opt.value ? 'active' : ''}`}
+                              type="button"
+                              className={`custom-dropdown-item my-0.5 border-0 ${statusFilter === opt.value ? 'active' : ''}`}
                               onClick={() => { setStatusFilter(opt.value); setShowStatusDropdown(false); }}
                             >
                               <span className="d-flex align-items-center gap-2">
                                 <i className={`bi ${opt.icon}`}></i> {opt.label}
                               </span>
                               {statusFilter === opt.value && <i className="bi bi-check2 text-primary"></i>}
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </>
@@ -457,8 +417,8 @@ export default function NotificationsPage({ setActivePage, user }) {
               </div>
             </div>
 
-            {/* 3. Search Input & Clear All */}
-            <div className="col-12 col-md-6 col-lg-3 d-flex flex-column gap-1">
+            {/* 2. Search Input & Clear All */}
+            <div className="col-12 col-md-5 col-lg-4 d-flex flex-column gap-1">
               <div className="d-flex align-items-center justify-content-between">
                 <label className="form-label text-secondary small fw-bold mb-0">Search Alerts:</label>
                 {notifications.length > 0 && (
@@ -524,22 +484,22 @@ export default function NotificationsPage({ setActivePage, user }) {
 
                   {/* Notification Info */}
                   <div className="flex-grow-1 min-w-0">
-                    <div className="mb-2 w-100">
-                      <div className="fw-bold text-dynamic mb-1.5" style={{ fontSize: '0.9rem', lineHeight: '1.35', wordBreak: 'break-word' }}>
+                    <div className="d-flex align-items-center justify-content-between gap-3 mb-2 w-100">
+                      <span className="fw-bold text-dynamic flex-grow-1 min-w-0 text-truncate" style={{ fontSize: '0.92rem' }}>
                         {notif.title}
-                      </div>
-                      <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
-                        {notif.status}
+                      </span>
+                      <span className={`notif-status-badge status-${notif.status === 'CANCELLED' ? 'denied' : (notif.status || '').toLowerCase()}`}>
+                        {notif.status === 'CANCELLED' ? 'DENIED' : notif.status}
                       </span>
                     </div>
 
-                    <div className="text-secondary mb-2.5" style={{ fontSize: '0.82rem', lineHeight: '1.5' }}>
+                    <div className="text-secondary mt-1" style={{ fontSize: '0.82rem', lineHeight: '1.5' }}>
                       {notif.message}
                     </div>
 
                     {/* Operator Security Note if submitted */}
                     {notif.security_note && (
-                      <div className="d-flex mb-2.5" style={{ background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0 8px 8px 0' }}>
+                      <div className="d-flex mt-2.5" style={{ background: 'rgba(239, 68, 68, 0.08)', borderRadius: notif.status === 'PENDING' ? '0 8px 0 0' : '0 8px 8px 0' }}>
                         <div style={{ width: '4px', background: '#dc2626', flexShrink: 0 }}></div>
                         <div className="px-3 py-2 flex-grow-1">
                           <div className="d-flex align-items-center gap-2 text-danger fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.4px' }}>
@@ -553,9 +513,11 @@ export default function NotificationsPage({ setActivePage, user }) {
                       </div>
                     )}
 
-                    {/* Quick Approval / Dismiss for PENDING Alerts */}
-                    {notif.status === 'PENDING' && (
-                      <div className="d-flex align-items-center gap-2 mb-2 w-100">
+                    {/* Quick Approval / Dismiss for PENDING Alerts (Only for Unknown person access review, not for Spoof or Brute Force) */}
+                    {notif.status === 'PENDING' && !((notif.title || '').toLowerCase().includes('spoof') || (notif.title || '').toLowerCase().includes('brute')) && (
+                      <div 
+                        className={`d-flex align-items-center gap-2 w-100 ${notif.security_note ? 'mt-2' : 'mt-2.5'}`}
+                      >
                         <button
                           type="button"
                           className="btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1"
@@ -575,7 +537,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       </div>
                     )}
 
-                    <div className="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-white border-opacity-10 w-100">
+                    <div className={`d-flex align-items-center justify-content-between gap-2 border-top border-white border-opacity-10 w-100 ${notif.security_note || notif.status === 'PENDING' ? 'mt-2.5 pt-2' : 'mt-1.5 pt-1.5'}`}>
                       <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">
                         {notif.action_source === 'APP' ? (
                           <span className="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style={{ background: 'rgba(13, 110, 253, 0.12)', color: '#2563eb', border: '1px solid rgba(13, 110, 253, 0.3)', fontSize: '0.68rem' }}>
@@ -690,8 +652,8 @@ export default function NotificationsPage({ setActivePage, user }) {
 
                       {/* Status Badge */}
                       <td className="text-center">
-                        <span className={`notif-status-badge status-${(notif.status || '').toLowerCase()}`}>
-                          {notif.status}
+                        <span className={`notif-status-badge status-${notif.status === 'CANCELLED' ? 'denied' : (notif.status || '').toLowerCase()}`}>
+                          {notif.status === 'CANCELLED' ? 'DENIED' : notif.status}
                         </span>
                       </td>
 
@@ -720,7 +682,7 @@ export default function NotificationsPage({ setActivePage, user }) {
                       {/* Action Controls */}
                       <td className="text-center">
                         <div className="d-flex align-items-center justify-content-center gap-1.5">
-                          {notif.status === 'PENDING' && (
+                          {notif.status === 'PENDING' && !((notif.title || '').toLowerCase().includes('spoof') || (notif.title || '').toLowerCase().includes('brute')) && (
                             <>
                               <button
                                 onClick={() => handleNotificationAction(notif.id, 'approve')}

@@ -300,9 +300,11 @@ JAZZMIN_UI_TWEAKS = {
 # ==============================================================================
 RECOGNITION_ENGINE = 'arcface'                  # Detection: SCRFD (InsightFace), Recognition: ArcFace (InsightFace)
 ARCFACE_SIMILARITY_THRESHOLD = 0.45             # Gallery match threshold (0.0–1.0)
-ARCFACE_LOGIN_THRESHOLD = 0.60                  # Stricter threshold for face login
+ARCFACE_LOGIN_THRESHOLD = 0.45                  # Threshold for face login (relaxed from 0.60 to match gallery)
 ARCFACE_DETECTION_CONFIDENCE = 0.45             # Face detection confidence threshold
 ARCFACE_MAX_FACES_PER_FRAME = 10                # Max faces to process per frame
-ANTISPOOF_ENABLED = os.environ.get('ANTISPOOF_ENABLED', 'True').lower() in ('true', '1', 't')
+ANTISPOOF_ENABLED = True                       # Temporarily disabled
 SUPABASE_SYNC_ENABLED = False
+
+
 

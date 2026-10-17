@@ -4,13 +4,13 @@
   --preloader-text: #f1f5f9;
   --preloader-subtext: #64748b;
   --preloader-card-bg: #0f172a;
-  --preloader-card-border: rgba(56, 189, 248, 0.14);
-  --preloader-logo-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.85), 0 0 40px rgba(37, 99, 235, 0.4);
-  --preloader-aura: radial-gradient(circle 420px at 50% 45%, rgba(37, 99, 235, 0.18) 0%, rgba(56, 189, 248, 0.06) 50%, transparent 70%);
-  --preloader-bar-track: rgba(255, 255, 255, 0.06);
-  --preloader-bar-fill: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+  --preloader-card-border: rgba(37, 99, 235, 0.2);
+  --preloader-logo-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.85), 0 0 32px rgba(37, 99, 235, 0.4);
+  --preloader-aura: radial-gradient(circle 420px at 50% 45%, rgba(37, 99, 235, 0.18) 0%, transparent 70%);
+  --preloader-bar-track: rgba(255, 255, 255, 0.08);
+  --preloader-bar-fill: #2563eb;
   --preloader-dot: rgba(255, 255, 255, 0.18);
-  --preloader-grid: rgba(56, 189, 248, 0.04);
+  --preloader-grid: rgba(37, 99, 235, 0.04);
 }
 [data-bs-theme="light"] {
   --preloader-bg: #f8fafc;
@@ -19,9 +19,9 @@
   --preloader-card-bg: #ffffff;
   --preloader-card-border: rgba(37, 99, 235, 0.14);
   --preloader-logo-shadow: 0 20px 40px -8px rgba(37, 99, 235, 0.22), 0 4px 16px rgba(0, 0, 0, 0.06);
-  --preloader-aura: radial-gradient(circle 420px at 50% 45%, rgba(37, 99, 235, 0.1) 0%, rgba(56, 189, 248, 0.04) 50%, transparent 70%);
-  --preloader-bar-track: rgba(37, 99, 235, 0.1);
-  --preloader-bar-fill: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+  --preloader-aura: radial-gradient(circle 420px at 50% 45%, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+  --preloader-bar-track: rgba(37, 99, 235, 0.12);
+  --preloader-bar-fill: #2563eb;
   --preloader-dot: rgba(37, 99, 235, 0.15);
   --preloader-grid: rgba(37, 99, 235, 0.04);
 }
@@ -145,7 +145,7 @@ body {
 
 @keyframes logoPulse {
   0%   { box-shadow: 0 0 12px rgba(37, 99, 235, 0.35), var(--preloader-logo-shadow); }
-  100% { box-shadow: 0 0 36px rgba(37, 99, 235, 0.75), 0 0 18px rgba(56, 189, 248, 0.6), var(--preloader-logo-shadow); }
+  100% { box-shadow: 0 0 36px rgba(37, 99, 235, 0.65), var(--preloader-logo-shadow); }
 }
 
 @keyframes ringPulse {
@@ -172,10 +172,10 @@ body {
 }
 
 .preloader-brand span {
-  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #2563eb;
+  background: none;
+  -webkit-text-fill-color: #2563eb;
+  background-clip: unset;
 }
 
 /* ── Tagline ── */
@@ -201,15 +201,18 @@ body {
 
 .preloader-bar-fill {
   height: 100%;
+  width: 100%;
   border-radius: 99px;
-  background: var(--preloader-bar-fill);
-  animation: barSlide 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  background: #2563eb;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+  animation: preloaderProgress 3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   transform-origin: left;
 }
 
-@keyframes barSlide {
-  0%   { transform: translateX(-100%) scaleX(0.6); }
-  40%  { transform: translateX(0%) scaleX(0.8); }
-  60%  { transform: translateX(0%) scaleX(1); }
-  100% { transform: translateX(180%) scaleX(0.6); }
+@keyframes preloaderProgress {
+  0%   { transform: scaleX(0); }
+  20%  { transform: scaleX(0.28); }
+  50%  { transform: scaleX(0.65); }
+  80%  { transform: scaleX(0.88); }
+  100% { transform: scaleX(1); }
 }

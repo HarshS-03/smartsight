@@ -190,6 +190,8 @@ class EmbeddingGallery:
                     logger.warning(f"[Gallery] Failed to load cache: {e}.")
             
             logger.error("[Gallery] NPZ file missing or corrupt. Cannot load gallery.")
+
+
             self._loaded = True # Prevent endless loops
 
     def reload(self):
@@ -294,9 +296,11 @@ class EmbeddingGallery:
             best_score = float(sims[best_idx])
             best_name, best_pid = self._meta[best_idx]
 
+
         if best_score >= threshold:
             return best_name, best_pid, best_score
         return None, None, best_score
+
 
     # ------------------------------------------------------------------
     # Stats

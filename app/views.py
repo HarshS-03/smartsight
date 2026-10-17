@@ -280,10 +280,11 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
     permission_classes = [permissions.IsAuthenticated]
 
     def update(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
+        if not (request.user.is_staff or request.user.is_superuser):
             return Response({'error': 'Only admins can approve or modify scan logs.'}, status=status.HTTP_403_FORBIDDEN)
         
         response = super().update(request, *args, **kwargs)
+
         
         status_val = request.data.get('status')
         log = self.get_object()
@@ -361,6 +362,22 @@ class RecognitionLogViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, v
 
     def get_queryset(self):
         from django.db.models import Q
+        now = timezone.now()
+        five_mins_ago = now - timezone.timedelta(minutes=5)
+
+        # Auto-deny ONLY pending UNKNOWN/unregistered stranger scans older than 5 minutes (NEVER touch KNOWN/registered persons)
+        stale_logs = RecognitionLog.objects.filter(
+            timestamp__lt=five_mins_ago,
+            status='UNKNOWN'
+        )
+        if stale_logs.exists():
+            stale_logs.update(status='DENIED')
+
+        # Auto-expire / cancel matching pending notifications older than 5 minutes
+        stale_pending = Notification.objects.filter(status='PENDING', created_at__lt=five_mins_ago)
+        if stale_pending.exists():
+            stale_pending.update(status='CANCELLED', is_read=True, processed_at=now)
+
         queryset = RecognitionLog.objects.all().order_by('-timestamp')
         params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
         status_param = params.get('status')
@@ -663,8 +680,9 @@ def face_verify_frame(request):
             if u.username.lower() == recognized_name.lower() or u.username.lower() in recognized_name.lower().split():
                 user = u
                 break
-        
+
         if not user:
+
             return Response({
                 'status': 'unrecognized',
                 'message': f'Detected "{recognized_name}" but no matching user found',
@@ -682,7 +700,9 @@ def face_verify_frame(request):
                 'confidence': round(best_conf, 3)
             })
 
-        min_login_conf = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60) if use_arcface else 0.50
+        use_arcface = getattr(settings, 'RECOGNITION_ENGINE', 'arcface') == 'arcface'
+        min_login_conf = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.45) if use_arcface else 0.50
+
         if best_conf < min_login_conf:
             return Response({
                 'status': 'low_confidence',
@@ -780,6 +800,7 @@ def biometric_verify_frame(request):
         antispoof_active = getattr(settings, 'ANTISPOOF_ENABLED', True)
         from app.utils.antispoof import check_liveness
         is_live, liveness_score, liveness_msg = check_liveness(frame, face_bbox) if antispoof_active else (True, 1.0, "DISABLED")
+        print(f"[Anti-Spoof Check] Active={antispoof_active}, is_live={is_live}, score={liveness_score:.4f}, msg={liveness_msg}")
         if not is_live:
             captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
             os.makedirs(captures_dir, exist_ok=True)
@@ -798,13 +819,25 @@ def biometric_verify_frame(request):
                 image_path=rel_img_path
             )
 
+            # Broadcast instant scan event to Desktop
+            try:
+                from app.services.event_bus import event_bus
+                event_bus.publish('SCAN_NEW', {
+                    'log_id': log.id,
+                    'status': 'DENIED',
+                    'person_name': 'Spoof / Fake Face Attempt'
+                })
+            except Exception as e:
+                pass
+
             # Dispatch FCM native push notification & SSE alert to Admin
             try:
                 from app.services.notification_service import dispatch_notification
                 dispatch_notification(
-                    title="Security Alert: Fake Face / Spoof Attempt",
-                    message="A screen spoof or fake face attempt was detected at Mobile Scanner. Access Denied.",
-                    image_url=f"/media/{rel_img_path}"
+                    title="Spoof Attack Detected",
+                    message="Screen or fake face spoof attempt detected. Access denied.",
+                    image_url=f"/media/{rel_img_path}",
+                    status='CANCELLED'
                 )
             except Exception as notif_err:
                 print("[Access Control Verify] Spoof notification failed:", notif_err)
@@ -968,7 +1001,7 @@ def biometric_verify_frame(request):
                 # Escalate to admin approval instead of auto-denial
                 try:
                     notification = Notification.objects.create(
-                        title="Unknown Person Detected — Admin Review Required",
+                        title="Unknown Person Detected",
                         message="An unregistered person has been detected at Mobile Scanner.",
                         image_url=f"/media/{rel_img_path}",
                         status='PENDING',
@@ -1017,8 +1050,8 @@ def biometric_verify_frame(request):
                 try:
                     from app.services.notification_service import dispatch_notification
                     dispatch_notification(
-                        title="Access Denied: Unregistered Person",
-                        message="Unauthorized person attempted entry at mobile access scanner.",
+                        title="Access Denied",
+                        message="Unauthorized person attempted entry at Mobile Scanner.",
                         image_url=f"/media/{rel_img_path}"
                     )
                 except Exception as notif_err:
@@ -1082,8 +1115,8 @@ class SecurityNoteAPIView(APIView):
             rel_path = log.image_path.replace('\\', '/') if log.image_path else ""
             image_url = f"/media/{rel_path}" if rel_path else None
             Notification.objects.create(
-                title="🔍 Security Alert — Suspicious Person Reported",
-                message="An operator has flagged an unregistered person detected at Mobile Access Scanner and submitted a security note for admin review.",
+                title="Suspicious Activity Reported",
+                message="Operator submitted a security note for admin review.",
                 image_url=image_url,
                 status='PENDING',
                 alert_person_name=log.person_name or "Unknown / Unregistered",
@@ -1165,7 +1198,13 @@ class ReportsExportView(APIView):
         if status_query:
             logs = logs.filter(status=status_query)
 
-        now = timezone.now()
+        status_scope = request.GET.get('status_scope', '').strip().lower()
+        if status_scope == 'known':
+            logs = logs.filter(status__in=['KNOWN', 'APPROVED'])
+        elif status_scope == 'unknown':
+            logs = logs.exclude(status__in=['KNOWN', 'APPROVED'])
+
+        now_local = timezone.localtime(timezone.now())
 
         if export_date:
             logs = logs.filter(timestamp__date=export_date)
@@ -1194,20 +1233,23 @@ class ReportsExportView(APIView):
                 title_suffix = "Report"
         else:
             if time_range in ['daily', 'today']:
-                logs = logs.filter(timestamp__date=now.date())
-                title_suffix = f"Daily Report ({now.strftime('%d-%m-%Y')})"
+                # Filter by local date bounds to avoid UTC cut-off issues
+                today_start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+                today_end = now_local.replace(hour=23, minute=59, second=59, microsecond=999999)
+                logs = logs.filter(timestamp__range=[today_start, today_end])
+                title_suffix = f"Daily Report ({now_local.strftime('%d-%m-%Y')})"
             elif time_range == 'weekly':
-                seven_days_ago = now - timedelta(days=7)
+                seven_days_ago = now_local - timedelta(days=7)
                 logs = logs.filter(timestamp__gte=seven_days_ago)
                 title_suffix = "Weekly Report (Last 7 Days)"
             elif time_range == 'monthly':
-                logs = logs.filter(timestamp__year=now.year, timestamp__month=now.month)
-                title_suffix = f"Monthly Report ({now.strftime('%B %Y')})"
+                logs = logs.filter(timestamp__year=now_local.year, timestamp__month=now_local.month)
+                title_suffix = f"Monthly Report ({now_local.strftime('%B %Y')})"
             elif time_range == 'yearly':
-                logs = logs.filter(timestamp__year=now.year)
-                title_suffix = f"Yearly Report ({now.year})"
+                logs = logs.filter(timestamp__year=now_local.year)
+                title_suffix = f"Yearly Report ({now_local.year})"
             else:
-                title_suffix = "All Historical Detection Records"
+                title_suffix = "All Detection Records"
 
         # Handle time of day range
         if export_time_start:
@@ -1230,50 +1272,93 @@ class ReportsExportView(APIView):
             else:
                 logs = logs.filter(person_name__iexact=person_filter)
 
+        # Clean title_suffix
+        title_suffix = title_suffix.replace("Historical ", "").replace("HISTORICAL ", "")
+
         # Format check: Excel (.xlsx) vs PDF (.pdf) with photos
         export_format = request.GET.get('export_format', 'excel').lower()
         if export_format == 'pdf':
             pdf_buffer = generate_reports_pdf(logs, title_suffix=title_suffix)
-            filename = f"SmartSight_{time_range}_Access_Report_{now.strftime('%Y%m%d_%H%M%S')}.pdf"
+            filename = f"SmartSight_{time_range}_Access_Report_{now_local.strftime('%Y%m%d_%H%M%S')}.pdf"
             response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
             response['Access-Control-Expose-Headers'] = 'Content-Disposition'
             return response
 
+        # Pre-fetch Person model info for clean name and role mapping
+        from app.models import Person
+        all_persons = list(Person.objects.all())
+        person_cache = {p.name.strip().lower(): p for p in all_persons}
+
+        def _clean_person_and_role(raw_name, status):
+            raw_name = (raw_name or '').strip()
+            raw_lower = raw_name.lower()
+            is_spoof = 'spoof' in raw_lower or status == 'SPOOF' or 'fake' in raw_lower
+            is_unknown = (not raw_name or 'unknown' in raw_lower or 'stranger' in raw_lower or status == 'UNKNOWN') and not is_spoof
+
+            if is_spoof:
+                return "Spoof Attempt", "Spoof", "DENIED"
+            if is_unknown:
+                return "Unknown / Stranger", "Unregistered / Visitor", "DENIED" if status in ['DENIED', 'UNKNOWN'] else status
+
+            # Registered Person lookup
+            p_obj = person_cache.get(raw_lower)
+            if not p_obj:
+                for k, p in person_cache.items():
+                    if k in raw_lower or raw_lower in k:
+                        p_obj = p
+                        break
+
+            if p_obj:
+                clean_name = p_obj.name.strip()
+                class_name = (p_obj.class_name or '').strip()
+                if class_name:
+                    for suffix_pattern in [f"({class_name})", class_name]:
+                        if clean_name.lower().endswith(suffix_pattern.lower()):
+                            clean_name = clean_name[:len(clean_name) - len(suffix_pattern)].strip(" -_()")
+                    formatted_name = f"{clean_name} ({class_name})"
+                else:
+                    formatted_name = clean_name
+
+                role = p_obj.get_category_display() or "Member"
+                access_status = "ALLOWED" if status in ['KNOWN', 'APPROVED'] else "DENIED"
+                return formatted_name, role, access_status
+
+            return raw_name, "Member", "ALLOWED" if status in ['KNOWN', 'APPROVED'] else "DENIED"
+
         person_freq = {}
         for log in logs:
-            is_unknown = log.status == 'UNKNOWN'
-            name_key = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
-            person_freq[name_key] = person_freq.get(name_key, 0) + 1
+            disp_name, _, _ = _clean_person_and_role(log.person_name, log.status)
+            person_freq[disp_name] = person_freq.get(disp_name, 0) + 1
 
         mapped_records = []
         for log in logs:
-            is_unknown = log.status == 'UNKNOWN'
-            name_key = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
-            
+            disp_name, role, access_status = _clean_person_and_role(log.person_name, log.status)
             mapped_records.append({
                 'id': log.id,
-                'date': log.timestamp.date() if log.timestamp else '',
-                'camera_name': log.camera_name if log.camera_name else 'Default Camera',
-                'person_name': log.person_name if log.person_name else ('Unknown Target' if log.status == 'UNKNOWN' else 'Unknown'),
+                'date': timezone.localtime(log.timestamp).date() if log.timestamp else '',
+                'camera_name': (log.camera_name or 'Default Camera').replace('Biometric', 'Access'),
+                'person_name': disp_name,
+                'role': role,
                 'status': log.status,
+                'access_status': access_status,
                 'entry_time': log.timestamp,
                 'exit_time': log.timestamp,
-                'frequency': person_freq.get(name_key, 1),
+                'frequency': person_freq.get(disp_name, 1),
                 'max_confidence': float(log.confidence) if log.confidence else 0.0
             })
 
         wb = Workbook()
 
-        # Sheet 1: Summary Dashboard
-        ws_summary = wb.active
-        ws_summary.title = "Summary"
-        _fill_summary_sheet(ws_summary, mapped_records, title_suffix)
-
-        # Sheet 2: Detection Records
-        ws_records = wb.create_sheet(title="Detection Records")
+        # Sheet 1: Detection Records (Make it the first & active sheet for immediate viewing!)
+        ws_records = wb.active
+        ws_records.title = "Detection Records"
         title_text = f"SMART SIGHT — {title_suffix.upper()}"
         _fill_excel_worksheet(ws_records, mapped_records, title_text)
+
+        # Sheet 2: Summary Dashboard
+        ws_summary = wb.create_sheet(title="Summary")
+        _fill_summary_sheet(ws_summary, mapped_records, title_suffix)
 
         # Sheet 3: Camera Analytics (if records exist)
         if mapped_records:
@@ -1283,7 +1368,7 @@ class ReportsExportView(APIView):
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        filename = f"SmartSight_{time_range}_Report_{now.strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filename = f"SmartSight_{time_range}_Report_{now_local.strftime('%Y%m%d_%H%M%S')}.xlsx"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         response['Access-Control-Expose-Headers'] = 'Content-Disposition'
 
@@ -1314,8 +1399,8 @@ class NotificationListAPIView(APIView):
 
     def get(self, request):
         now = timezone.now()
-        # Auto-expire any pending notifications older than 15 minutes
-        timeout_threshold = now - timezone.timedelta(minutes=15)
+        # Auto-expire any pending notifications older than 5 minutes
+        timeout_threshold = now - timezone.timedelta(minutes=5)
         stale_pending = Notification.objects.filter(status='PENDING', created_at__lt=timeout_threshold)
         if stale_pending.exists():
             stale_pending.update(status='EXPIRED', is_read=True, processed_at=now)
@@ -1388,56 +1473,64 @@ class NotificationActionAPIView(APIView):
         # Apply action with source tracking
         new_status = 'APPROVED' if action == 'approve' else ('CANCELLED' if action == 'cancel' else None)
         if new_status:
-            if action == 'approve':
-                # Use structured fields directly (Fix 8), with regex fallback for legacy records
-                person_name = notification.alert_person_name or "Unknown"
-                camera_name = notification.alert_camera_name or "Default Camera"
-                confidence = notification.alert_confidence if notification.alert_confidence is not None else 0.0
+            # Use structured fields directly (Fix 8), with regex fallback for legacy records
+            person_name = notification.alert_person_name or "Unknown"
+            camera_name = notification.alert_camera_name or "Default Camera"
+            confidence = notification.alert_confidence if notification.alert_confidence is not None else 0.0
 
-                if not notification.alert_person_name and not notification.alert_camera_name:
-                    import re
-                    pm = re.search(r"\((.*?)\)", notification.title)
-                    if pm:
-                        person_name = pm.group(1).strip()
-                        if 'unknown' in person_name.lower():
-                            person_name = 'Unknown'
-                    cm = re.search(r"on (.*?) \(Confidence: (.*?)%\)", notification.message)
-                    if cm:
-                        camera_name = cm.group(1)
-                        try:
-                            confidence = float(cm.group(2)) / 100.0
-                        except Exception:
-                            pass
+            if not notification.alert_person_name and not notification.alert_camera_name:
+                import re
+                pm = re.search(r"\((.*?)\)", notification.title)
+                if pm:
+                    person_name = pm.group(1).strip()
+                    if 'unknown' in person_name.lower():
+                        person_name = 'Unknown'
+                cm = re.search(r"on (.*?) \(Confidence: (.*?)%\)", notification.message)
+                if cm:
+                    camera_name = cm.group(1)
+                    try:
+                        confidence = float(cm.group(2)) / 100.0
+                    except Exception:
+                        pass
 
-                relative_img = notification.image_url.replace('/media/', '') if notification.image_url else None
+            relative_img = notification.image_url.replace('/media/', '') if notification.image_url else None
 
-                try:
-                    # Fix: Find the original UNKNOWN log and update it to APPROVED or DENIED to preserve original timestamp
+            try:
+                # Fix: Find the original UNKNOWN log and update it to APPROVED or DENIED to preserve original timestamp
+                target_log_status = 'APPROVED' if action == 'approve' else 'DENIED'
+                original_log = RecognitionLog.objects.filter(
+                    image_path=relative_img,
+                    status='UNKNOWN'
+                ).order_by('-timestamp').first()
+
+                # If no UNKNOWN log found with relative_img, also check if any recent UNKNOWN log exists from roughly the same time
+                if not original_log and notification.created_at:
+                    from datetime import timedelta
+                    t_start = notification.created_at - timedelta(minutes=2)
+                    t_end = notification.created_at + timedelta(minutes=2)
                     original_log = RecognitionLog.objects.filter(
-                        image_path=relative_img,
+                        timestamp__range=(t_start, t_end),
                         status='UNKNOWN'
                     ).order_by('-timestamp').first()
 
-                    target_log_status = 'APPROVED' if action == 'approve' else 'DENIED'
-
-                    if original_log:
-                        original_log.status = target_log_status
-                        if action == 'approve':
-                            original_log.person_name = person_name
-                            original_log.camera_name = camera_name
-                        original_log.save()
-                        print(f"[Mobile App] Updated log to {target_log_status}: {person_name}")
-                    else:
-                        RecognitionLog.objects.create(
-                            person_name=person_name if action == 'approve' else "Unregistered Person",
-                            camera_name=camera_name if action == 'approve' else "Mobile Access Scanner",
-                            confidence=confidence if action == 'approve' else 0.0,
-                            status=target_log_status,
-                            image_path=relative_img
-                        )
-                        print(f"[Mobile App] Created new log as {target_log_status}: {person_name}")
-                except Exception as e:
-                    print(f"[Mobile App] Error updating RecognitionLog: {e}")
+                if original_log:
+                    original_log.status = target_log_status
+                    if action == 'approve':
+                        original_log.person_name = person_name
+                        original_log.camera_name = camera_name
+                    original_log.save()
+                    print(f"[{source}] Updated log #{original_log.id} to {target_log_status}: {original_log.person_name}")
+                else:
+                    new_log = RecognitionLog.objects.create(
+                        person_name=person_name if action == 'approve' else "Unregistered Person",
+                        camera_name=camera_name if action == 'approve' else "Mobile Access Scanner",
+                        confidence=confidence if action == 'approve' else 0.0,
+                        status=target_log_status,
+                        image_path=relative_img
+                    )
+                    print(f"[{source}] Created new log #{new_log.id} as {target_log_status}")
+            except Exception as e:
+                print(f"[{source}] Error updating RecognitionLog: {e}")
 
             notification.status = new_status
             notification.action_source = source

@@ -18,4 +18,4 @@ setTimeout(() => {
       </ErrorBoundary>
     </React.StrictMode>
   );
-}, 1000);
+}, 3000);

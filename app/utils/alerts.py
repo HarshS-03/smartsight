@@ -13,7 +13,7 @@ from app.services.notification_service import send_fcm_push
 _pending_alerts = {}
 _unknown_cooldowns = {}
 UNKNOWN_COOLDOWN_SECONDS = 3600
-PENDING_ALERT_TIMEOUT = 900  # 15 minutes expiration timeout
+PENDING_ALERT_TIMEOUT = 300  # 5 minutes expiration timeout
 _polling_started = False
 
 
@@ -260,11 +260,11 @@ def check_alert_timeouts():
             RecognitionLog.objects.create(
                 person_name=person_name,
                 confidence=confidence,
-                status='UNKNOWN',
+                status='DENIED',
                 image_path=relative_image_path,
                 camera_name=camera_name,
             )
-            print(f"[Timeout Engine] Auto-saved alert due to 10-minute timeout: {person_name}")
+            print(f"[Timeout Engine] Auto-denied alert due to 5-minute timeout: {person_name}")
         except Exception as e:
             print(f"[Timeout Engine] DB save error: {e}")
 
@@ -281,8 +281,8 @@ def check_alert_timeouts():
                 notif.save()
             else:
                 Notification.objects.create(
-                    title=f"Intruder Alert Expired ({person_name})",
-                    message=f"No response received within timeout for {camera_name}.",
+                    title="Intruder Alert Expired",
+                    message=f"Verification timed out for {camera_name}.",
                     image_url=f"/media/{relative_image_path}" if relative_image_path else None,
                     status='EXPIRED',
                     is_read=True,
@@ -501,8 +501,8 @@ def send_alerts(*args, **kwargs):
             # Immediately log PENDING Notification in DB for Web/Mobile Realtime Audit Log
             try:
                 notif = Notification.objects.create(
-                    title="Intruder Alert (Unknown)",
-                    message=f"Unrecognized person detected{bystanders_msg} on {camera_name} (Confidence: {confidence_pct}%).",
+                    title="Intruder Detected",
+                    message=f"Unrecognized face on {camera_name} ({confidence_pct}% match).",
                     image_url=f"/media/{relative_image_path}" if relative_image_path else None,
                     status='PENDING',
                     alert_person_name=person_name,

@@ -99,10 +99,64 @@ class PersonSerializer(serializers.ModelSerializer):
 
 class RecognitionLogSerializer(serializers.ModelSerializer):
     timestamp = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%SZ", read_only=True)
+    class_name = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
 
     class Meta:
         model = RecognitionLog
-        fields = ['id', 'person_name', 'camera_name', 'confidence', 'detection_confidence', 'recognition_similarity', 'status', 'image_path', 'timestamp']
+        fields = [
+            'id', 'person_name', 'display_name', 'class_name', 'department', 'role',
+            'camera_name', 'confidence', 'detection_confidence', 'recognition_similarity',
+            'status', 'image_path', 'timestamp'
+        ]
+
+    def _get_person(self, obj):
+        if not obj.person_name:
+            return None
+        # Cache person lookup on serializer context
+        if not hasattr(self, '_person_cache'):
+            self._person_cache = {}
+        cleaned = obj.person_name.strip()
+        if cleaned in self._person_cache:
+            return self._person_cache[cleaned]
+
+        from app.models import Person
+        # Try exact match, prefix match or contains
+        p = Person.objects.filter(name__iexact=cleaned).first()
+        if not p:
+            first_word = cleaned.split()[0] if cleaned else ''
+            p = Person.objects.filter(name__istartswith=first_word).first() if first_word else None
+        self._person_cache[cleaned] = p
+        return p
+
+    def get_class_name(self, obj):
+        p = self._get_person(obj)
+        return p.class_name if p and p.class_name else ''
+
+    def get_department(self, obj):
+        p = self._get_person(obj)
+        return p.department if p and p.department else ''
+
+    def get_role(self, obj):
+        p = self._get_person(obj)
+        if not p:
+            return ''
+        return p.get_category_display() if hasattr(p, 'get_category_display') and p.get_category_display() else p.category
+
+    def get_display_name(self, obj):
+        if not obj.person_name:
+            return 'Unregistered Person'
+        p = self._get_person(obj)
+        if p:
+            # Clean up redundant class suffixes from raw name if already embedded
+            raw = obj.person_name.strip()
+            if p.class_name:
+                import re
+                raw = re.sub(re.escape(p.class_name), '', raw, flags=re.IGNORECASE).strip(' -').strip()
+            return raw or obj.person_name
+        return obj.person_name
 
 class NotificationSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%SZ", read_only=True)

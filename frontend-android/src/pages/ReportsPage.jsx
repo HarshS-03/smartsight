@@ -238,13 +238,25 @@ export default function ReportsPage() {
         const dateStr = `${day}/${month}/${year}`;
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
+        let rawName = log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown");
+        const className = (log.class_name || '').trim()
+          .replace(/\b(aiml|mca|cs|it)\b/gi, (match) => match.toUpperCase())
+          .replace(/\b(sem)\b/gi, "Sem");
+
+        const isUnknown = !rawName || rawName === "Unknown" || rawName.toLowerCase().includes('unknown');
+        const isSpoof = rawName.toLowerCase().includes('spoof');
+
+        if (!isUnknown && !isSpoof && className && !rawName.includes(className)) {
+          rawName = `${rawName} (${className})`;
+        }
+
         return {
           id: log.id,
           date: dateStr,
           rawTimestamp: dateObj.getTime(),
           camera_name: (log.camera_name || "Default Camera").replace(/Biometric/gi, "Access"),
-          person_name: log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown"),
-          name: log.person_name === "Unknown Person" ? "Unknown" : (log.person_name || "Unknown"),
+          person_name: rawName,
+          name: rawName,
           status: log.status,
           entry_time: timeStr,
           exit_time: timeStr,
@@ -265,13 +277,31 @@ export default function ReportsPage() {
 
       const personCounts = {};
       logs.forEach(log => {
-        const isSpoof = (log.person_name && log.person_name.toLowerCase().includes('spoof'));
-        // If UNKNOWN/DENIED/no name/name contains 'unknown', treat each detection as a unique occurrence
-        const isUnknown = !isSpoof && (log.status === 'UNKNOWN' || log.status === 'DENIED' || !log.person_name || (log.person_name && log.person_name.toLowerCase().includes('unknown')));
+        const pName = (log.person_name || '').trim();
+        const pNameLower = pName.toLowerCase();
+        const isSpoof = pNameLower.includes('spoof') || (log.status === 'SPOOF');
         
-        let rawName = log.person_name || 'Unknown Person';
+        // Genuine unknown check: Only if person_name is missing or explicitly 'unknown' / 'unregistered' / 'no face'
+        const isUnknown = !isSpoof && (
+          !pName || 
+          pNameLower.includes('unknown') || 
+          pNameLower.includes('unregistered') || 
+          pNameLower.includes('no face') ||
+          pNameLower === 'stranger'
+        );
+        
+        let rawName = isUnknown ? 'Unknown Person' : pName;
         // Uppercase courses like AIML, MCA, CS, SEM, etc.
         rawName = rawName.replace(/\b(aiml|mca|cs|sem|it)\b/gi, (match) => match.toUpperCase());
+
+        const className = (log.class_name || '').trim()
+          .replace(/\b(aiml|mca|cs|it)\b/gi, (match) => match.toUpperCase())
+          .replace(/\b(sem)\b/gi, "Sem");
+
+        let formattedName = rawName;
+        if (!isUnknown && !isSpoof && className && !rawName.includes(className)) {
+          formattedName = `${rawName} (${className})`;
+        }
 
         const groupKey = isSpoof 
           ? `__spoof_${log.id || Math.floor(Math.random()*1000)}`
@@ -279,13 +309,13 @@ export default function ReportsPage() {
         
         if (!personCounts[groupKey]) {
           personCounts[groupKey] = { 
-            display_name: isSpoof ? 'Spoof Attempt' : (isUnknown ? 'Unknown' : rawName),
+            display_name: isSpoof ? 'Spoof Attempt' : (isUnknown ? 'Unknown' : formattedName),
             total_count: 0, 
             daily_count: 0, 
             weekly_count: 0, 
             monthly_count: 0, 
             last_seen: log.timestamp, 
-            status: isSpoof ? 'SPOOF' : log.status, 
+            status: isSpoof ? 'SPOOF' : (isUnknown ? 'DENIED' : (log.status || 'KNOWN')), 
             image_path: log.image_path, 
             is_unknown: isUnknown,
             is_spoof: isSpoof
@@ -327,6 +357,7 @@ export default function ReportsPage() {
           name: data.display_name,
           status: data.status,
           isUnknown: data.is_unknown,
+          isSpoof: data.is_spoof,
           total_count: data.total_count,
           daily_count: data.daily_count,
           weekly_count: data.weekly_count,
@@ -409,9 +440,14 @@ export default function ReportsPage() {
     }
 
     if (statusQuery && statusQuery !== 'all') {
-      if (statusQuery === 'UNKNOWN') {
-        const isUnknown = rep.status === 'UNKNOWN' || rep.status === 'DENIED' || !rep.person_name || (rep.person_name && rep.person_name.toLowerCase().includes('unknown'));
+      const isRepSpoof = rep.status === 'SPOOF' || (rep.person_name && rep.person_name.toLowerCase().includes('spoof'));
+      if (statusQuery === 'SPOOF') {
+        if (!isRepSpoof) return false;
+      } else if (statusQuery === 'UNKNOWN') {
+        const isUnknown = !isRepSpoof && (rep.status === 'UNKNOWN' || rep.status === 'DENIED' || !rep.person_name || (rep.person_name && rep.person_name.toLowerCase().includes('unknown')));
         if (!isUnknown) return false;
+      } else if (statusQuery === 'KNOWN') {
+        if (isRepSpoof || (rep.status !== 'KNOWN' && rep.status !== 'APPROVED')) return false;
       } else {
         if (rep.status !== statusQuery) return false;
       }
@@ -694,8 +730,8 @@ export default function ReportsPage() {
               </h6>
 
               <div className="d-flex justify-content-center w-100 mb-3">
-                <div className="d-inline-flex align-items-center gap-1 p-1 rounded-pill shadow-sm" style={{ minWidth: '320px', maxWidth: '420px', width: '100%', overflowX: 'auto', background: 'var(--bg-input, #f8f9fa)', border: '1px solid var(--border-color, rgba(0,0,0,0.08))' }}>
-                  {['ALL', 'KNOWN', 'UNKNOWN'].map(filter => {
+                <div className="d-inline-flex align-items-center gap-1 p-1 rounded-pill shadow-sm" style={{ minWidth: '320px', maxWidth: '480px', width: '100%', overflowX: 'auto', background: 'var(--bg-input, #f8f9fa)', border: '1px solid var(--border-color, rgba(0,0,0,0.08))' }}>
+                  {['ALL', 'KNOWN', 'UNKNOWN', 'SPOOF'].map(filter => {
                     const isActive = frequentPersonsFilter === filter;
                     let bgClass = 'transparent';
                     let textClass = 'text-secondary';
@@ -703,6 +739,7 @@ export default function ReportsPage() {
                       textClass = 'text-white shadow-sm';
                       if (filter === 'KNOWN') bgClass = '#198754';
                       else if (filter === 'UNKNOWN') bgClass = '#dc3545';
+                      else if (filter === 'SPOOF') bgClass = '#dc2626';
                       else bgClass = 'var(--bs-primary)';
                     }
                     return (
@@ -712,7 +749,7 @@ export default function ReportsPage() {
                         style={{ fontSize: '0.75rem', padding: '0.5rem 0.5rem', background: isActive ? bgClass : 'transparent', letterSpacing: '0.3px' }}
                         onClick={() => setFrequentPersonsFilter(filter)}
                       >
-                        {filter === 'ALL' ? 'All' : filter === 'KNOWN' ? 'Known' : 'Unknown'}
+                        {filter === 'ALL' ? 'All' : filter === 'KNOWN' ? 'Known' : filter === 'UNKNOWN' ? 'Unknown' : 'Spoof'}
                       </button>
                     );
                   })}
@@ -728,8 +765,9 @@ export default function ReportsPage() {
                     (() => {
                       const visiblePersons = frequentPersons.filter(p => {
                         if (frequentPersonsFilter === 'ALL') return true;
-                        if (frequentPersonsFilter === 'KNOWN') return !p.isUnknown;
-                        if (frequentPersonsFilter === 'UNKNOWN') return p.isUnknown;
+                        if (frequentPersonsFilter === 'KNOWN') return !p.isUnknown && !p.isSpoof && p.status !== 'SPOOF';
+                        if (frequentPersonsFilter === 'UNKNOWN') return p.isUnknown && !p.isSpoof && p.status !== 'SPOOF';
+                        if (frequentPersonsFilter === 'SPOOF') return p.isSpoof || p.status === 'SPOOF' || (p.name && p.name.toLowerCase().includes('spoof'));
                         return true;
                       });
                       if (visiblePersons.length === 0) {
@@ -792,10 +830,10 @@ export default function ReportsPage() {
                               <div className="d-flex align-items-center gap-2 mb-1">
                                 <strong className="text-dynamic text-truncate" style={{ fontSize: '1rem' }}>{person.name}</strong>
                                 <span
-                                  className={`badge rounded-pill fw-bold ${person.status === 'KNOWN' ? 'bg-success' : 'bg-danger'} text-white`}
+                                  className={`badge rounded-pill fw-bold ${!person.isUnknown ? 'bg-success' : 'bg-danger'} text-white`}
                                   style={{ fontSize: '0.65rem', padding: '0.35em 0.65em' }}
                                 >
-                                  {person.status}
+                                  {person.status === 'SPOOF' ? 'SPOOF' : (!person.isUnknown ? 'KNOWN' : 'UNKNOWN')}
                                 </span>
                               </div>
                               
@@ -1094,64 +1132,10 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Filter Bar Controls (Camera, Person, Timeframe Dropdowns & Actions) */}
+              {/* Filter Bar Controls (Person, Timeframe Dropdowns & Actions) */}
               <div className="row g-3 align-items-end mb-4 px-1">
-                {/* Camera Dropdown */}
-                <div className="col-12 col-sm-6 col-lg-3">
-                  <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-inline-flex align-items-center gap-2">
-                    <i className="bi bi-camera-video text-primary fs-6 flex-shrink-0"></i>
-                    <span>Camera</span>
-                  </label>
-                  <div className="dropdown position-relative">
-                    <button
-                      type="button"
-                      className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
-                      style={{ background: 'var(--bg-input, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.1))', fontSize: '0.85rem', height: '42px' }}
-                      onClick={() => { setShowCameraDropdown(!showCameraDropdown); setShowPersonDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
-                    >
-                      <span className="text-truncate d-inline-flex align-items-center gap-2">
-                        <i className="bi bi-camera-video text-primary flex-shrink-0"></i>
-                        <span>{cameraQuery === 'all' ? 'All Cameras' : cameraQuery}</span>
-                      </span>
-                      <i className={`bi bi-chevron-down ms-2 small transition-all ${showCameraDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.7rem' }}></i>
-                    </button>
-
-                    {showCameraDropdown && (
-                      <>
-                        <div className="position-fixed inset-0" style={{ zIndex: 990 }} onClick={() => setShowCameraDropdown(false)}></div>
-                        <div
-                          className="position-absolute top-100 mt-2 start-0 w-100 rounded-4 p-2 shadow-lg overflow-hidden"
-                          style={{
-                            zIndex: 1000,
-                            background: 'var(--dropdown-bg, var(--bg-surface-solid, #0f172a))',
-                            border: '1px solid var(--dropdown-border, rgba(255, 255, 255, 0.12))',
-                            boxShadow: 'var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.25))'
-                          }}
-                        >
-                          {availableCameras.map((cam) => (
-                            <button
-                              key={cam}
-                              type="button"
-                              className={`w-100 custom-dropdown-item my-0.5 border-0 bg-transparent ${cameraQuery === cam ? 'active fw-bold' : ''
-                                }`}
-                              style={{ fontSize: '0.85rem' }}
-                              onClick={() => {
-                                setCameraQuery(cam);
-                                setShowCameraDropdown(false);
-                              }}
-                            >
-                              <span className="text-truncate">{cam === 'all' ? 'All Cameras' : cam}</span>
-                              {cameraQuery === cam && <i className="bi bi-check2"></i>}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
                 {/* Person Dropdown */}
-                <div className="col-12 col-sm-6 col-lg-3">
+                <div className="col-12 col-sm-6 col-lg-4">
                   <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-inline-flex align-items-center gap-2">
                     <i className="bi bi-person text-primary fs-6"></i>
                     <span>Person</span>
@@ -1161,11 +1145,11 @@ export default function ReportsPage() {
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
                       style={{ background: 'var(--bg-input, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.1))', fontSize: '0.85rem', height: '42px' }}
-                      onClick={() => { setShowPersonDropdown(!showPersonDropdown); setShowCameraDropdown(false); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
+                      onClick={() => { setShowPersonDropdown(!showPersonDropdown); setShowTimeframeDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate d-inline-flex align-items-center gap-2">
                         <i className="bi bi-person text-primary"></i>
-                        <span>{statusQuery === 'KNOWN' ? 'Known Persons' : statusQuery === 'UNKNOWN' ? 'Unknown Persons' : 'All Persons'}</span>
+                        <span>{statusQuery === 'KNOWN' ? 'Known Persons' : statusQuery === 'UNKNOWN' ? 'Unknown Persons' : statusQuery === 'SPOOF' ? 'Spoof Attempts' : 'All Persons'}</span>
                       </span>
                       <i className={`bi bi-chevron-down ms-2 small transition-all ${showPersonDropdown ? 'rotate-180' : ''}`} style={{ fontSize: '0.7rem' }}></i>
                     </button>
@@ -1185,7 +1169,8 @@ export default function ReportsPage() {
                           {[
                             { label: 'All Persons', value: 'all' },
                             { label: 'Known Persons', value: 'KNOWN' },
-                            { label: 'Unknown Persons', value: 'UNKNOWN' }
+                            { label: 'Unknown Persons', value: 'UNKNOWN' },
+                            { label: 'Spoof Attempts', value: 'SPOOF' }
                           ].map((opt) => (
                             <button
                               key={opt.value}
@@ -1209,7 +1194,7 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Timeframe Dropdown */}
-                <div className="col-12 col-sm-6 col-lg-3">
+                <div className="col-12 col-sm-6 col-lg-4">
                   <label className="form-label text-secondary small fw-bold text-uppercase mb-2 d-inline-flex align-items-center gap-2">
                     <i className="bi bi-clock-history text-primary fs-6"></i>
                     <span>Timeframe</span>
@@ -1219,7 +1204,7 @@ export default function ReportsPage() {
                       type="button"
                       className="btn w-100 d-flex align-items-center justify-content-between text-dynamic px-3.5 rounded-pill shadow-xs transition-all hover-glow"
                       style={{ background: 'var(--bg-input, #ffffff)', border: '1px solid var(--border-color, rgba(0,0,0,0.1))', fontSize: '0.85rem', height: '42px' }}
-                      onClick={() => { setShowTimeframeDropdown(!showTimeframeDropdown); setShowCameraDropdown(false); setShowPersonDropdown(false); setShowPerPageDropdown(false); }}
+                      onClick={() => { setShowTimeframeDropdown(!showTimeframeDropdown); setShowPersonDropdown(false); setShowPerPageDropdown(false); }}
                     >
                       <span className="text-truncate d-inline-flex align-items-center gap-2">
                         <i className="bi bi-calendar3 text-primary"></i>
@@ -1270,7 +1255,7 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Apply & Reset Filter Actions */}
-                <div className="col-12 col-sm-6 col-lg-3">
+                <div className="col-12 col-sm-12 col-lg-4">
                   <label className="form-label d-none d-lg-block text-secondary small fw-bold text-uppercase mb-2" style={{ visibility: 'hidden' }}>Actions</label>
                   <div className="d-flex align-items-center gap-2">
                     <button
@@ -1339,7 +1324,9 @@ export default function ReportsPage() {
                                   <span className="fw-bold text-dynamic lh-sm text-truncate" style={{ fontSize: '0.98rem' }}>
                                     {rep.person_name === "Unknown Person" ? "Unknown" : (rep.person_name || "Unknown")}
                                   </span>
-                                  {rep.status === 'KNOWN' ? (
+                                  {rep.status === 'SPOOF' || (rep.person_name && rep.person_name.toLowerCase().includes('spoof')) ? (
+                                    <span className="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px', backgroundColor: '#dc2626' }}>Spoof</span>
+                                  ) : rep.status === 'KNOWN' ? (
                                     <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Known</span>
                                   ) : rep.status === 'APPROVED' ? (
                                     <span className="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.3px' }}>Approved</span>

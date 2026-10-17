@@ -485,10 +485,12 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
             
             try:
                 # ── InsightFace Detection (SCRFD) & ArcFace Recognition ──
+                antispoof_active = getattr(settings, 'ANTISPOOF_ENABLED', True)
                 detections = detect_and_recognize(
                     frame_to_process,
                     threshold=arcface_threshold,
-                    max_faces=arcface_max_faces
+                    max_faces=arcface_max_faces,
+                    check_spoof=antispoof_active
                 )
 
                 boxes = []

@@ -45,14 +45,33 @@ def check_liveness(frame, bbox=None):
     try:
         h, w = frame.shape[:2]
         if bbox is not None:
-            bx1, by1, bx2, by2 = [int(v) for v in bbox]
-            pad_x = int((bx2 - bx1) * 0.15)
-            pad_y = int((bx2 - bx1) * 0.15)
-            cx1 = max(0, bx1 - pad_x)
-            cy1 = max(0, by1 - pad_y)
-            cx2 = min(w, bx2 + pad_x)
-            cy2 = min(h, by2 + pad_y)
-            face_img = frame[cy1:cy2, cx1:cx2]
+            bx1, by1, bx2, by2 = [float(v) for v in bbox]
+            box_w = bx2 - bx1
+            box_h = by2 - by1
+            cx = bx1 + box_w / 2.0
+            cy = by1 + box_h / 2.0
+
+            # MiniFASNet V2 expects a 2.7x scaled crop around face to inspect skin texture & surroundings
+            scale = 2.7
+            new_w = box_w * scale
+            new_h = box_h * scale
+
+            crop_x1 = int(cx - new_w / 2.0)
+            crop_y1 = int(cy - new_h / 2.0)
+            crop_x2 = int(cx + new_w / 2.0)
+            crop_y2 = int(cy + new_h / 2.0)
+
+            dx = max(0, -crop_x1)
+            dy = max(0, -crop_y1)
+            edx = max(0, crop_x2 - w)
+            edy = max(0, crop_y2 - h)
+
+            h_slice = slice(max(0, crop_y1), min(h, crop_y2))
+            w_slice = slice(max(0, crop_x1), min(w, crop_x2))
+            face_img = frame[h_slice, w_slice]
+
+            if dx > 0 or dy > 0 or edx > 0 or edy > 0:
+                face_img = cv.copyMakeBorder(face_img, dy, edy, dx, edx, cv.BORDER_CONSTANT, value=[0, 0, 0])
         else:
             face_img = frame
 
@@ -62,11 +81,11 @@ def check_liveness(frame, bbox=None):
         session = get_antispoof_session()
         input_name = session.get_inputs()[0].name
 
-        # MiniFASNet V2 input preprocessing: 80x80 BGR, float32, NCHW format
-        resized = cv.resize(face_img, (80, 80), interpolation=cv.INTER_AREA)
-        blob = resized.astype(np.float32)
-        blob = np.transpose(blob, (2, 0, 1)) # HWC -> CHW
-        blob = np.expand_dims(blob, axis=0)  # CHW -> NCHW
+        # MiniFASNet V2 input preprocessing: 80x80 BGR, float32, normalized to [0, 1], NCHW format
+        resized = cv.resize(face_img, (80, 80), interpolation=cv.INTER_LINEAR)
+        blob = resized.astype(np.float32) / 255.0
+        blob = np.transpose(blob, (2, 0, 1)) # HWC -> CHW (3, 80, 80)
+        blob = np.expand_dims(blob, axis=0)  # CHW -> NCHW (1, 3, 80, 80)
 
         # Run ONNX model (takes ~4ms)
         output = session.run(None, {input_name: blob})[0][0]
@@ -74,14 +93,22 @@ def check_liveness(frame, bbox=None):
         exp_vals = np.exp(output - np.max(output))
         probs = exp_vals / np.sum(exp_vals)
 
-        # In MiniFASNet: class 1 is Genuine / Live human face
-        live_prob = float(probs[1]) if len(probs) > 1 else float(probs[0])
-        is_real = live_prob >= 0.50
+        # MiniFASNet V2 classification classes:
+        # Class 1: Genuine / Real human face
+        # Class 0: Print attack (paper / photo)
+        # Class 2: Replay attack (digital screen / phone)
+        real_prob = float(probs[1]) if len(probs) > 1 else 0.0
+        spoof_prob = float(probs[0] + probs[2]) if len(probs) > 2 else float(probs[0])
+        pred_label = int(np.argmax(probs))
+
+        # Real if argmax is class 1 and real_prob is significant
+        is_real = (pred_label == 1) and (real_prob >= 0.50)
 
         if is_real:
-            return True, live_prob, "REAL"
+            return True, real_prob, "REAL"
         else:
-            return False, live_prob, "SPOOF_ATTEMPT"
+            return False, spoof_prob, "SPOOF_ATTEMPT"
+
 
     except Exception as e:
         logger.warning(f"[AntiSpoof] Error checking liveness via ONNX: {e}")

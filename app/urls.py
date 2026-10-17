@@ -76,8 +76,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             
                         try:
                             dispatch_notification(
-                                title="Security Alert: Brute Force",
-                                message=f"Multiple failed login attempts detected. IP Address: {ip}. System has blocked this IP for {t_str}."
+                                title="Brute Force Attempt Blocked",
+                                message=f"Multiple failed logins. IP {ip} blocked for {t_str}."
                             )
                         except Exception as notif_err:
                             print("[Auth Throttle] Failed to send notification:", notif_err)

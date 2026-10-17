@@ -759,34 +759,40 @@ export default function DetectionPage() {
               <span className="badge bg-light text-dark">{recentScans.length}</span>
             </div>
             <div className="d-flex flex-column gap-2">
-              {recentScans.map((scan, i) => (
-                <div key={i} className="d-flex align-items-center justify-content-between p-2 rounded-3 border" style={{ background: 'var(--bg-input, #f8fafc)' }}>
-                  <div className="d-flex align-items-center gap-2">
-                    {scan.image_url ? (
-                      <img src={scan.image_url} alt="Face" className="rounded-circle" style={{ width: '32px', height: '32px', objectFit: 'cover' }} />
-                    ) : (
-                      <i className="bi bi-person-circle fs-5 text-secondary"></i>
-                    )}
-                    <div>
-                      <div className="fw-bold small text-capitalize" style={{ fontSize: '0.8rem', color: 'var(--text-heading, #ffffff)' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
-                      <div className="text-secondary" style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                        {[scan.department, scan.class_name].filter(Boolean).join(' • ') || (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Pending Admin Review' : (scan.role || 'Authorized'))}
+              {recentScans.map((scan, i) => {
+                const scanTime = scan.timestamp ? new Date(scan.timestamp).getTime() : 0;
+                const isScanExpired = scanTime > 0 && (Date.now() - scanTime > 5 * 60 * 1000);
+                const isAllowed = !isScanExpired && scan.status === 'ALLOWED';
+
+                return (
+                  <div key={i} className="d-flex align-items-center justify-content-between p-2 rounded-3 border" style={{ background: 'var(--bg-input, #f8fafc)' }}>
+                    <div className="d-flex align-items-center gap-2">
+                      {scan.image_url ? (
+                        <img src={scan.image_url} alt="Face" className="rounded-circle" style={{ width: '32px', height: '32px', objectFit: 'cover' }} />
+                      ) : (
+                        <i className="bi bi-person-circle fs-5 text-secondary"></i>
+                      )}
+                      <div>
+                        <div className="fw-bold small text-capitalize" style={{ fontSize: '0.8rem', color: 'var(--text-heading, #ffffff)' }}>{scan.person_name || 'Unregistered Person / Stranger'}</div>
+                        <div className="text-secondary" style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>
+                          {[scan.department, scan.class_name].filter(Boolean).join(' • ') || (isScanExpired ? 'Session Expired (Auto-Denied)' : (scan.status === 'DENIED' || scan.status === 'PENDING_REVIEW' ? 'Pending Admin Review' : (scan.role || 'Authorized')))}
+                        </div>
                       </div>
                     </div>
+                    <span 
+                      className={`badge rounded-pill ${isAllowed ? 'bg-success' : scan.status === 'PENDING_REVIEW' ? '' : 'bg-danger'}`} 
+                      style={{ 
+                        fontSize: '0.65rem',
+                        letterSpacing: '0.3px',
+                        padding: '4px 8px',
+                        ...(scan.status === 'PENDING_REVIEW' ? { background: '#d97706', color: '#fff' } : {})
+                      }}
+                    >
+                      {scan.status === 'PENDING_REVIEW' ? 'REVIEW' : (isScanExpired ? 'AUTO-DENIED' : (scan.status || '').replace(/_/g, ' '))}
+                    </span>
                   </div>
-                  <span 
-                    className={`badge rounded-pill ${scan.status === 'ALLOWED' ? 'bg-success' : scan.status === 'PENDING_REVIEW' ? '' : 'bg-danger'}`} 
-                    style={{ 
-                      fontSize: '0.65rem',
-                      letterSpacing: '0.3px',
-                      padding: '4px 8px',
-                      ...(scan.status === 'PENDING_REVIEW' ? { background: '#d97706', color: '#fff' } : {})
-                    }}
-                  >
-                    {scan.status === 'PENDING_REVIEW' ? 'REVIEW' : (scan.status || '').replace(/_/g, ' ')}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

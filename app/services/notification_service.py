@@ -138,7 +138,7 @@ def send_fcm_push(notification, image_url=None):
         print(f"[FCM Dispatch Error]: {fcm_err}")
 
 
-def dispatch_notification(title, message, image_url=None, user=None):
+def dispatch_notification(title, message, image_url=None, user=None, status='PENDING'):
     """
     Creates a DB Notification record, sends Telegram Alert,
     and dispatches FCM Native Push Notification simultaneously.
@@ -148,7 +148,7 @@ def dispatch_notification(title, message, image_url=None, user=None):
         title=title,
         message=message,
         image_url=image_url,
-        status='PENDING',
+        status=status,
         user=user
     )
 

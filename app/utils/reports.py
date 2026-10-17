@@ -118,7 +118,7 @@ def _fill_summary_sheet(ws, reports, title_suffix):
         ws['A9'].alignment = Alignment(horizontal='center', vertical='center')
         ws.row_dimensions[9].height = 32
 
-        tp_headers = ['#', 'Person Name', 'Status', 'Frequency']
+        tp_headers = ['Number', 'Person Name', 'Status', 'Frequency']
         for ci, h in enumerate(tp_headers, 1):
             cell = ws.cell(row=10, column=ci, value=h)
             cell.font = Font(name='Inter', size=10, bold=True, color='FFFFFF')
@@ -169,33 +169,34 @@ def _fill_summary_sheet(ws, reports, title_suffix):
 
 def _fill_excel_worksheet(ws, reports, title_text):
     """Fill a worksheet with styled detection records."""
-    ws.sheet_properties.tabColor = "10B981"
-    ws.views.sheetView[0].showGridLines = False
+    ws.sheet_properties.tabColor = "2563EB"
+    ws.views.sheetView[0].showGridLines = True
 
     # ── Title Banner ──
-    ws.append([title_text])
-    ws.merge_cells("A1:H1")
+    clean_title = title_text.replace("Historical ", "").replace("HISTORICAL ", "")
+    ws.append([clean_title])
+    ws.merge_cells("A1:I1")
     title_cell = ws["A1"]
-    title_cell.font = Font(name="Inter", size=16, bold=True, color="FFFFFF")
-    title_cell.fill = PatternFill(start_color=BRAND_BLUE, end_color=BRAND_BLUE, fill_type="solid")
+    title_cell.font = Font(name="Inter", size=15, bold=True, color="FFFFFF")
+    title_cell.fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[1].height = 45
+    ws.row_dimensions[1].height = 42
 
     # ── Subtitle ──
     now = timezone.localtime(timezone.now())
-    ws.append([f"Generated: {now.strftime('%d %b %Y, %I:%M %p')}  •  {len(reports)} Records"])
-    ws.merge_cells("A2:H2")
-    ws["A2"].font = Font(name="Inter", size=10, italic=True, color="64748B")
-    ws["A2"].fill = PatternFill(start_color=LIGHT_BG, end_color=LIGHT_BG, fill_type="solid")
+    ws.append([f"Generated: {now.strftime('%d %b %Y, %I:%M %p')}   •   Total Logs: {len(reports)}"])
+    ws.merge_cells("A2:I2")
+    ws["A2"].font = Font(name="Inter", size=9.5, italic=True, color="475569")
+    ws["A2"].fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
     ws["A2"].alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[2].height = 26
+    ws.row_dimensions[2].height = 24
 
     # ── Headers ──
-    headers = ["#", "Date", "Camera", "Person Name", "Classification", "Frequency", "Entry Time", "Exit Time"]
+    headers = ["Number", "Date", "Camera", "Person Name", "Role / Classification", "Access Status", "Frequency", "Time"]
     ws.append(headers)
     ws.row_dimensions[3].height = 28
 
-    header_fill = PatternFill(start_color=DARK_HEADER, end_color=DARK_HEADER, fill_type="solid")
+    header_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
     header_font = Font(name="Inter", size=10, bold=True, color="FFFFFF")
     header_alignment = Alignment(horizontal="center", vertical="center")
 
@@ -209,30 +210,41 @@ def _fill_excel_worksheet(ws, reports, title_text):
     # ── Data Rows ──
     row_idx = 4
     for idx, rep in enumerate(reports):
-        rep_date = rep['date']
+        rep_date = rep.get('date', '')
         if isinstance(rep_date, str):
             date_str = rep_date
-        else:
+        elif hasattr(rep_date, 'strftime'):
             date_str = rep_date.strftime('%d/%m/%Y')
+        else:
+            date_str = str(rep_date or '—')
 
-        name = rep['person_name'] if rep['person_name'] else "Unknown Person"
-        status_disp = "Known" if rep['status'] == "KNOWN" else "Unknown"
+        name = rep.get('person_name', 'Unknown')
+        role = rep.get('role', 'Member')
         camera_disp = rep.get('camera_name', 'Default Camera')
-        entry_local = timezone.localtime(rep['entry_time'])
-        exit_local  = timezone.localtime(rep['exit_time'])
-        entry_str = entry_local.strftime('%I:%M:%S %p')
-        exit_str  = exit_local.strftime('%I:%M:%S %p')
-        max_conf = f"{rep['max_confidence'] * 100:.1f}%" if rep.get('max_confidence') and rep['max_confidence'] <= 1.0 else f"{rep.get('max_confidence', 0):.1f}%"
+        
+        entry_raw = rep.get('entry_time')
+        if entry_raw:
+            entry_local = timezone.localtime(entry_raw)
+            time_str = entry_local.strftime('%I:%M:%S %p')
+        else:
+            time_str = '—'
+
+        acc_status = rep.get('access_status')
+        if not acc_status:
+            acc_status = "ALLOWED" if rep.get('status') in ['KNOWN', 'APPROVED'] else "DENIED"
+
         freq_val = rep.get('frequency', 1)
 
-        ws.append([idx + 1, date_str, camera_disp, name, status_disp, freq_val, entry_str, exit_str])
-        ws.row_dimensions[row_idx].height = 22
+        ws.append([idx + 1, date_str, camera_disp, name, role, acc_status, freq_val, time_str])
+        ws.row_dimensions[row_idx].height = 24
 
-        row_fill = PatternFill(start_color=ROW_EVEN if row_idx % 2 == 0 else ROW_ODD, fill_type="solid")
-        status_color = KNOWN_GREEN if rep['status'] == "KNOWN" else UNKNOWN_RED
+        row_fill = PatternFill(start_color="F8FAFC" if row_idx % 2 == 0 else "FFFFFF", fill_type="solid")
+        
+        is_allowed = acc_status == "ALLOWED"
+        status_color = "15803D" if is_allowed else "B91C1C"
         status_fill = PatternFill(
-            start_color="DCFCE7" if rep['status'] == "KNOWN" else "FEE2E2",
-            end_color="DCFCE7" if rep['status'] == "KNOWN" else "FEE2E2",
+            start_color="DCFCE7" if is_allowed else "FEE2E2",
+            end_color="DCFCE7" if is_allowed else "FEE2E2",
             fill_type="solid"
         )
 
@@ -240,36 +252,36 @@ def _fill_excel_worksheet(ws, reports, title_text):
             cell = ws.cell(row=row_idx, column=col_num)
             cell.border = THIN_BORDER
 
-            if col_num == 5:  # Classification column
+            if col_num == 6:  # Access Status column (Pill-like colored badge)
                 cell.fill = status_fill
-                cell.font = Font(name="Inter", size=10, bold=True, color=status_color)
-            else:
-                cell.fill = row_fill
-                cell.font = Font(name="Inter", size=10)
-
-            if col_num in [1, 2, 3, 5, 6, 7, 8]:
+                cell.font = Font(name="Inter", size=9.5, bold=True, color=status_color)
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             else:
-                cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+                cell.fill = row_fill
+                cell.font = Font(name="Inter", size=9.5)
+                if col_num in [1, 2, 7, 8]:
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+                else:
+                    cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
 
         row_idx += 1
 
     # ── Footer Summary Row ──
     if reports:
-        known_count = sum(1 for r in reports if r['status'] == 'KNOWN')
-        footer_text = f"Total: {len(reports)} records  |  Known: {known_count}  |  Unknown: {len(reports) - known_count}"
+        allowed_count = sum(1 for r in reports if r.get('access_status') == 'ALLOWED' or r.get('status') in ['KNOWN', 'APPROVED'])
+        footer_text = f"Total: {len(reports)} records  |  Allowed: {allowed_count}  |  Denied: {len(reports) - allowed_count}"
         ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=8)
         ws.cell(row=row_idx, column=1, value=footer_text)
         ws.cell(row=row_idx, column=1).font = Font(name='Inter', size=10, bold=True, color='FFFFFF')
-        ws.cell(row=row_idx, column=1).fill = PatternFill(start_color=FOOTER_BG, end_color=FOOTER_BG, fill_type='solid')
+        ws.cell(row=row_idx, column=1).fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type='solid')
         ws.cell(row=row_idx, column=1).alignment = Alignment(horizontal='center', vertical='center')
         for c in range(1, 9):
-            ws.cell(row=row_idx, column=c).fill = PatternFill(start_color=FOOTER_BG, end_color=FOOTER_BG, fill_type='solid')
+            ws.cell(row=row_idx, column=c).fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type='solid')
             ws.cell(row=row_idx, column=c).border = THIN_BORDER
         ws.row_dimensions[row_idx].height = 28
 
     # ── Auto-fit Column Widths ──
-    min_widths = {'A': 5, 'B': 14, 'C': 16, 'D': 22, 'E': 16, 'F': 14, 'G': 16, 'H': 16}
+    min_widths = {'A': 10, 'B': 14, 'C': 18, 'D': 28, 'E': 20, 'F': 16, 'G': 12, 'H': 16}
     for col in ws.columns:
         col_letter = None
         for cell in col:
@@ -393,7 +405,7 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
     import os
     import io
     from django.conf import settings
-    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import inch
     from reportlab.platypus import (
@@ -405,40 +417,41 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
-        pagesize=landscape(letter),
-        leftMargin=30,
-        rightMargin=30,
-        topMargin=30,
-        bottomMargin=30
+        pagesize=A4,
+        leftMargin=24,
+        rightMargin=24,
+        topMargin=26,
+        bottomMargin=26
     )
 
     styles = getSampleStyleSheet()
 
     # ── Styles ──
+    title_clean = title_suffix.replace("Historical ", "").replace("HISTORICAL ", "")
     title_style = ParagraphStyle(
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=24,
+        fontSize=17,
+        leading=21,
         textColor=colors.HexColor('#0F172A'),
-        spaceAfter=2
+        spaceAfter=3
     )
     subtitle_style = ParagraphStyle(
         'DocSubtitle',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=9,
-        leading=12,
+        fontSize=8.5,
+        leading=11,
         textColor=colors.HexColor('#64748B'),
-        spaceAfter=14
+        spaceAfter=12
     )
     cell_style = ParagraphStyle(
         'CellText',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=8.5,
-        leading=11,
+        fontSize=7.5,
+        leading=10,
         textColor=colors.HexColor('#1E293B')
     )
     cell_bold_style = ParagraphStyle(
@@ -460,8 +473,8 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
         'HeaderCell',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=9,
-        leading=11,
+        fontSize=8,
+        leading=10,
         textColor=colors.white,
         alignment=1  # Centered
     )
@@ -469,65 +482,142 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
     story = []
     media_root = getattr(settings, 'MEDIA_ROOT', '')
 
-    # ── Title & Header ──
+    # ── Modern Header Banner with Accent Line ──
     now_str = timezone.localtime(timezone.now()).strftime('%d %b %Y, %I:%M %p')
-    story.append(Paragraph(f"SMARTSIGHT — {title_suffix.upper()}", title_style))
-    story.append(Paragraph(
-        f"Generated on {now_str} &bull; Department Smart Access Control Audit",
-        subtitle_style
-    ))
+    
+    header_data = [[
+        Paragraph(f"<b><font color='#2563EB'>SMARTSIGHT</font></b> &nbsp;|&nbsp; {title_clean.upper()}", title_style),
+    ], [
+        Paragraph(f"Generated: <b>{now_str}</b> &nbsp;&bull;&nbsp; Smart Access Control & Security Audit", subtitle_style),
+    ]]
+    header_table = Table(header_data, colWidths=[547])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LINEBELOW', (0, 1), (-1, 1), 1.5, colors.HexColor('#2563EB')),
+    ]))
+    story.append(header_table)
+    story.append(Spacer(1, 12))
 
-    # ── Summary Statistics Bar ──
+    # ── Summary Statistics Bar (A4 Portrait printable width: 547pt) ──
     total_count = logs.count() if hasattr(logs, 'count') else len(logs)
     known_count = sum(1 for l in logs if getattr(l, 'status', '') == 'KNOWN')
     unknown_count = total_count - known_count
     rate_str = f"{(known_count / total_count * 100):.1f}%" if total_count else "N/A"
 
-    stat_label = ParagraphStyle('StatLabel', parent=cell_style, fontSize=7.5, textColor=colors.HexColor('#64748B'), alignment=1)
-    stat_value = ParagraphStyle('StatValue', parent=cell_bold_style, fontSize=13, leading=16, alignment=1)
+    stat_label = ParagraphStyle('StatLabel', parent=cell_style, fontSize=7, textColor=colors.HexColor('#64748B'), alignment=1)
+    stat_value = ParagraphStyle('StatValue', parent=cell_bold_style, fontSize=12, leading=15, alignment=1)
 
     summary_data = [[
         [Paragraph(f"{total_count}", stat_value), Paragraph("Total Scans", stat_label)],
         [Paragraph(f"<font color='#15803D'>{known_count}</font>", stat_value), Paragraph("Authorized (Known)", stat_label)],
-        [Paragraph(f"<font color='#B91C1C'>{unknown_count}</font>", stat_value), Paragraph("Unauthorized", stat_label)],
-        [Paragraph(f"<font color='#0D6EFD'>{rate_str}</font>", stat_value), Paragraph("Verification Rate", stat_label)],
+        [Paragraph(f"<font color='#B91C1C'>{unknown_count}</font>", stat_value), Paragraph("Unauthorized / Denied", stat_label)],
+        [Paragraph(f"<font color='#2563EB'>{rate_str}</font>", stat_value), Paragraph("Verification Rate", stat_label)],
     ]]
-    summary_table = Table(summary_data, colWidths=[185, 185, 185, 185])
+    summary_table = Table(summary_data, colWidths=[136, 137, 137, 137])
     summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F1F5F9')),
-        ('BOX', (0, 0), (-1, -1), 1.2, colors.HexColor('#CBD5E1')),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#E2E8F0')),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
     story.append(summary_table)
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 12))
+
+    # ── Pre-fetch all Person objects into a lookup dictionary ──
+    from app.models import Person, PersonImage
+    all_persons = list(Person.objects.all())
+    person_cache = {p.name.strip().lower(): p for p in all_persons}
+    
+    # Pre-fetch first dataset images for all persons
+    person_ids = [p.id for p in all_persons]
+    first_images = {}
+    if person_ids:
+        for pi in PersonImage.objects.filter(person_id__in=person_ids).order_by('person_id', 'id'):
+            if pi.person_id not in first_images:
+                first_images[pi.person_id] = pi
+        for p in all_persons:
+            p._cached_first_image = first_images.get(p.id)
+
+    def _format_display_name(raw_name):
+        """Format clean name with class/batch in parentheses, e.g. 'Harsh Shrimali (AIML - Sem 3)' without repetition"""
+        if not raw_name:
+            return "Unknown"
+        raw_name = raw_name.strip()
+        raw_lower = raw_name.lower()
+        if 'unknown' in raw_lower or 'stranger' in raw_lower:
+            return "Unknown"
+        if 'spoof' in raw_lower or 'fake' in raw_lower:
+            return "Spoof Attempt"
+        
+        # Check person cache
+        p_obj = person_cache.get(raw_lower)
+        if not p_obj:
+            for key, p in person_cache.items():
+                if key in raw_lower or raw_lower in key:
+                    p_obj = p
+                    break
+        
+        if p_obj:
+            clean_name = p_obj.name.strip()
+            class_name = (p_obj.class_name or '').strip()
+            
+            # If log.person_name had raw class appended like "Jiral Aiml - Sem 1", also clean it
+            raw_base = raw_name
+            if '(' in raw_base:
+                raw_base = raw_base.split('(')[0].strip()
+
+            if class_name:
+                # Strip class from raw_base or clean_name if it appears at the end
+                for target_str in [raw_base, clean_name]:
+                    low = target_str.lower()
+                    c_low = class_name.lower()
+                    if low.endswith(c_low):
+                        clean_name = target_str[:len(target_str) - len(class_name)].strip(" -_()")
+                        break
+                    elif c_low in low:
+                        idx = low.find(c_low)
+                        clean_name = target_str[:idx].strip(" -_()")
+                        break
+                return f"{clean_name} ({class_name})" if class_name else clean_name
+            return clean_name
+
+        # If no p_obj found, return raw_name cleanly
+        return raw_name
 
     # ── Frequency Analysis Table ──
     # Count frequency per person within the already-filtered log set
     person_counts = {}
     for log in logs:
         is_unknown = getattr(log, 'status', '') == 'UNKNOWN'
-        name = f"Unknown Person #{getattr(log, 'id', 'N/A')}" if is_unknown else (getattr(log, 'person_name', None) or 'Unknown')
+        raw_n = (getattr(log, 'person_name', None) or '').strip()
+        if is_unknown or not raw_n:
+            display_n = "Unknown"
+        else:
+            display_n = _format_display_name(raw_n)
         
-        if name not in person_counts:
-            person_counts[name] = {
-                'name': name,
+        if display_n not in person_counts:
+            person_counts[display_n] = {
+                'name': display_n,
                 'status': getattr(log, 'status', 'UNKNOWN'),
                 'frequency': 0
             }
-        person_counts[name]['frequency'] += 1
+        person_counts[display_n]['frequency'] += 1
 
     sorted_persons = sorted(person_counts.values(), key=lambda x: x['frequency'], reverse=True)[:10]
 
     if sorted_persons:
         story.append(Paragraph("FREQUENCY ANALYSIS (TOP 10)", subtitle_style))
         freq_data = [[
-            Paragraph("No.", header_style),
+            Paragraph("Number", header_style),
             Paragraph("Person Name", header_style),
             Paragraph("Status", header_style),
             Paragraph("Frequency", header_style),
@@ -543,7 +633,7 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
                 Paragraph(str(p_data['frequency']), cell_center_style),
             ])
             
-        freq_table = Table(freq_data, colWidths=[40, 320, 120, 120])
+        freq_table = Table(freq_data, colWidths=[42, 245, 130, 130])
         freq_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -551,18 +641,18 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#FFFFFF'), colors.HexColor('#F8FAFC')]),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ]))
         story.append(freq_table)
-        story.append(Spacer(1, 16))
+        story.append(Spacer(1, 14))
 
     # ── Table Headers ──
     table_data = [[
-        Paragraph("No.", header_style),
+        Paragraph("Number", header_style),
         Paragraph("Photo", header_style),
         Paragraph("Person Name", header_style),
-        Paragraph("Department / Role", header_style),
+        Paragraph("Role / Classification", header_style),
         Paragraph("Access Status", header_style),
         Paragraph("Freq.", header_style),
         Paragraph("Date & Time", header_style),
@@ -583,10 +673,15 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
             if os.path.exists(full_path):
                 return _make_image(full_path)
 
-        # Fallback: For KNOWN persons, use their first dataset photo
-        if log.status == 'KNOWN' and log.person_name:
+        # Fallback: Check if person is registered in database and has a dataset photo
+        if log.person_name:
             from app.models import Person, PersonImage
             person_obj = Person.objects.filter(name__iexact=log.person_name).first()
+            if not person_obj:
+                # Try trimming extra course suffix like 'Om (AIML Sem 4)' -> 'Om'
+                base_name = log.person_name.split('(')[0].strip()
+                if base_name:
+                    person_obj = Person.objects.filter(name__iexact=base_name).first()
             if person_obj:
                 first_img = PersonImage.objects.filter(person=person_obj).first()
                 if first_img and first_img.image:
@@ -602,54 +697,57 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
             reader = ImageReader(full_path)
             iw, ih = reader.getSize()
             aspect = ih / float(iw)
-            # Target: 72px wide, max 80px tall for clear visibility
-            w = 72
+            # Target: 52px wide, max 62px tall for clear visibility in Portrait
+            w = 52
             h = w * aspect
-            if h > 80:
-                h = 80
+            if h > 62:
+                h = 62
                 w = h / aspect
             return RLImage(full_path, width=w, height=h)
         except Exception:
             return Paragraph("[Error]", cell_center_style)
-
-    # ── Build table rows ──
-    # Pre-fetch all Person objects to avoid N+1 queries
-    from app.models import Person, PersonImage
-    person_names = set()
-    for log in logs:
-        if log.status == 'KNOWN' and log.person_name:
-            person_names.add(log.person_name.lower())
-
-    person_cache = {}
-    if person_names:
-        for p in Person.objects.filter(name__iregex=r'^(' + '|'.join(person_names) + r')$'):
-            person_cache[p.name.lower()] = p
-        # Pre-fetch first dataset images for all persons
-        person_ids = [p.id for p in person_cache.values()]
-        first_images = {}
-        for pi in PersonImage.objects.filter(person_id__in=person_ids).order_by('person_id', 'id'):
-            if pi.person_id not in first_images:
-                first_images[pi.person_id] = pi
-        # Attach to cache
-        for key, p in person_cache.items():
-            p._cached_first_image = first_images.get(p.id)
 
     for idx, log in enumerate(logs):
         # 1. Photo
         img_flowable = _resolve_photo(log)
 
         # 2. Department / Role
+        raw_name = (getattr(log, 'person_name', None) or '').strip()
+        raw_name_lower = raw_name.lower()
+        log_status = getattr(log, 'status', '')
+
+        is_spoof = 'spoof' in raw_name_lower or log_status == 'SPOOF' or 'fake' in raw_name_lower
+        is_unknown = (
+            not raw_name or
+            'unknown' in raw_name_lower or
+            'stranger' in raw_name_lower or
+            'unregistered' in raw_name_lower or
+            log_status == 'UNKNOWN'
+        ) and not is_spoof
+
         dept_role = "—"
-        person_name = getattr(log, 'person_name', None) or "Unknown / Stranger"
-        if log.status == 'KNOWN' and log.person_name:
-            person_obj = person_cache.get(log.person_name.lower())
+        person_name = _format_display_name(raw_name) if raw_name else "Unknown / Stranger"
+
+        if is_spoof:
+            person_name = raw_name if raw_name else "Spoof Attempt"
+            dept_role = "Spoof"
+        elif is_unknown:
+            person_name = "Unknown / Stranger"
+            dept_role = "Unregistered / Visitor"
+        else:
+            # Registered person lookup (by exact or partial match in cache)
+            person_obj = person_cache.get(raw_name_lower)
+            if not person_obj:
+                for key, p in person_cache.items():
+                    if key in raw_name_lower or raw_name_lower in key:
+                        person_obj = p
+                        break
+
             if person_obj:
-                dept_parts = []
-                if person_obj.department:
-                    dept_parts.append(person_obj.department)
-                if person_obj.class_name:
-                    dept_parts.append(person_obj.class_name)
-                dept_role = " / ".join(dept_parts) if dept_parts else person_obj.get_category_display()
+                role_category = person_obj.get_category_display() or "Member"
+                dept_role = role_category
+            else:
+                dept_role = "Member"
 
         # 3. Status
         if log.status == 'KNOWN' or log.status == 'APPROVED':
@@ -679,9 +777,9 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
         ]
         table_data.append(row)
 
-    # ── Table Layout ──
-    #                      No.  Photo  Name   Dept   Status  Freq   DateTime
-    col_widths =          [28,  82,    150,   140,   100,    50,    170]
+    # ── Table Layout (Optimized for A4 Portrait: 547pt printable width) ──
+    #                      Number Photo  Name   Role/Class Status  Freq   DateTime
+    col_widths =          [36,    58,    110,   116,       72,     35,    120]
     log_table = Table(table_data, colWidths=col_widths, repeatRows=1)
 
     table_styles = [
@@ -697,12 +795,14 @@ def generate_reports_pdf(logs, title_suffix="SMART ACCESS CONTROL REPORT"):
         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('TOPPADDING', (0, 1), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        # Column 0 (#) centered with minimal horizontal padding
+        ('LEFTPADDING', (0, 0), (0, -1), 2),
+        ('RIGHTPADDING', (0, 0), (0, -1), 2),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
         # Photo column centered
         ('ALIGN', (1, 1), (1, -1), 'CENTER'),
-        # No. column centered
-        ('ALIGN', (0, 1), (0, -1), 'CENTER'),
     ]
 
     # Alternating row colors

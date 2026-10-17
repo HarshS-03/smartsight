@@ -2210,11 +2210,11 @@ export default function DatasetPage() {
       )}
 
       {/* Auto Classification Modal */}
-      {showAutoClassifyModal && (
+      {showAutoClassifyModal && createPortal(
         <>
           <div className="modal-backdrop fade show modern-backdrop" style={{ opacity: 0.7, zIndex: 10540 }}></div>
           <div className="modal fade show d-flex align-items-center justify-content-center" tabIndex="-1" data-bs-backdrop="static" aria-hidden="true" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 10550, overflowY: 'auto' }}>
-            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable w-100 mx-auto" style={{ maxWidth: '1140px', margin: 'auto' }}>
+            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable w-100 mx-auto my-auto" style={{ maxWidth: '1140px' }}>
               <div className="modal-content overflow-hidden shadow-2xl"
                 style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', borderRadius: '24px', }}>
                 <div className="modal-header border-0 p-4">
@@ -2434,7 +2434,8 @@ export default function DatasetPage() {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* In-App Image Lightbox Preview Modal - Mounted directly on document.body via React Portal */}

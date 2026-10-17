@@ -73,6 +73,12 @@ export default function DetectionPage() {
     try {
       await API.patch(`/logs/${id}/`, { status: 'APPROVED' });
       setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: 'APPROVED' } : l)));
+      setSelectedScan((prev) => (prev && prev.id === id ? { ...prev, status: 'APPROVED' } : prev));
+      setStats((prev) => ({
+        ...prev,
+        known: (prev.known || 0) + 1,
+        unknown: Math.max(0, (prev.unknown || 1) - 1),
+      }));
       if (window.showToast) {
         window.showToast('Scan log approved successfully!', 'success', 'ACCESS GRANTED');
       }
@@ -88,6 +94,7 @@ export default function DetectionPage() {
     try {
       await API.patch(`/logs/${id}/`, { status: 'DENIED' });
       setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: 'DENIED' } : l)));
+      setSelectedScan((prev) => (prev && prev.id === id ? { ...prev, status: 'DENIED' } : prev));
       if (window.showToast) {
         window.showToast('Scan log marked as denied.', 'warning', 'ACCESS DENIED');
       }
@@ -98,6 +105,7 @@ export default function DetectionPage() {
       }
     }
   };
+
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
@@ -121,8 +129,32 @@ export default function DetectionPage() {
     }
   };
 
+  // 5-minute access timeout rule: ONLY pending UNKNOWN stranger scans older than 5 minutes become DENIED / EXPIRED
+  const isScanExpired = (log) => {
+    if (!log || !log.timestamp) return false;
+    // Known/Approved persons NEVER expire or auto-deny
+    if (log.status === 'KNOWN' || log.status === 'APPROVED') return false;
+    if (log.person_name && !log.person_name.toLowerCase().includes('unknown') && !log.person_name.toLowerCase().includes('unregistered')) return false;
+
+    const logTime = new Date(log.timestamp).getTime();
+    return !isNaN(logTime) && (Date.now() - logTime > 5 * 60 * 1000);
+  };
+
+  const getEffectiveStatus = (log) => {
+    if (!log) return 'UNKNOWN';
+    if (log.status === 'KNOWN' || log.status === 'APPROVED') return log.status;
+    if (log.status === 'DENIED') return 'DENIED';
+    if (isScanExpired(log)) return 'DENIED';
+    return log.status;
+  };
+
   useEffect(() => {
     fetchRecentScans();
+
+    // Auto-refresh periodically every 15s to ensure auto-denial transitions dynamically
+    const interval = setInterval(() => {
+      fetchRecentScans();
+    }, 15000);
 
     // Instant zero-latency SSE sync whenever any mobile terminal or admin takes an action
     const unsubscribe = subscribeNotificationEvents((eventType) => {
@@ -132,14 +164,16 @@ export default function DetectionPage() {
     });
 
     return () => {
+      clearInterval(interval);
       unsubscribe();
     };
   }, []);
 
   const filteredLogs = logs.filter((l) => {
-    if (filter === 'KNOWN') return l.status === 'KNOWN' || l.status === 'APPROVED';
-    if (filter === 'UNKNOWN') return l.status === 'UNKNOWN';
-    if (filter === 'DENIED') return l.status === 'DENIED';
+    const eff = getEffectiveStatus(l);
+    if (filter === 'KNOWN') return eff === 'KNOWN' || eff === 'APPROVED';
+    if (filter === 'UNKNOWN') return eff === 'UNKNOWN';
+    if (filter === 'DENIED') return eff === 'DENIED';
     return true;
   });
 
@@ -236,7 +270,12 @@ export default function DetectionPage() {
                 <span className="text-success small fw-semibold text-uppercase d-block text-truncate" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }} title="Authorized Entries (Known)">
                   Authorized Entries (Known)
                 </span>
-                <h3 className="fw-bold text-success mt-1 mb-0 font-mono">{logs.length > 0 ? logs.filter((l) => l.status === 'KNOWN' || l.status === 'APPROVED').length : stats.known}</h3>
+                <h3 className="fw-bold text-success mt-1 mb-0 font-mono">
+                  {logs.length > 0 ? logs.filter((l) => {
+                    const eff = getEffectiveStatus(l);
+                    return eff === 'KNOWN' || eff === 'APPROVED';
+                  }).length : stats.known}
+                </h3>
               </div>
               <div className="rounded-3 p-3 bg-success bg-opacity-10 text-success flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
                 <i className="bi bi-patch-check-fill fs-4"></i>
@@ -250,9 +289,14 @@ export default function DetectionPage() {
             <div className="d-flex align-items-center justify-content-between h-100 gap-3">
               <div style={{ minWidth: 0, flex: 1 }}>
                 <span className="text-danger small fw-semibold text-uppercase d-block text-truncate" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }} title="Denied / Strangers">
-                  Denied / Strangers
+                  Denied / Expired Entries
                 </span>
-                <h3 className="fw-bold text-danger mt-1 mb-0 font-mono">{logs.length > 0 ? logs.filter((l) => l.status === 'DENIED' || l.status === 'UNKNOWN').length : stats.unknown}</h3>
+                <h3 className="fw-bold text-danger mt-1 mb-0 font-mono">
+                  {logs.length > 0 ? logs.filter((l) => {
+                    const eff = getEffectiveStatus(l);
+                    return eff === 'DENIED';
+                  }).length : stats.unknown}
+                </h3>
               </div>
               <div className="rounded-3 p-3 bg-danger bg-opacity-10 text-danger flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
                 <i className="bi bi-shield-x fs-4"></i>
@@ -371,9 +415,11 @@ export default function DetectionPage() {
                 <th>Access Status</th>
                 <th>Confidence</th>
                 <th>Verification Time</th>
-                <th className="text-end pe-4">Action</th>
+                <th className="text-center" style={{ width: '190px' }}>Action</th>
               </tr>
             </thead>
+
+
             <tbody>
               {filteredLogs.length === 0 ? (
                 <tr>
@@ -390,7 +436,11 @@ export default function DetectionPage() {
                 </tr>
               ) : (
                 filteredLogs.map((log, index) => {
-                  const isAllowed = log.status === 'KNOWN' || log.status === 'APPROVED';
+                  const isExpired = isScanExpired(log);
+                  const effStatus = isExpired ? 'DENIED' : log.status;
+                  const isAllowed = !isExpired && (log.status === 'KNOWN' || log.status === 'APPROVED');
+                  const isDenied = effStatus === 'DENIED';
+                  const isPending = effStatus === 'UNKNOWN';
                   const dateStr = log.timestamp ? new Date(log.timestamp).toLocaleString() : '—';
                   const conf = log.confidence ? `${(log.confidence * (log.confidence <= 1 ? 100 : 1)).toFixed(1)}%` : '—';
 
@@ -439,17 +489,24 @@ export default function DetectionPage() {
                       </td>
                       <td>
                         <div className="fw-bold text-dynamic" style={{ fontSize: '0.92rem' }}>
-                          {(log.person_name || 'Unregistered Person')
+                          {(log.display_name || log.person_name || 'Unregistered Person')
                             .replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase())
                             .replace(/\b(sem)\b/gi, "Sem")}
+                          {log.class_name && (
+                            <> ({log.class_name.replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase()).replace(/\b(sem)\b/gi, "Sem")})</>
+                          )}
                         </div>
-                        <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
+                        <div className="text-secondary small mt-0.5" style={{ fontSize: '0.72rem' }}>
                           {((log.person_name || '').toLowerCase().includes('harsh') && (log.person_name || '').toLowerCase().includes('shrimali')) ? (
                             <span style={{ color: '#3b82f6', fontWeight: 600, letterSpacing: '0.03em' }}>THE SYSTEM GOD</span>
                           ) : (log.person_name || '').includes('Spoof') ? (
                             <span className="text-danger fw-semibold" style={{ fontSize: '0.72rem' }}>Digital Screen / Photo Attack Blocked</span>
                           ) : (
-                            [log.department, log.class_name, log.role, (isAllowed ? 'Authorized Entry' : 'Intruder / Stranger Attempt')].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')
+                            [
+                              log.department,
+                              log.role,
+                              (isAllowed ? 'Authorized Entry' : (isExpired ? 'Session Expired (Auto-Denied)' : 'Intruder / Stranger Attempt'))
+                            ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')
                           )}
                         </div>
                       </td>
@@ -469,11 +526,11 @@ export default function DetectionPage() {
                       <td>
                         <span
                           className={`badge rounded-pill fw-bold px-2.5 py-1 ${
-                            log.status === 'UNKNOWN' ? 'badge-pending' : (isAllowed ? 'bg-success text-white' : 'bg-danger text-white')
+                            isPending ? 'badge-pending' : (isAllowed ? 'bg-success text-white' : 'bg-danger text-white')
                           }`}
                           style={{ fontSize: '0.72rem' }}
                         >
-                          {log.status === 'UNKNOWN' ? '⏳ PENDING' : (isAllowed ? '✓ ALLOWED' : '✕ DENIED')}
+                          {isPending ? '⏳ PENDING' : (isAllowed ? '✓ ALLOWED' : (isExpired && log.status !== 'DENIED' ? '✕ AUTO-DENIED' : '✕ DENIED'))}
                         </span>
                       </td>
                       <td className="font-mono fw-semibold small text-secondary">
@@ -482,50 +539,71 @@ export default function DetectionPage() {
                       <td className="text-secondary small font-mono">
                         {dateStr}
                       </td>
-                      <td className="text-end pe-4">
-                        <div className="d-flex align-items-center gap-1.5 justify-content-end flex-wrap">
-                          {log.image_path && (
+                      <td className="text-center pe-3" style={{ width: '190px' }}>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, 78px)',
+                            gap: '6px',
+                            justifyContent: 'center',
+                            margin: '0 auto',
+                            width: '162px',
+                          }}
+                        >
+                          {/* 1. View button */}
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-premium btn-premium-view rounded-pill px-2 py-1 d-inline-flex align-items-center justify-content-center gap-1 w-100"
+                            onClick={() => setSelectedScan(log)}
+                            title="Inspect scan details & photo"
+                            style={{ fontSize: '0.73rem', fontWeight: '500' }}
+                          >
+                            <i className="bi bi-eye"></i> <span>View</span>
+                          </button>
+
+                          {isDenied || isAllowed ? (
+                            /* ALLOWED & DENIED: Clean 1x2 row with View & Delete */
                             <button
                               type="button"
-                              className="btn btn-sm btn-premium btn-premium-view rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
-                              onClick={() => setSelectedScan(log)}
-                              title="Inspect high-res photo"
-                              style={{ fontSize: '0.74rem' }}
+                              className="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 d-inline-flex align-items-center justify-content-center gap-1 w-100"
+                              onClick={() => setDeleteLog(log)}
+                              title="Delete scan entry"
+                              style={{ fontSize: '0.73rem', fontWeight: '500' }}
                             >
-                              <i className="bi bi-eye"></i> <span className="d-none d-xl-inline">View</span>
+                              <i className="bi bi-trash"></i> <span>Delete</span>
                             </button>
-                          )}
-                          {log.status === 'UNKNOWN' && (
+                          ) : (
+                            /* PENDING: Perfect 2x2 grid: View & Approve on Row 1, Deny & Delete on Row 2 */
                             <>
                               <button
                                 type="button"
-                                className="btn btn-sm btn-premium btn-premium-approve rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
+                                className="btn btn-sm btn-premium btn-premium-approve rounded-pill px-2 py-1 d-inline-flex align-items-center justify-content-center gap-1 w-100"
                                 onClick={() => handleApproveScan(log.id)}
-                                title="Approve access"
-                                style={{ fontSize: '0.74rem' }}
+                                title="Grant/Approve access"
+                                style={{ fontSize: '0.73rem', fontWeight: '500' }}
                               >
-                                <i className="bi bi-check-circle"></i> <span className="d-none d-xl-inline">Approve</span>
+                                <i className="bi bi-check-circle"></i> <span>Approve</span>
                               </button>
                               <button
                                 type="button"
-                                className="btn btn-sm btn-premium btn-premium-deny rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
+                                className="btn btn-sm btn-premium btn-premium-deny rounded-pill px-2 py-1 d-inline-flex align-items-center justify-content-center gap-1 w-100"
                                 onClick={() => handleDenyScan(log.id)}
                                 title="Deny access"
-                                style={{ fontSize: '0.74rem' }}
+                                style={{ fontSize: '0.73rem', fontWeight: '500' }}
                               >
-                                <i className="bi bi-x-circle"></i> <span className="d-none d-xl-inline">Deny</span>
+                                <i className="bi bi-x-circle"></i> <span>Deny</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 d-inline-flex align-items-center justify-content-center gap-1 w-100"
+                                onClick={() => setDeleteLog(log)}
+                                title="Delete scan entry"
+                                style={{ fontSize: '0.73rem', fontWeight: '500' }}
+                              >
+                                <i className="bi bi-trash"></i> <span>Delete</span>
                               </button>
                             </>
                           )}
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1"
-                            onClick={() => setDeleteLog(log)}
-                            title="Delete scan entry"
-                            style={{ fontSize: '0.74rem' }}
-                          >
-                            <i className="bi bi-trash"></i> <span className="d-none d-xl-inline">Delete</span>
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -590,217 +668,224 @@ export default function DetectionPage() {
                   }}
                 >
                   {/* Modal Header */}
-                  <div className="modal-header border-0 p-4 pb-3 d-flex justify-content-between align-items-center">
-                    <div className="d-flex align-items-center gap-3">
-                      <div
-                        className="d-flex align-items-center justify-content-center rounded-3"
-                        style={{
-                          width: '42px',
-                          height: '42px',
-                          backgroundColor:
-                            selectedScan.status === 'KNOWN'
-                              ? 'rgba(22, 163, 74, 0.15)'
-                              : 'rgba(220, 53, 69, 0.15)',
-                          color: selectedScan.status === 'KNOWN' ? '#16a34a' : '#ef4444',
-                        }}
-                      >
-                        <i
-                          className={`bi ${
-                            selectedScan.status === 'KNOWN'
-                              ? 'bi-shield-check'
-                              : 'bi-shield-exclamation'
-                          } fs-4`}
-                        ></i>
-                      </div>
-                      <div>
-                        <h5 className="modal-title fw-bold mb-0" style={{ fontSize: '1.15rem', color: 'var(--text-heading)' }}>
-                          Access Control Snapshot
-                        </h5>
-                        <span className="small text-secondary" style={{ fontSize: '0.78rem' }}>
-                          Log Record #{selectedScan.id} • Terminal Capture
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-close hover-glow ms-auto"
-                      style={{
-                        filter: 'var(--btn-close-filter, none)',
-                        opacity: 0.85,
-                        padding: '8px',
-                      }}
-                      onClick={() => setSelectedScan(null)}
-                      aria-label="Close"
-                    />
-                  </div>
+                  {(() => {
+                    const isModalExpired = isScanExpired(selectedScan);
+                    const modalEffStatus = isModalExpired ? 'DENIED' : selectedScan.status;
+                    const isModalAllowed = !isModalExpired && (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED');
+                    const isModalDenied = modalEffStatus === 'DENIED';
+                    const isModalPending = modalEffStatus === 'UNKNOWN';
 
-                  {/* Modal Body */}
-                  <div className="modal-body p-4 pt-1">
-                    {/* Snapshot Frame */}
-                    <div
-                      className="d-flex align-items-center justify-content-center rounded-4 overflow-hidden mb-3 position-relative border"
-                      style={{
-                        background: 'var(--bg-input, rgba(0, 0, 0, 0.4))',
-                        borderColor: 'var(--border-color)',
-                        width: '100%',
-                      }}
-                    >
-                      {selectedScan.image_path && !imgError ? (
-                        <img
-                          src={getImageUrl(selectedScan.image_path)}
-                          alt="Access Control Snapshot"
-                          className="w-100"
-                          style={{
-                            objectFit: 'cover',
-                            maxHeight: '380px',
-                            display: 'block',
-                          }}
-                          onError={() => setImgError(true)}
-                        />
-                      ) : (
-                        <div className="text-center py-5 px-3">
-                          <i className="bi bi-person-bounding-box fs-1 text-secondary opacity-50 mb-2 d-block"></i>
-                          <span className="small text-secondary">
-                            Snapshot image not available or file removed
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Floating Status Pill over image */}
-                      <div className="position-absolute top-0 start-0 m-3">
-                        <span
-                          className={`badge rounded-pill fw-bold px-3 py-1.5 shadow-sm ${
-                            selectedScan.status === 'UNKNOWN' ? 'badge-pending' : (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED' ? 'bg-success text-white' : 'bg-danger text-white')
-                          }`}
-                          style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}
-                        >
-                          <i
-                            className={`bi ${
-                              selectedScan.status === 'UNKNOWN' ? 'bi-hourglass-split' : (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED' ? 'bi-check-circle-fill' : 'bi-x-circle-fill')
-                            } me-1.5`}
-                          ></i>
-                          {selectedScan.status === 'UNKNOWN' ? 'PENDING APPROVAL' : (selectedScan.status === 'KNOWN' || selectedScan.status === 'APPROVED' ? 'MATCH VERIFIED' : 'ACCESS DENIED')}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Person Details Card */}
-                    <div
-                      className="p-3 rounded-4 mb-3"
-                      style={{
-                        background: 'var(--bg-surface-hover, rgba(255, 255, 255, 0.03))',
-                        border: '1px solid var(--border-color)',
-                      }}
-                    >
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <div>
-                          <div className="small text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                            Identified Person
-                          </div>
-                          <h4 className="fw-bold mb-0 text-dynamic" style={{ fontSize: '1.25rem' }}>
-                            {(selectedScan.person_name || 'Unregistered Person / Stranger')
-                              .replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase())
-                              .replace(/\b(sem)\b/gi, "Sem")}
-                          </h4>
-                          <div className="small text-secondary mt-1">
-                             {[selectedScan.department, selectedScan.class_name, selectedScan.role].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')}
-                          </div>
-                        </div>
-                        {selectedScan.confidence !== undefined && selectedScan.confidence !== null && (
-                          <div className="text-end">
-                            <div className="small text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                              Confidence
+                    return (
+                      <>
+                        <div className="modal-header border-0 p-4 pb-3 d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center gap-3">
+                            <div
+                              className="d-flex align-items-center justify-content-center rounded-3"
+                              style={{
+                                width: '42px',
+                                height: '42px',
+                                backgroundColor: isModalAllowed
+                                  ? 'rgba(22, 163, 74, 0.15)'
+                                  : 'rgba(220, 53, 69, 0.15)',
+                                color: isModalAllowed ? '#16a34a' : '#ef4444',
+                              }}
+                            >
+                              <i
+                                className={`bi ${
+                                  isModalAllowed ? 'bi-shield-check' : 'bi-shield-exclamation'
+                                } fs-4`}
+                              ></i>
                             </div>
-                            <span className="fw-bold font-mono text-primary" style={{ fontSize: '1.1rem' }}>
-                              {(selectedScan.confidence <= 1
-                                ? selectedScan.confidence * 100
-                                : Number(selectedScan.confidence)
-                              ).toFixed(1)}%
-                            </span>
+                            <div>
+                              <h5 className="modal-title fw-bold mb-0" style={{ fontSize: '1.15rem', color: 'var(--text-heading)' }}>
+                                Access Control Snapshot
+                              </h5>
+                              <span className="small text-secondary" style={{ fontSize: '0.78rem' }}>
+                                Log Record #{selectedScan.id} • Terminal Capture
+                              </span>
+                            </div>
                           </div>
-                        )}
-                      </div>
-
-                      <hr className="my-2.5 opacity-10" />
-
-                      <div className="row g-2 text-start">
-                        <div className="col-6">
-                          <div className="small text-secondary" style={{ fontSize: '0.72rem' }}>
-                            Capture Device
-                          </div>
-                          <div className="small fw-semibold text-dynamic text-truncate">
-                            <i className="bi bi-phone me-1 text-primary"></i>
-                            {(selectedScan.camera_name || 'Mobile Access Control Scanner').replace(/Biometric/gi, "Access")}
-                          </div>
+                          <button
+                            type="button"
+                            className="btn-close hover-glow ms-auto"
+                            style={{
+                              filter: 'var(--btn-close-filter, none)',
+                              opacity: 0.85,
+                              padding: '8px',
+                            }}
+                            onClick={() => setSelectedScan(null)}
+                            aria-label="Close"
+                          />
                         </div>
-                        <div className="col-6">
-                          <div className="small text-secondary" style={{ fontSize: '0.72rem' }}>
-                            Detection Time
-                          </div>
-                          <div className="small fw-semibold text-dynamic font-mono text-truncate">
-                            <i className="bi bi-clock me-1 text-secondary"></i>
-                            {new Date(selectedScan.timestamp).toLocaleString([], {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Modal Actions */}
-                    <div className="d-flex align-items-center justify-content-between gap-2 pt-1">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
-                        onClick={() => {
-                          const scanToDelete = selectedScan;
-                          setSelectedScan(null);
-                          setDeleteLog(scanToDelete);
-                        }}
-                      >
-                        <i className="bi bi-trash"></i>
-                        <span className="d-none d-sm-inline">Delete</span>
-                      </button>
-                      
-                      <div className="d-flex gap-2">
-                        {selectedScan.status === 'UNKNOWN' && (
-                          <>
+                        {/* Modal Body */}
+                        <div className="modal-body p-4 pt-1">
+                          {/* Snapshot Frame */}
+                          <div
+                            className="d-flex align-items-center justify-content-center rounded-4 overflow-hidden mb-3 position-relative border"
+                            style={{
+                              background: 'var(--bg-input, rgba(0, 0, 0, 0.4))',
+                              borderColor: 'var(--border-color)',
+                              width: '100%',
+                            }}
+                          >
+                            {selectedScan.image_path && !imgError ? (
+                              <img
+                                src={getImageUrl(selectedScan.image_path)}
+                                alt="Access Control Snapshot"
+                                className="w-100"
+                                style={{
+                                  objectFit: 'cover',
+                                  maxHeight: '380px',
+                                  display: 'block',
+                                }}
+                                onError={() => setImgError(true)}
+                              />
+                            ) : (
+                              <div className="text-center py-5 px-3">
+                                <i className="bi bi-person-bounding-box fs-1 text-secondary opacity-50 mb-2 d-block"></i>
+                                <span className="small text-secondary">
+                                  Snapshot image not available or file removed
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Floating Status Pill over image */}
+                            <div className="position-absolute top-0 start-0 m-3">
+                              <span
+                                className={`badge rounded-pill fw-bold px-3 py-1.5 shadow-sm ${
+                                  isModalPending ? 'badge-pending' : (isModalAllowed ? 'bg-success text-white' : 'bg-danger text-white')
+                                }`}
+                                style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}
+                              >
+                                <i
+                                  className={`bi ${
+                                    isModalPending ? 'bi-hourglass-split' : (isModalAllowed ? 'bi-check-circle-fill' : 'bi-x-circle-fill')
+                                  } me-1.5`}
+                                ></i>
+                                {isModalPending ? 'PENDING APPROVAL' : (isModalAllowed ? 'MATCH VERIFIED' : (isModalExpired && selectedScan.status !== 'DENIED' ? 'AUTO-DENIED (EXPIRED)' : 'ACCESS DENIED'))}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Person Details Card */}
+                          <div
+                            className="p-3 rounded-4 mb-3"
+                            style={{
+                              background: 'var(--bg-surface-hover, rgba(255, 255, 255, 0.03))',
+                              border: '1px solid var(--border-color)',
+                            }}
+                          >
+                            <div className="d-flex align-items-center justify-content-between mb-2">
+                              <div>
+                                <div className="small text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                                  Identified Person
+                                </div>
+                                <h4 className="fw-bold mb-0 text-dynamic" style={{ fontSize: '1.25rem' }}>
+                                  {(selectedScan.person_name || 'Unregistered Person / Stranger')
+                                    .replace(/\b(aiml|mca|cs|it)\b/gi, (m) => m.toUpperCase())
+                                    .replace(/\b(sem)\b/gi, "Sem")}
+                                </h4>
+                                <div className="small text-secondary mt-1">
+                                   {[selectedScan.department, selectedScan.class_name, selectedScan.role].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' • ')}
+                                </div>
+                              </div>
+                              {selectedScan.confidence !== undefined && selectedScan.confidence !== null && (
+                                <div className="text-end">
+                                  <div className="small text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                                    Confidence
+                                  </div>
+                                  <span className="fw-bold font-mono text-primary" style={{ fontSize: '1.1rem' }}>
+                                    {(selectedScan.confidence <= 1
+                                      ? selectedScan.confidence * 100
+                                      : Number(selectedScan.confidence)
+                                    ).toFixed(1)}%
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <hr className="my-2.5 opacity-10" />
+
+                            <div className="row g-2 text-start">
+                              <div className="col-6">
+                                <div className="small text-secondary" style={{ fontSize: '0.72rem' }}>
+                                  Capture Device
+                                </div>
+                                <div className="small fw-semibold text-dynamic text-truncate">
+                                  <i className="bi bi-phone me-1 text-primary"></i>
+                                  {(selectedScan.camera_name || 'Mobile Access Control Scanner').replace(/Biometric/gi, "Access")}
+                                </div>
+                              </div>
+                              <div className="col-6">
+                                <div className="small text-secondary" style={{ fontSize: '0.72rem' }}>
+                                  Detection Time
+                                </div>
+                                <div className="small fw-semibold text-dynamic font-mono text-truncate">
+                                  <i className="bi bi-clock me-1 text-secondary"></i>
+                                  {new Date(selectedScan.timestamp).toLocaleString([], {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Modal Actions */}
+                          <div className="d-flex align-items-center justify-content-between gap-2 pt-1">
                             <button
                               type="button"
-                              className="btn btn-sm btn-premium btn-premium-deny rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                              className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
                               onClick={() => {
-                                handleDenyScan(selectedScan.id);
+                                const scanToDelete = selectedScan;
                                 setSelectedScan(null);
+                                setDeleteLog(scanToDelete);
                               }}
                             >
-                              <i className="bi bi-x-circle"></i> Deny
+                              <i className="bi bi-trash"></i>
+                              <span className="d-none d-sm-inline">Delete</span>
                             </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-premium btn-premium-approve rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
-                              onClick={() => {
-                                handleApproveScan(selectedScan.id);
-                                setSelectedScan(null);
-                              }}
-                            >
-                              <i className="bi bi-check-circle"></i> Approve
-                            </button>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-semibold"
-                          onClick={() => setSelectedScan(null)}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                            
+                            <div className="d-flex gap-2">
+                              {!isModalDenied && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-premium btn-premium-deny rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                                  onClick={() => {
+                                    handleDenyScan(selectedScan.id);
+                                  }}
+                                >
+                                  <i className="bi bi-x-circle"></i> Deny
+                                </button>
+                              )}
+                              {isModalPending && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-premium btn-premium-approve rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                                  onClick={() => {
+                                    handleApproveScan(selectedScan.id);
+                                  }}
+                                >
+                                  <i className="bi bi-check-circle"></i> Approve
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-semibold"
+                                onClick={() => setSelectedScan(null)}
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

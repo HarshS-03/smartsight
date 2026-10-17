@@ -7433,7 +7433,8 @@ detection-hero-bg,
   border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
-.notif-status-badge.status-cancelled {
+.notif-status-badge.status-cancelled,
+.notif-status-badge.status-denied {
   background: rgba(239, 68, 68, 0.14);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.35);
