@@ -296,13 +296,14 @@ JAZZMIN_UI_TWEAKS = {
 }
 
 # ==============================================================================
-# SmartSight AI Recognition Engine Configuration (YOLOv8 Detection + ArcFace Recognition)
+# SmartSight AI Pipeline Configuration (InsightFace SCRFD + ArcFace Recognition)
 # ==============================================================================
-RECOGNITION_ENGINE = 'arcface'                  # Detection: YOLOv8-Face, Recognition: ArcFace
-FACE_DETECTION_MODEL = str(BASE_DIR / 'app' / 'models' / 'yolo26n-face.onnx')
+RECOGNITION_ENGINE = 'arcface'                  # Detection: SCRFD (InsightFace), Recognition: ArcFace (InsightFace)
 ARCFACE_SIMILARITY_THRESHOLD = 0.45             # Gallery match threshold (0.0–1.0)
 ARCFACE_LOGIN_THRESHOLD = 0.60                  # Stricter threshold for face login
-ARCFACE_DETECTION_CONFIDENCE = 0.45             # YOLOv8-Face detection confidence threshold
+ARCFACE_DETECTION_CONFIDENCE = 0.45             # Face detection confidence threshold
 ARCFACE_MAX_FACES_PER_FRAME = 10                # Max faces to process per frame
+ANTISPOOF_ENABLED = os.environ.get('ANTISPOOF_ENABLED', 'True').lower() in ('true', '1', 't')
 
 SUPABASE_SYNC_ENABLED = True
+

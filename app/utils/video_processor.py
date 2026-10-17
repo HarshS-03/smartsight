@@ -294,18 +294,8 @@ def draw_detection_box(frame, box, label_text, box_color):
 
 
 def gen_face_login_frames(token=None):
-    from django.conf import settings as django_settings
-    use_arcface = getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
-
-    cap = ThreadedCamera(0)
-    if not cap.grabbed:
-        cap = ThreadedCamera(1)
-        
-    if not use_arcface:
-        model = get_yolo_model('yolov8n')
-    else:
-        from app.utils.embedding_engine import detect_and_recognize
-        login_threshold = getattr(django_settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
+    from app.utils.embedding_engine import detect_and_recognize
+    login_threshold = getattr(django_settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
 
     laser_y = 40
     laser_direction = 8
@@ -349,25 +339,14 @@ def gen_face_login_frames(token=None):
             recognized_name = None
             face_box = None
 
-            if use_arcface:
-                # ── ArcFace Pipeline ──
-                detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1)
-                if detections:
-                    det = detections[0]
-                    recognized_name = det['person_name']
-                    best_conf = det['recognition_similarity']
-                    x1, y1, x2, y2 = det['bbox']
-                    face_box = [int(x1), int(y1), int(x2), int(y2)]
-            else:
-                # ── YOLO Fallback ──
-                results = model(frame, conf=0.25, verbose=False)
-                for box in results[0].boxes:
-                    cls_id = int(box.cls[0])
-                    conf = float(box.conf[0])
-                    if conf > best_conf:
-                        best_conf = conf
-                        recognized_name = model.names[cls_id]
-                        face_box = [int(v) for v in box.xyxy[0]]
+            # ── InsightFace Pipeline (SCRFD + ArcFace) ──
+            detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1)
+            if detections:
+                det = detections[0]
+                recognized_name = det['person_name']
+                best_conf = det['recognition_similarity']
+                x1, y1, x2, y2 = det['bbox']
+                face_box = [int(x1), int(y1), int(x2), int(y2)]
             
             # Draw Biometric Corner HUD overlays
             hud_color = (253, 110, 13)
@@ -387,8 +366,7 @@ def gen_face_login_frames(token=None):
             if laser_y >= h - 40 or laser_y <= 40:
                 laser_direction *= -1
                 
-            # Verification threshold: ArcFace uses login_threshold, YOLO uses 0.75
-            verify_threshold = login_threshold if use_arcface else 0.75
+            verify_threshold = login_threshold
 
             if face_box:
                 x1, y1, x2, y2 = face_box
@@ -468,17 +446,14 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
 
     cap.start()
 
-    model = get_yolo_model(model_name)
-    print(f"[SmartSight Engine] >>> Inference Worker active with Model: '{model_name}' on source: '{camera_src}' <<<")
-    is_custom = (model_name in ['yolov8n_onnx', 'yolov8n_pt', 'yolov8n', 'yolov8s_onnx', 'yolov8s_pt', 'yolov8s'])
+    print(f"[SmartSight Engine] >>> Inference Worker active (InsightFace SCRFD + ArcFace) on source: '{camera_src}' <<<")
 
     # Determine recognition engine
     from django.conf import settings as django_settings
-    use_arcface = getattr(django_settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
-    if use_arcface:
-        from app.utils.embedding_engine import detect_and_recognize
-        arcface_threshold = getattr(django_settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45)
-        arcface_max_faces = getattr(django_settings, 'ARCFACE_MAX_FACES_PER_FRAME', 10)
+    # ── InsightFace SCRFD + ArcFace Pipeline ──
+    from app.utils.embedding_engine import detect_and_recognize
+    arcface_threshold = getattr(django_settings, 'ARCFACE_SIMILARITY_THRESHOLD', 0.45)
+    arcface_max_faces = getattr(django_settings, 'ARCFACE_MAX_FACES_PER_FRAME', 10)
     
     inference_lock = threading.Lock()
     latest_frame = [None]
@@ -509,104 +484,54 @@ def gen_frames(camera_src, model_name='yolov8n', orientation='normal', stats_key
                 continue
             
             try:
-                if use_arcface:
-                    # ── ArcFace Pipeline ──
-                    detections = detect_and_recognize(
-                        frame_to_process,
-                        threshold=arcface_threshold,
-                        max_faces=arcface_max_faces,
-                        model_name=model_name
-                    )
+                # ── InsightFace Detection (SCRFD) & ArcFace Recognition ──
+                detections = detect_and_recognize(
+                    frame_to_process,
+                    threshold=arcface_threshold,
+                    max_faces=arcface_max_faces
+                )
 
-                    boxes = []
-                    person_count = 0
-                    person_detected = False
-                    max_confidence = 0.0
-                    detected_names_set = set()
+                boxes = []
+                person_count = 0
+                person_detected = False
+                max_confidence = 0.0
+                detected_names_set = set()
 
-                    for det in detections:
-                        person_count += 1
-                        person_detected = True
-                        x1, y1, x2, y2 = [int(v) for v in det['bbox']]
-                        raw_name = det.get('person_name')
-                        display = det.get('display_name')
-                        if det.get('is_known') and (not display or '[' not in str(display)):
-                            try:
-                                from app.utils.embedding_engine import get_gallery
-                                p_info = get_gallery().get_person_info(det.get('person_id'), raw_name)
-                                cls = p_info.get('class_name') or p_info.get('department') or ''
-                                if cls and raw_name:
-                                    display = f"{raw_name} [{cls}]"
-                            except Exception:
-                                pass
-                        name = display or (raw_name if det['is_known'] else 'Unknown')
-                        sim = det['recognition_similarity']
-                        det_conf = det['detection_confidence']
+                for det in detections:
+                    person_count += 1
+                    person_detected = True
+                    x1, y1, x2, y2 = [int(v) for v in det['bbox']]
+                    raw_name = det.get('person_name')
+                    display = det.get('display_name')
+                    if det.get('is_known') and (not display or '[' not in str(display)):
+                        try:
+                            from app.utils.embedding_engine import get_gallery
+                            p_info = get_gallery().get_person_info(det.get('person_id'), raw_name)
+                            cls = p_info.get('class_name') or p_info.get('department') or ''
+                            if cls and raw_name:
+                                display = f"{raw_name} [{cls}]"
+                        except Exception:
+                            pass
+                    name = display or (raw_name if det['is_known'] else 'Unknown')
+                    sim = det['recognition_similarity']
+                    det_conf = det['detection_confidence']
 
-                        # Use recognition similarity as the display confidence
-                        conf = sim if det['is_known'] else det_conf
-                        if conf > max_confidence:
-                            max_confidence = conf
+                    # Use recognition similarity as the display confidence
+                    conf = sim if det['is_known'] else det_conf
+                    if conf > max_confidence:
+                        max_confidence = conf
 
-                        detected_names_set.add(name)
+                    detected_names_set.add(name)
 
-                        # Color coding based on recognition similarity
-                        if det['is_known'] and sim >= 0.70:
-                            box_color = (84, 185, 25)   # Green — high confidence match
-                        elif det['is_known']:
-                            box_color = (0, 200, 200)   # Yellow-green — moderate match
-                        else:
-                            box_color = (0, 0, 255)     # Red — unknown
-
-                        boxes.append((x1, y1, x2, y2, name, conf, box_color))
-
-                else:
-                    # ── YOLO Fallback ──
-                    fh, fw = frame_to_process.shape[:2]
-                    if fw > 640:
-                        scale_w = 640.0 / fw
-                        target_h = max(320, int(fh * scale_w))
-                        infer_frame = cv.resize(frame_to_process, (640, target_h))
-                        scale_x = fw / 640.0
-                        scale_y = fh / float(target_h)
+                    # Color coding based on recognition similarity
+                    if det['is_known'] and sim >= 0.70:
+                        box_color = (84, 185, 25)   # Green — high confidence match
+                    elif det['is_known']:
+                        box_color = (0, 200, 200)   # Yellow-green — moderate match
                     else:
-                        infer_frame = frame_to_process
-                        scale_x = 1.0
-                        scale_y = 1.0
+                        box_color = (0, 0, 255)     # Red — unknown
 
-                    results = model(infer_frame, conf=0.5, verbose=False, imgsz=640)
-                    
-                    boxes = []
-                    person_count = 0
-                    person_detected = False
-                    max_confidence = 0.0
-                    detected_names_set = set()
-                    
-                    for box in results[0].boxes:
-                        cls_id = int(box.cls[0])
-                        if is_custom or cls_id == 0:
-                            person_count += 1
-                            person_detected = True
-                            conf = float(box.conf[0])
-                            if conf > max_confidence:
-                                max_confidence = conf
-                            
-                            box_name = 'Unknown'
-                            if is_custom:
-                                if conf >= 0.65:
-                                    box_name = model.names[cls_id]
-                                detected_names_set.add(box_name)
-                            else:
-                                detected_names_set.add('Unknown')
-                            
-                            bx1, by1, bx2, by2 = [float(v) for v in box.xyxy[0]]
-                            x1 = int(bx1 * scale_x)
-                            y1 = int(by1 * scale_y)
-                            x2 = int(bx2 * scale_x)
-                            y2 = int(by2 * scale_y)
-                            
-                            box_color = (84, 185, 25) if box_name != 'Unknown' else (0, 0, 255)
-                            boxes.append((x1, y1, x2, y2, box_name, conf, box_color))
+                    boxes.append((x1, y1, x2, y2, name, conf, box_color))
                 
                 with inference_lock:
                     latest_detections["boxes"] = boxes

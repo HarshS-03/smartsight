@@ -209,18 +209,16 @@ class DatasetUploadView(APIView):
                 pi = PersonImage.objects.create(person=person, image=img)
                 uploaded_images.append(pi)
 
-                # Auto-compute ArcFace embedding for the uploaded image
-                if getattr(settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface':
-                    try:
-                        from app.utils.embedding_engine import compute_embedding, get_gallery
-                        result = compute_embedding(pi.image.path)
-                        if result is not None:
-                            emb, det_conf, _ = result
-
-                            get_gallery().add_embedding(person.id, person.name, emb)
-                            embedding_count += 1
-                    except Exception as e:
-                        print(f"[DatasetUpload] Auto-embedding error for {pi.image.name}: {e}")
+                # Auto-compute InsightFace embedding for the uploaded image
+                try:
+                    from app.utils.embedding_engine import compute_embedding, get_gallery
+                    result = compute_embedding(pi.image.path)
+                    if result is not None:
+                        emb, det_conf, _ = result
+                        get_gallery().add_embedding(person.id, person.name, emb)
+                        embedding_count += 1
+                except Exception as e:
+                    print(f"[DatasetUpload] Auto-embedding error for {pi.image.name}: {e}")
 
         serializer = PersonSerializer(person, context={'request': request})
         res_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
@@ -624,63 +622,40 @@ def face_verify_frame(request):
         if frame is None:
             return Response({'status': 'error', 'message': 'Invalid image format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        use_arcface = getattr(settings, 'RECOGNITION_ENGINE', 'yolo') == 'arcface'
+        # ── InsightFace Pipeline with SCRFD + Anti-Spoofing ──
+        from app.utils.embedding_engine import detect_and_recognize
+        login_threshold = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
+        antispoof_active = getattr(settings, 'ANTISPOOF_ENABLED', True)
+        detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1, check_spoof=antispoof_active)
 
-        if use_arcface:
-            # ── ArcFace Pipeline with SCRFD + Anti-Spoofing ──
-            from app.utils.embedding_engine import detect_and_recognize
-            login_threshold = getattr(settings, 'ARCFACE_LOGIN_THRESHOLD', 0.60)
-            detections = detect_and_recognize(frame, threshold=login_threshold, max_faces=1, check_spoof=True)
+        if not detections:
+            return Response({
+                'status': 'no_face',
+                'message': 'No face detected in frame',
+                'faces': 0
+            })
 
-            if not detections:
-                return Response({
-                    'status': 'no_face',
-                    'message': 'No face detected in frame',
-                    'faces': 0
-                })
+        best = detections[0]
+        if not best.get('is_real', True):
+            return Response({
+                'status': 'spoof_detected',
+                'message': 'Security Alert: Live human face required. Spoofing or screen photo detected.',
+                'faces': 1,
+                'spoof_score': best.get('spoof_score', 0.0)
+            }, status=status.HTTP_403_FORBIDDEN)
 
-            best = detections[0]
-            if not best.get('is_real', True):
-                return Response({
-                    'status': 'spoof_detected',
-                    'message': 'Security Alert: Live human face required. Spoofing or screen photo detected.',
-                    'faces': 1,
-                    'spoof_score': best.get('spoof_score', 0.0)
-                }, status=status.HTTP_403_FORBIDDEN)
+        recognized_name = best['person_name']
+        best_conf = best['recognition_similarity']
+        det_conf = best['detection_confidence']
 
-            recognized_name = best['person_name']
-            best_conf = best['recognition_similarity']
-            det_conf = best['detection_confidence']
-
-            if not recognized_name:
-                return Response({
-                    'status': 'unrecognized',
-                    'message': f'Face detected but no matching identity found (similarity: {round(best_conf * 100, 1)}%)',
-                    'faces': 1,
-                    'detection_confidence': round(det_conf, 3),
-                    'recognition_similarity': round(best_conf, 3)
-                })
-        else:
-            # ── YOLO Fallback ──
-            model = get_yolo_model('yolov8n')
-            results = model(frame, conf=0.25, verbose=False)
-
-            best_conf = 0.0
-            recognized_name = None
-
-            for box in results[0].boxes:
-                cls_id = int(box.cls[0])
-                conf = float(box.conf[0])
-                if conf > best_conf:
-                    best_conf = conf
-                    recognized_name = model.names[cls_id]
-
-            if not recognized_name:
-                return Response({
-                    'status': 'no_face',
-                    'message': 'No face detected in frame',
-                    'faces': 0
-                })
+        if not recognized_name:
+            return Response({
+                'status': 'unrecognized',
+                'message': f'Face detected but no matching identity found (similarity: {round(best_conf * 100, 1)}%)',
+                'faces': 1,
+                'detection_confidence': round(det_conf, 3),
+                'recognition_similarity': round(best_conf, 3)
+            })
 
         # Check if recognized person is a registered admin user
         user = None
@@ -802,8 +777,9 @@ def biometric_verify_frame(request):
         face_bbox = best.get('bbox')
 
         # ── LIVENESS / ANTI-SPOOFING CHECK ──
+        antispoof_active = getattr(settings, 'ANTISPOOF_ENABLED', True)
         from app.utils.antispoof import check_liveness
-        is_live, liveness_score, liveness_msg = check_liveness(frame, face_bbox)
+        is_live, liveness_score, liveness_msg = check_liveness(frame, face_bbox) if antispoof_active else (True, 1.0, "DISABLED")
         if not is_live:
             captures_dir = os.path.join(settings.MEDIA_ROOT, 'captures')
             os.makedirs(captures_dir, exist_ok=True)
@@ -1607,10 +1583,6 @@ class GalleryRebuildAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
-        if engine != 'arcface':
-            return Response({'error': 'ArcFace engine is not active.'}, status=status.HTTP_400_BAD_REQUEST)
-
         from app.utils.embedding_engine import get_gallery
         gallery = get_gallery()
         gallery.reload()
@@ -1627,10 +1599,6 @@ class ComputePersonEmbeddingsAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, person_id):
-        engine = getattr(settings, 'RECOGNITION_ENGINE', 'yolo')
-        if engine != 'arcface':
-            return Response({'error': 'ArcFace engine is not active.'}, status=status.HTTP_400_BAD_REQUEST)
-
         from app.utils.embedding_engine import compute_person_embeddings
         try:
             person = Person.objects.get(id=person_id)

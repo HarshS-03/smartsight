@@ -45,13 +45,13 @@ def check_liveness(frame, bbox=None):
     try:
         h, w = frame.shape[:2]
         if bbox is not None:
-            x1, y1, x2, y2 = bbox
-            pad_x = int((x2 - x1) * 0.15)
-            pad_y = int((y2 - y1) * 0.15)
-            cx1 = max(0, x1 - pad_x)
-            cy1 = max(0, y1 - pad_y)
-            cx2 = min(w, x2 + pad_x)
-            cy2 = min(h, y2 + pad_y)
+            bx1, by1, bx2, by2 = [int(v) for v in bbox]
+            pad_x = int((bx2 - bx1) * 0.15)
+            pad_y = int((bx2 - bx1) * 0.15)
+            cx1 = max(0, bx1 - pad_x)
+            cy1 = max(0, by1 - pad_y)
+            cx2 = min(w, bx2 + pad_x)
+            cy2 = min(h, by2 + pad_y)
             face_img = frame[cy1:cy2, cx1:cx2]
         else:
             face_img = frame
